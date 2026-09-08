@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteShell, PageIntro } from "@/components/eoz/SiteShell";
-import { ORG } from "@/lib/eoz-data";
+import { useOrgSettings } from "@/lib/use-org-settings";
 
 export const Route = createFileRoute("/privacy")({
   head: () => ({
@@ -49,12 +49,13 @@ const SECTIONS = [
 ];
 
 function Privacy() {
+  const org = useOrgSettings();
   return (
     <SiteShell>
       <PageIntro
         eyebrow="( 11 ) — Privacy"
         title="Privacy policy."
-        lead={`How ${ORG.short} handles personal data for candidates, employers and service clients.`}
+        lead={`How ${org.shortName} handles personal data for candidates, employers and service clients.`}
       />
       <section className="max-w-[70ch] space-y-8 pb-14">
         {SECTIONS.map((s, i) => (
@@ -65,7 +66,7 @@ function Privacy() {
           </div>
         ))}
         <p className="text-sm text-muted">
-          Questions about this policy: {ORG.email} · {ORG.phone}
+          Questions about this policy: {org.email} · {org.phone}
         </p>
       </section>
     </SiteShell>

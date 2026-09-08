@@ -1,0 +1,4 @@
+zm\eoz\platform\opportunity\OpportunityModerationTest.class
+zm\eoz\platform\candidate\CandidateProfileTest.class
+zm\eoz\platform\payments\PaymentWebhookTest.class
+zm\eoz\platform\auth\AuthFlowTest.class

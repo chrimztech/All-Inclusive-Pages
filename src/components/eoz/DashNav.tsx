@@ -59,6 +59,7 @@ export const ADMIN_NAV = [
   { to: "/admin/notifications", label: "Notifications" },
   { to: "/admin/reports", label: "Reports" },
   { to: "/admin/users", label: "Users & RBAC" },
+  { to: "/admin/permissions", label: "Permissions" },
   { to: "/admin/settings", label: "Settings" },
   { to: "/admin/audit", label: "Audit log" },
   { to: "/admin/health", label: "System health" },

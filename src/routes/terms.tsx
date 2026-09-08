@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { SiteShell, PageIntro } from "@/components/eoz/SiteShell";
-import { ORG } from "@/lib/eoz-data";
+import { useOrgSettings } from "@/lib/use-org-settings";
 
 export const Route = createFileRoute("/terms")({
   head: () => ({
@@ -53,12 +53,13 @@ const SECTIONS = [
 ];
 
 function Terms() {
+  const org = useOrgSettings();
   return (
     <SiteShell>
       <PageIntro
         eyebrow="( 12 ) — Terms"
         title="Terms of use."
-        lead={`The rules governing use of ${ORG.name}.`}
+        lead={`The rules governing use of ${org.name}.`}
       />
       <section className="max-w-[70ch] space-y-8 pb-14">
         {SECTIONS.map((s, i) => (
@@ -69,7 +70,7 @@ function Terms() {
           </div>
         ))}
         <p className="text-sm text-muted">
-          Queries: {ORG.email} · {ORG.phone} · {ORG.location}
+          Queries: {org.email} · {org.phone} · {org.location}
         </p>
       </section>
     </SiteShell>

@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
 import { SiteShell, Panel, PageIntro } from "@/components/eoz/SiteShell";
 import { OpportunityCard } from "@/components/eoz/OpportunityCard";
-import { CATEGORIES, OPPORTUNITIES, REGIONS } from "@/lib/eoz-data";
+import { REGIONS } from "@/lib/eoz-data";
+import { api, type ApiCategory, type ApiOpportunitySummary, type PageResponse } from "@/lib/api-client";
 
 export const Route = createFileRoute("/opportunities/")({
   head: () => ({
@@ -29,18 +31,32 @@ function Board() {
   const [sort, setSort] = useState("newest");
   const [query, setQuery] = useState("");
 
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => api.get<ApiCategory[]>("/categories"),
+  });
+
+  const opportunitiesQuery = useQuery({
+    queryKey: ["opportunities", category, region, query],
+    queryFn: () =>
+      api.get<PageResponse<ApiOpportunitySummary>>("/opportunities", {
+        category,
+        region,
+        q: query || undefined,
+        size: 50,
+      }),
+  });
+
   const results = useMemo(() => {
-    const list = OPPORTUNITIES.filter((o) => {
-      if (category !== "All" && o.category !== category) return false;
-      if (region !== "All regions" && o.region !== region) return false;
-      if (query && !`${o.title} ${o.organisation}`.toLowerCase().includes(query.toLowerCase()))
-        return false;
-      return true;
-    });
+    const list = opportunitiesQuery.data?.items ?? [];
     return sort === "deadline"
-      ? [...list].sort((a, b) => a.closesInDays - b.closesInDays)
+      ? [...list].sort((a, b) => {
+          if (!a.deadline) return 1;
+          if (!b.deadline) return -1;
+          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
+        })
       : list;
-  }, [category, region, sort, query]);
+  }, [opportunitiesQuery.data, sort]);
 
   return (
     <SiteShell>
@@ -63,7 +79,7 @@ function Board() {
             />
             <div className="label-mono mb-2">Category</div>
             <div className="mb-5 space-y-1">
-              {CATEGORIES.map((c) => (
+              {["All", ...(categoriesQuery.data?.map((c) => c.name) ?? [])].map((c) => (
                 <label key={c} className="flex items-center gap-2 py-0.5 text-sm">
                   <input
                     type="radio"
@@ -96,7 +112,9 @@ function Board() {
 
         <div className="space-y-3 lg:col-span-9">
           <div className="flex items-center justify-between text-sm">
-            <div className="label-mono">{results.length} results</div>
+            <div className="label-mono">
+              {opportunitiesQuery.isLoading ? "Loading…" : `${results.length} results`}
+            </div>
             <select
               value={sort}
               onChange={(e) => setSort(e.target.value)}
@@ -107,6 +125,18 @@ function Board() {
               <option value="deadline">Closing soonest</option>
             </select>
           </div>
+          {opportunitiesQuery.isError ? (
+            <Panel>
+              <p className="text-sm text-muted">
+                We couldn't reach the opportunities service. Please try again shortly.
+              </p>
+            </Panel>
+          ) : null}
+          {!opportunitiesQuery.isLoading && results.length === 0 ? (
+            <Panel>
+              <p className="text-sm text-muted">No opportunities match these filters yet.</p>
+            </Panel>
+          ) : null}
           {results.map((item, i) => (
             <OpportunityCard key={item.id} item={item} delay={i * 60} />
           ))}

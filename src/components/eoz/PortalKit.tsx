@@ -105,11 +105,13 @@ export function SettingToggle({
   description,
   initial = true,
   locked = false,
+  onChange,
 }: {
   title: string;
   description: string;
   initial?: boolean;
   locked?: boolean;
+  onChange?: (enabled: boolean) => void;
 }) {
   const [enabled, setEnabled] = useState(initial);
   return (
@@ -118,7 +120,13 @@ export function SettingToggle({
       role="switch"
       aria-checked={enabled}
       disabled={locked}
-      onClick={() => setEnabled((value) => !value)}
+      onClick={() =>
+        setEnabled((value) => {
+          const next = !value;
+          onChange?.(next);
+          return next;
+        })
+      }
       className="flex w-full items-start justify-between gap-4 border-t border-line py-4 text-left first:border-0 first:pt-0 last:pb-0 disabled:cursor-not-allowed"
     >
       <span>

@@ -1,5 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
+import { api } from "@/lib/api-client";
 
 const PARTNER_TYPES = [
   {
@@ -22,12 +24,12 @@ const PARTNER_TYPES = [
   },
 ];
 
-const NUMBERS = [
-  { k: "Provinces covered", v: "10" },
-  { k: "Verified organisations", v: "180+" },
-  { k: "Listings distributed", v: "4,200+" },
-  { k: "Average review time", v: "< 1 day" },
-];
+type PublicStats = {
+  verifiedOrganisations: number;
+  publishedListings: number;
+  applicationsThisWeek: number;
+  averageReviewHours: number | null;
+};
 
 export const Route = createFileRoute("/partners")({
   head: () => ({
@@ -51,6 +53,25 @@ export const Route = createFileRoute("/partners")({
 });
 
 function Partners() {
+  const { data } = useQuery({
+    queryKey: ["stats", "public"],
+    queryFn: () => api.get<PublicStats>("/stats/public"),
+  });
+
+  const reviewTime =
+    data?.averageReviewHours == null
+      ? "—"
+      : data.averageReviewHours < 24
+        ? `< 1 day`
+        : `${Math.round(data.averageReviewHours / 24)} days`;
+
+  const numbers = [
+    { k: "Provinces covered", v: "10" },
+    { k: "Verified organisations", v: data ? `${data.verifiedOrganisations}` : "—" },
+    { k: "Listings distributed", v: data ? `${data.publishedListings}` : "—" },
+    { k: "Average review time", v: reviewTime },
+  ];
+
   return (
     <SiteShell>
       <PageIntro
@@ -81,7 +102,7 @@ function Partners() {
       </section>
 
       <section className="grid gap-4 pb-14 sm:grid-cols-2 lg:grid-cols-4">
-        {NUMBERS.map((n) => (
+        {numbers.map((n) => (
           <Panel key={n.k}>
             <div className="label-mono">{n.k}</div>
             <div className="mt-1 font-display text-3xl text-amber">{n.v}</div>

@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ORG } from "@/lib/eoz-data";
+import { useOrgSettings } from "@/lib/use-org-settings";
 
 const CHECKS = [
   { t: "Source of record", d: "Every listing must trace back to an official notice: the organisation's website, portal, letterhead or gazetted advert." },
@@ -40,6 +41,7 @@ export const Route = createFileRoute("/verification")({
 });
 
 function Verification() {
+  const org = useOrgSettings();
   return (
     <SiteShell>
       <PageIntro
@@ -79,7 +81,7 @@ function Verification() {
           <div className="eyebrow mb-3">Seen something wrong?</div>
           <p className="text-sm text-muted">
             Report the listing and we will take it down while we re-check the source. You can also reach the team
-            on {ORG.phone} or {ORG.email}.
+            on {org.phone} or {org.email}.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
             <Link to="/report" className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink">

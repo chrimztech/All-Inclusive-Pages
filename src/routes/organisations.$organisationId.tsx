@@ -1,92 +1,84 @@
-import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { Globe2, MapPin, ShieldCheck } from "lucide-react";
 import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
-import { OPPORTUNITIES } from "@/lib/eoz-data";
+import { api, daysUntil, type ApiOpportunitySummary, type PageResponse } from "@/lib/api-client";
 
-const PROFILES = {
-  "mfumu-analytics": {
-    name: "Mfumu Analytics",
-    sector: "Technology & professional services",
-    location: "Lusaka",
-    website: "mfumu-analytics.zm",
-    about:
-      "A fictional Zambian consultancy helping organisations turn operational data into practical decisions.",
-    verified: true,
-  },
-  "zambezi-build": {
-    name: "Zambezi Build Co.",
-    sector: "Construction & engineering",
-    location: "Copperbelt",
-    website: "zambezibuild.co.zm",
-    about:
-      "A fictional civil works company delivering commercial and public infrastructure projects across Zambia.",
-    verified: true,
-  },
-  "kalulu-trust": {
-    name: "Kalulu Development Trust",
-    sector: "Non-profit & development",
-    location: "Central",
-    website: "kalulutrust.org",
-    about:
-      "A fictional development organisation focused on youth livelihoods, community resilience and local partnerships.",
-    verified: true,
-  },
-  "chobe-foundation": {
-    name: "Chobe Foundation",
-    sector: "Enterprise development",
-    location: "National",
-    website: "chobefoundation.org",
-    about:
-      "A fictional foundation supporting early-stage enterprises through grants, mentoring and market connections.",
-    verified: false,
-  },
-  "lusaka-skills": {
-    name: "Lusaka Skills Institute",
-    sector: "Education & training",
-    location: "Lusaka",
-    website: "lusakaskills.zm",
-    about: "A fictional practical training provider for digital, technical and workplace skills.",
-    verified: true,
-  },
-  "zambezi-bank": {
-    name: "Zambezi Commercial Bank",
-    sector: "Banking & finance",
-    location: "National",
-    website: "zcb.co.zm",
-    about:
-      "A fictional financial institution serving individuals and growing businesses across Zambia.",
-    verified: true,
-  },
-} as const;
+type ApiOrganisation = {
+  id: string;
+  legalName: string;
+  tradingName: string | null;
+  sector: string | null;
+  website: string | null;
+  address: string | null;
+  description: string | null;
+  verificationStatus: string;
+  listingsCount: number;
+};
 
 export const Route = createFileRoute("/organisations/$organisationId")({
-  loader: ({ params }) => {
-    const profile = PROFILES[params.organisationId as keyof typeof PROFILES];
-    if (!profile) throw notFound();
-    return profile;
-  },
-  head: ({ loaderData }) => ({
+  head: () => ({
     meta: [
-      { title: `${loaderData?.name ?? "Organisation"} - EOZ` },
-      { name: "description", content: loaderData?.about ?? "Public organisation profile on EOZ." },
+      { title: "Organisation profile - EOZ" },
+      { name: "description", content: "Public organisation profile on EOZ." },
     ],
   }),
   component: OrganisationProfile,
 });
 
 function OrganisationProfile() {
-  const profile = Route.useLoaderData();
-  const listings = OPPORTUNITIES.filter((item) => item.organisation === profile.name);
+  const { organisationId } = Route.useParams();
+
+  const orgQuery = useQuery({
+    queryKey: ["organisation", organisationId],
+    queryFn: () => api.get<ApiOrganisation>(`/organisations/${organisationId}`),
+  });
+
+  const listingsQuery = useQuery({
+    queryKey: ["organisation-listings", organisationId],
+    queryFn: () =>
+      api.get<PageResponse<ApiOpportunitySummary>>("/opportunities", {
+        organisationId,
+        size: 20,
+      }),
+    enabled: !!orgQuery.data,
+  });
+
+  if (orgQuery.isLoading) {
+    return (
+      <SiteShell>
+        <PageIntro eyebrow="Public organisation profile" title="Loading…" lead="" />
+      </SiteShell>
+    );
+  }
+
+  if (orgQuery.isError || !orgQuery.data) {
+    return (
+      <SiteShell>
+        <PageIntro
+          eyebrow="Public organisation profile"
+          title="Organisation not found"
+          lead="This organisation profile is unavailable or has been removed."
+        />
+      </SiteShell>
+    );
+  }
+
+  const profile = orgQuery.data;
+  const name = profile.tradingName ?? profile.legalName;
+  const verified = profile.verificationStatus === "VERIFIED";
+  const listings = listingsQuery.data?.items ?? [];
+
   return (
     <SiteShell>
       <PageIntro
         eyebrow="Public organisation profile"
-        title={profile.name}
-        lead={profile.about}
+        title={name}
+        lead={profile.description ?? "This organisation has not added a public description yet."}
         aside={
           <Panel>
-            <Chip tone={profile.verified ? "emerald" : "amber"}>
-              {profile.verified ? "EOZ verified" : "Verification in progress"}
+            <Chip tone={verified ? "emerald" : "amber"}>
+              {verified ? "EOZ verified" : "Verification in progress"}
             </Chip>
             <p className="mt-3 text-xs leading-5 text-muted">
               Verification confirms submitted organisation evidence. It does not guarantee a hiring
@@ -101,40 +93,45 @@ function OrganisationProfile() {
             <Panel>
               <MapPin aria-hidden="true" className="size-4 text-accent-soft" />
               <div className="mt-3 label-mono">Location</div>
-              <div className="mt-1 text-sm">{profile.location}</div>
+              <div className="mt-1 text-sm">{profile.address ?? "Not listed"}</div>
             </Panel>
             <Panel>
               <Globe2 aria-hidden="true" className="size-4 text-accent-soft" />
               <div className="mt-3 label-mono">Website</div>
-              <div className="mt-1 text-sm">{profile.website}</div>
+              <div className="mt-1 text-sm">{profile.website ?? "Not listed"}</div>
             </Panel>
             <Panel>
               <ShieldCheck aria-hidden="true" className="size-4 text-accent-soft" />
               <div className="mt-3 label-mono">Sector</div>
-              <div className="mt-1 text-sm">{profile.sector}</div>
+              <div className="mt-1 text-sm">{profile.sector ?? "Not listed"}</div>
             </Panel>
           </div>
           <Panel>
             <div className="label-mono mb-4">Active opportunities</div>
-            {listings.length ? (
-              listings.map((listing) => (
-                <Link
-                  key={listing.id}
-                  to="/opportunities/$opportunityId"
-                  params={{ opportunityId: listing.id }}
-                  className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-4 first:border-0 first:pt-0"
-                >
-                  <span>
-                    <span className="block text-sm">{listing.title}</span>
-                    <span className="text-xs text-muted">
-                      {listing.category} · {listing.region}
+            {listingsQuery.isLoading ? (
+              <p className="text-sm text-muted">Loading listings…</p>
+            ) : listings.length ? (
+              listings.map((listing) => {
+                const closesIn = daysUntil(listing.deadline);
+                return (
+                  <Link
+                    key={listing.id}
+                    to="/opportunities/$opportunityId"
+                    params={{ opportunityId: listing.slug }}
+                    className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-4 first:border-0 first:pt-0"
+                  >
+                    <span>
+                      <span className="block text-sm">{listing.title}</span>
+                      <span className="text-xs text-muted">
+                        {listing.categoryName} · {listing.region ?? "National"}
+                      </span>
                     </span>
-                  </span>
-                  <span className="font-mono text-xs text-accent-soft">
-                    Closes in {listing.closesInDays} days →
-                  </span>
-                </Link>
-              ))
+                    <span className="font-mono text-xs text-accent-soft">
+                      {closesIn !== null ? `Closes in ${closesIn} days →` : "Open →"}
+                    </span>
+                  </Link>
+                );
+              })
             ) : (
               <p className="text-sm text-muted">
                 No active EOZ listings from this organisation right now.

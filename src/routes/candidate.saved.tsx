@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { CANDIDATE_NAV, DashNav } from "@/components/eoz/DashNav";
 import { OpportunityCard } from "@/components/eoz/OpportunityCard";
-import { OPPORTUNITIES } from "@/lib/eoz-data";
+import { api, isUnauthenticated, type ApiOpportunitySummary } from "@/lib/api-client";
 
 export const Route = createFileRoute("/candidate/saved")({
   head: () => ({
@@ -23,7 +24,12 @@ export const Route = createFileRoute("/candidate/saved")({
 });
 
 function Saved() {
-  const saved = OPPORTUNITIES.slice(0, 4);
+  const savedQuery = useQuery({
+    queryKey: ["candidate", "saved"],
+    queryFn: () => api.get<ApiOpportunitySummary[]>("/candidate/saved"),
+    retry: false,
+  });
+
   return (
     <SiteShell>
       <PageIntro
@@ -34,7 +40,17 @@ function Saved() {
       <DashNav items={CANDIDATE_NAV} />
       <section className="grid gap-6 pb-14 lg:grid-cols-12">
         <div className="space-y-3 lg:col-span-8">
-          {saved.map((o, i) => (
+          {isUnauthenticated(savedQuery.error) ? (
+            <Panel>
+              <p className="text-sm text-muted">Sign in as a candidate to see your saved opportunities.</p>
+            </Panel>
+          ) : null}
+          {savedQuery.data?.length === 0 ? (
+            <Panel>
+              <p className="text-sm text-muted">Nothing saved yet — browse the board and save a listing.</p>
+            </Panel>
+          ) : null}
+          {(savedQuery.data ?? []).map((o, i) => (
             <OpportunityCard key={o.id} item={o} delay={i * 60} />
           ))}
         </div>

@@ -1,7 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Building2, MapPin, Search } from "lucide-react";
 import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
+import { api, type PageResponse } from "@/lib/api-client";
 
 export const Route = createFileRoute("/organisations/")({
   head: () => ({
@@ -16,64 +18,32 @@ export const Route = createFileRoute("/organisations/")({
   component: OrganisationDirectory,
 });
 
-const PROFILES = [
-  {
-    id: "mfumu-analytics",
-    name: "Mfumu Analytics",
-    sector: "Technology & professional services",
-    location: "Lusaka",
-    listings: 12,
-    verified: true,
-  },
-  {
-    id: "zambezi-build",
-    name: "Zambezi Build Co.",
-    sector: "Construction & engineering",
-    location: "Copperbelt",
-    listings: 7,
-    verified: true,
-  },
-  {
-    id: "kalulu-trust",
-    name: "Kalulu Development Trust",
-    sector: "Non-profit & development",
-    location: "Central",
-    listings: 9,
-    verified: true,
-  },
-  {
-    id: "chobe-foundation",
-    name: "Chobe Foundation",
-    sector: "Enterprise development",
-    location: "National",
-    listings: 3,
-    verified: false,
-  },
-  {
-    id: "lusaka-skills",
-    name: "Lusaka Skills Institute",
-    sector: "Education & training",
-    location: "Lusaka",
-    listings: 5,
-    verified: true,
-  },
-  {
-    id: "zambezi-bank",
-    name: "Zambezi Commercial Bank",
-    sector: "Banking & finance",
-    location: "National",
-    listings: 4,
-    verified: true,
-  },
-];
+type ApiOrganisation = {
+  id: string;
+  legalName: string;
+  tradingName: string | null;
+  sector: string | null;
+  website: string | null;
+  address: string | null;
+  description: string | null;
+  verificationStatus: string;
+  listingsCount: number;
+};
 
 function OrganisationDirectory() {
   const [query, setQuery] = useState("");
-  const visible = PROFILES.filter((profile) =>
-    `${profile.name} ${profile.sector} ${profile.location}`
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["organisations"],
+    queryFn: () => api.get<PageResponse<ApiOrganisation>>("/organisations", { size: 60 }),
+  });
+
+  const profiles = data?.items ?? [];
+  const visible = profiles.filter((profile) =>
+    `${profile.tradingName ?? profile.legalName} ${profile.sector ?? ""} ${profile.address ?? ""}`
       .toLowerCase()
       .includes(query.toLowerCase()),
   );
+
   return (
     <SiteShell>
       <PageIntro
@@ -92,35 +62,49 @@ function OrganisationDirectory() {
         />
       </label>
       <section className="grid gap-4 pb-14 md:grid-cols-2 lg:grid-cols-3">
-        {visible.map((profile) => (
-          <Panel key={profile.id} className="flex min-h-56 flex-col">
-            <div className="flex items-start justify-between gap-3">
-              <div className="grid size-10 place-items-center rounded-lg bg-accent/10 text-accent-soft ring-1 ring-accent/25">
-                <Building2 aria-hidden="true" className="size-5" />
-              </div>
-              <Chip tone={profile.verified ? "emerald" : "amber"}>
-                {profile.verified ? "Verified" : "Under review"}
-              </Chip>
-            </div>
-            <h2 className="mt-5 font-display text-2xl tracking-tight">{profile.name}</h2>
-            <p className="mt-1 text-sm text-muted">{profile.sector}</p>
-            <div className="mt-auto flex items-center justify-between border-t border-line pt-4 text-xs text-muted">
-              <span className="flex items-center gap-1">
-                <MapPin aria-hidden="true" className="size-3" />
-                {profile.location}
-              </span>
-              <span>{profile.listings} listings</span>
-            </div>
-            <Link
-              to="/organisations/$organisationId"
-              params={{ organisationId: profile.id }}
-              className="mt-4 text-sm text-accent-soft"
-            >
-              View profile →
-            </Link>
+        {isLoading ? (
+          <Panel className="md:col-span-2 lg:col-span-3 py-12 text-center text-sm text-muted">
+            Loading organisations…
           </Panel>
-        ))}
-        {!visible.length ? (
+        ) : isError ? (
+          <Panel className="md:col-span-2 lg:col-span-3 py-12 text-center text-sm text-muted">
+            Could not load organisations right now. Please try again shortly.
+          </Panel>
+        ) : (
+          visible.map((profile) => {
+            const verified = profile.verificationStatus === "VERIFIED";
+            const name = profile.tradingName ?? profile.legalName;
+            return (
+              <Panel key={profile.id} className="flex min-h-56 flex-col">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="grid size-10 place-items-center rounded-lg bg-accent/10 text-accent-soft ring-1 ring-accent/25">
+                    <Building2 aria-hidden="true" className="size-5" />
+                  </div>
+                  <Chip tone={verified ? "emerald" : "amber"}>
+                    {verified ? "Verified" : "Under review"}
+                  </Chip>
+                </div>
+                <h2 className="mt-5 font-display text-2xl tracking-tight">{name}</h2>
+                <p className="mt-1 text-sm text-muted">{profile.sector ?? "Sector not listed"}</p>
+                <div className="mt-auto flex items-center justify-between border-t border-line pt-4 text-xs text-muted">
+                  <span className="flex items-center gap-1">
+                    <MapPin aria-hidden="true" className="size-3" />
+                    {profile.address ?? "Location not listed"}
+                  </span>
+                  <span>{profile.listingsCount} listings</span>
+                </div>
+                <Link
+                  to="/organisations/$organisationId"
+                  params={{ organisationId: profile.id }}
+                  className="mt-4 text-sm text-accent-soft"
+                >
+                  View profile →
+                </Link>
+              </Panel>
+            );
+          })
+        )}
+        {!isLoading && !isError && !visible.length ? (
           <Panel className="md:col-span-2 lg:col-span-3 py-12 text-center text-sm text-muted">
             No organisations match that search.
           </Panel>

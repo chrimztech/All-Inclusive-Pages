@@ -1,15 +1,17 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { SiteShell, Panel, PageIntro } from "@/components/eoz/SiteShell";
 import { OpportunityCard } from "@/components/eoz/OpportunityCard";
 import {
   APPLICATIONS,
   APPLICATION_STAGES,
   CATEGORIES,
-  OPPORTUNITIES,
-  ORG,
+  PILLARS,
   REGIONS,
 } from "@/lib/eoz-data";
+import { api, type ApiOpportunitySummary, type PageResponse } from "@/lib/api-client";
+import { useOrgSettings } from "@/lib/use-org-settings";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -31,32 +33,39 @@ export const Route = createFileRoute("/")({
   component: Home,
 });
 
+type PublicStats = {
+  verifiedOrganisations: number;
+  publishedListings: number;
+  applicationsThisWeek: number;
+  averageReviewHours: number | null;
+};
+
 function Home() {
+  const org = useOrgSettings();
   const [category, setCategory] = useState<string>("All");
   const [query, setQuery] = useState("");
   const [region, setRegion] = useState("All regions");
   const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [deadline, setDeadline] = useState("any");
 
-  const results = useMemo(() => {
-    return OPPORTUNITIES.filter((o) => {
-      if (category !== "All" && o.category !== category) return false;
-      if (region !== "All regions" && o.region !== region) return false;
-      if (verifiedOnly && !o.verified) return false;
-      if (deadline === "7" && o.closesInDays > 7) return false;
-      if (deadline === "30" && o.closesInDays > 30) return false;
-      if (query) {
-        const q = query.toLowerCase();
-        if (
-          !o.title.toLowerCase().includes(q) &&
-          !o.organisation.toLowerCase().includes(q) &&
-          !o.region.toLowerCase().includes(q)
-        )
-          return false;
-      }
-      return true;
-    });
-  }, [category, query, region, verifiedOnly, deadline]);
+  const statsQuery = useQuery({
+    queryKey: ["stats", "public"],
+    queryFn: () => api.get<PublicStats>("/stats/public"),
+  });
+
+  const opportunitiesQuery = useQuery({
+    queryKey: ["opportunities", "home", category, region, query, verifiedOnly, deadline],
+    queryFn: () =>
+      api.get<PageResponse<ApiOpportunitySummary>>("/opportunities", {
+        category,
+        region,
+        q: query || undefined,
+        verifiedOnly: verifiedOnly ? "true" : undefined,
+        deadlineWithinDays: deadline === "any" ? undefined : Number(deadline),
+        size: 20,
+      }),
+  });
+  const results = opportunitiesQuery.data?.items ?? [];
 
   return (
     <SiteShell>
@@ -76,15 +85,21 @@ function Home() {
             <div className="space-y-3 text-sm">
               <div className="flex items-baseline justify-between">
                 <span>Active opportunities</span>
-                <span className="font-mono text-accent-soft">1,247</span>
+                <span className="font-mono text-accent-soft">
+                  {statsQuery.data ? statsQuery.data.publishedListings.toLocaleString() : "—"}
+                </span>
               </div>
               <div className="flex items-baseline justify-between">
                 <span>Verified employers</span>
-                <span className="font-mono text-accent-soft">318</span>
+                <span className="font-mono text-accent-soft">
+                  {statsQuery.data ? statsQuery.data.verifiedOrganisations.toLocaleString() : "—"}
+                </span>
               </div>
               <div className="flex items-baseline justify-between">
                 <span>Applications this week</span>
-                <span className="font-mono text-accent-soft">4,892</span>
+                <span className="font-mono text-accent-soft">
+                  {statsQuery.data ? statsQuery.data.applicationsThisWeek.toLocaleString() : "—"}
+                </span>
               </div>
             </div>
           </Panel>
@@ -227,19 +242,18 @@ function Home() {
         <div
           className="fade-in rounded-2xl p-6 ring-1 ring-line backdrop-blur-md lg:p-8"
           style={{
-            background:
-              "linear-gradient(180deg, rgba(196,181,253,0.08), rgba(255,255,255,0.01))",
+            background: "linear-gradient(180deg, rgba(36,180,92,0.10), rgba(255,255,255,0.01))",
           }}
         >
           <div className="grid gap-6 lg:grid-cols-12">
             <div className="lg:col-span-4">
-              <div className="eyebrow mb-3">( 02 ) — Your Candidate Portal</div>
+              <div className="eyebrow mb-3">( 02 ) — Candidate Portal Preview</div>
               <h2 className="font-display text-3xl leading-tight tracking-tight lg:text-4xl">
                 Applications tracked, deadlines watched.
               </h2>
               <p className="mt-3 max-w-[40ch] text-pretty text-sm text-muted">
                 Every submission logged with the employer's official channel. Status timeline from
-                draft to shortlist.
+                draft to shortlist — example view below, sign in to see your own.
               </p>
               <div className="mt-5 flex gap-4">
                 <div>
@@ -291,7 +305,7 @@ function Home() {
                         }`}
                         style={
                           i <= APPLICATIONS[0]!.stage
-                            ? { boxShadow: "0 0 12px 2px rgba(196,181,253,0.4)" }
+                            ? { boxShadow: "0 0 12px 2px rgba(124,227,164,0.4)" }
                             : undefined
                         }
                       />
@@ -329,13 +343,49 @@ function Home() {
       </section>
 
       <section className="border-t border-line py-10">
+        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <div className="eyebrow mb-2">( 03 ) — What EOZ connects</div>
+            <h2 className="font-display text-3xl tracking-tight">
+              Opportunity access with practical support.
+            </h2>
+          </div>
+          <Link to="/about" className="text-sm text-accent-soft">
+            Our story and values →
+          </Link>
+        </div>
+        <div className="grid gap-3 pb-10 md:grid-cols-2 lg:grid-cols-5">
+          {PILLARS.map((pillar) => (
+            <Panel key={pillar.title} className="p-4">
+              <h3 className="font-display text-lg leading-tight">{pillar.title}</h3>
+              <p className="mt-2 text-xs leading-5 text-muted">{pillar.description}</p>
+            </Panel>
+          ))}
+        </div>
         <div className="grid gap-4 sm:grid-cols-3">
           {[
-            { to: "/services", t: "Professional services", d: "CVs, cover letters, coaching and business profiles." },
-            { to: "/employers", t: "For employers", d: "Publish verified vacancies and manage recruitment." },
-            { to: "/about", t: "About EOZ", d: `${ORG.tagline}` },
+            {
+              to: "/services",
+              t: "Professional services",
+              d: "CVs, cover letters, coaching and business profiles.",
+            },
+            {
+              to: "/employers",
+              t: "For employers",
+              d: "Publish verified vacancies and manage recruitment.",
+            },
+            {
+              to: "/content",
+              t: "Content & channels",
+              d: "Follow opportunity updates, career guidance and professional content.",
+            },
+            { to: "/about", t: "About EOZ", d: `${org.tagline}` },
           ].map((c) => (
-            <Link key={c.to} to={c.to} className="glass rounded-xl p-5 ring-1 ring-line hover:ring-accent/40">
+            <Link
+              key={c.to}
+              to={c.to}
+              className="glass rounded-xl p-5 ring-1 ring-line hover:ring-accent/40"
+            >
               <div className="font-display text-lg">{c.t}</div>
               <p className="mt-2 text-sm text-muted">{c.d}</p>
             </Link>

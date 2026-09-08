@@ -1,7 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { DashNav, EMPLOYER_NAV } from "@/components/eoz/DashNav";
-import { CATEGORIES, ORG, REGIONS } from "@/lib/eoz-data";
+import { ORG, REGIONS } from "@/lib/eoz-data";
+import { api, ApiError, type ApiCategory, type ApiOpportunityDetail } from "@/lib/api-client";
 
 export const Route = createFileRoute("/employers/post")({
   head: () => ({
@@ -25,7 +28,78 @@ export const Route = createFileRoute("/employers/post")({
 const inputCls =
   "mt-1 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/40";
 
+const APPLICATION_MODES = [
+  { value: "EXTERNAL_URL", label: "Employer application URL" },
+  { value: "EMPLOYER_EMAIL", label: "Employer email address" },
+  { value: "PHYSICAL_ADDRESS", label: "Physical / postal submission" },
+] as const;
+
+type ApplicationMode = (typeof APPLICATION_MODES)[number]["value"];
+
 function PostOpportunity() {
+  const queryClient = useQueryClient();
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => api.get<ApiCategory[]>("/categories"),
+  });
+
+  const [title, setTitle] = useState("");
+  const [categoryCode, setCategoryCode] = useState("");
+  const [region, setRegion] = useState(REGIONS[0] ?? "");
+  const [organisationName, setOrganisationName] = useState("");
+  const [deadline, setDeadline] = useState("");
+  const [applicationMode, setApplicationMode] = useState<ApplicationMode>("EXTERNAL_URL");
+  const [routeValue, setRouteValue] = useState("");
+  const [source, setSource] = useState("");
+  const [description, setDescription] = useState("");
+  const [requirements, setRequirements] = useState("");
+
+  const submitMutation = useMutation({
+    mutationFn: () =>
+      api.post<ApiOpportunityDetail>("/opportunities", {
+        title,
+        categoryCode,
+        organisationName,
+        description,
+        requirements: requirements
+          .split("\n")
+          .map((r) => r.trim())
+          .filter(Boolean)
+          .join("; "),
+        region,
+        deadline: deadline ? new Date(deadline).toISOString() : undefined,
+        applicationMode,
+        applicationUrl: applicationMode === "EXTERNAL_URL" ? routeValue : undefined,
+        applicationEmail: applicationMode === "EMPLOYER_EMAIL" ? routeValue : undefined,
+        applicationAddress: applicationMode === "PHYSICAL_ADDRESS" ? routeValue : undefined,
+        source,
+        salaryVisible: false,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["opportunities"] });
+    },
+  });
+
+  const routeFieldLabel =
+    applicationMode === "EXTERNAL_URL"
+      ? "Careers portal / application URL"
+      : applicationMode === "EMPLOYER_EMAIL"
+        ? "Employer email address"
+        : "Physical submission address";
+
+  if (submitMutation.isSuccess) {
+    return (
+      <SiteShell>
+        <PageIntro
+          eyebrow="( 05.2 ) — Submitted"
+          title="Submitted for review."
+          lead={`Reference ${submitMutation.data.reference} has been logged as pending review. EOZ staff will verify the application route before it is published.`}
+        />
+        <div className="pb-14" />
+      </SiteShell>
+    );
+  }
+
   return (
     <SiteShell>
       <PageIntro
@@ -42,23 +116,40 @@ function PostOpportunity() {
               className="grid gap-4 sm:grid-cols-2"
               onSubmit={(e) => {
                 e.preventDefault();
+                submitMutation.mutate();
               }}
             >
               <label className="sm:col-span-2">
                 <span className="label-mono">Opportunity title</span>
-                <input className={inputCls} placeholder="e.g. Senior Data Analyst" />
+                <input
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className={inputCls}
+                  placeholder="e.g. Senior Data Analyst"
+                />
               </label>
               <label>
                 <span className="label-mono">Category</span>
-                <select className={inputCls}>
-                  {CATEGORIES.filter((c) => c !== "All").map((c) => (
-                    <option key={c}>{c}</option>
+                <select
+                  required
+                  value={categoryCode}
+                  onChange={(e) => setCategoryCode(e.target.value)}
+                  className={inputCls}
+                >
+                  <option value="" disabled>
+                    Select a category
+                  </option>
+                  {(categoriesQuery.data ?? []).map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.name}
+                    </option>
                   ))}
                 </select>
               </label>
               <label>
                 <span className="label-mono">Region</span>
-                <select className={inputCls}>
+                <select value={region} onChange={(e) => setRegion(e.target.value)} className={inputCls}>
                   {REGIONS.map((r) => (
                     <option key={r}>{r}</option>
                   ))}
@@ -66,37 +157,89 @@ function PostOpportunity() {
               </label>
               <label>
                 <span className="label-mono">Organisation</span>
-                <input className={inputCls} />
+                <input
+                  required
+                  value={organisationName}
+                  onChange={(e) => setOrganisationName(e.target.value)}
+                  className={inputCls}
+                />
               </label>
               <label>
                 <span className="label-mono">Closing date</span>
-                <input type="date" className={inputCls} />
+                <input
+                  required
+                  type="date"
+                  value={deadline}
+                  onChange={(e) => setDeadline(e.target.value)}
+                  className={inputCls}
+                />
               </label>
-              <label className="sm:col-span-2">
-                <span className="label-mono">Official application method (required)</span>
-                <input className={inputCls} placeholder="Careers portal URL or employer email" />
+              <label>
+                <span className="label-mono">Application route type</span>
+                <select
+                  value={applicationMode}
+                  onChange={(e) => setApplicationMode(e.target.value as ApplicationMode)}
+                  className={inputCls}
+                >
+                  {APPLICATION_MODES.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                <span className="label-mono">{routeFieldLabel} (required)</span>
+                <input
+                  required
+                  value={routeValue}
+                  onChange={(e) => setRouteValue(e.target.value)}
+                  className={inputCls}
+                  placeholder={applicationMode === "EMPLOYER_EMAIL" ? "careers@employer.zm" : "https://"}
+                />
               </label>
               <label className="sm:col-span-2">
                 <span className="label-mono">Source link for verification</span>
-                <input className={inputCls} placeholder="https://" />
+                <input
+                  required
+                  value={source}
+                  onChange={(e) => setSource(e.target.value)}
+                  className={inputCls}
+                  placeholder="https://"
+                />
               </label>
               <label className="sm:col-span-2">
                 <span className="label-mono">Summary</span>
-                <textarea rows={4} className={inputCls} />
+                <textarea
+                  required
+                  rows={4}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  className={inputCls}
+                />
               </label>
               <label className="sm:col-span-2">
                 <span className="label-mono">Requirements (one per line)</span>
-                <textarea rows={4} className={inputCls} />
+                <textarea
+                  rows={4}
+                  value={requirements}
+                  onChange={(e) => setRequirements(e.target.value)}
+                  className={inputCls}
+                />
               </label>
+              {submitMutation.isError ? (
+                <p className="text-xs text-rose-400 sm:col-span-2">
+                  {submitMutation.error instanceof ApiError
+                    ? submitMutation.error.message
+                    : "Something went wrong. Please try again."}
+                </p>
+              ) : null}
               <div className="sm:col-span-2 flex flex-wrap gap-3">
-                <button className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink">
-                  Submit for review
-                </button>
                 <button
-                  type="button"
-                  className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg"
+                  disabled={submitMutation.isPending}
+                  className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
                 >
-                  Save draft
+                  {submitMutation.isPending ? "Submitting…" : "Submit for review"}
                 </button>
               </div>
             </form>

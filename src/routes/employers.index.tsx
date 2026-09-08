@@ -1,7 +1,16 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { DashNav, EMPLOYER_NAV, StatTile } from "@/components/eoz/DashNav";
 import { ORG } from "@/lib/eoz-data";
+import { api, type ApiCategory } from "@/lib/api-client";
+
+type PublicStats = {
+  verifiedOrganisations: number;
+  publishedListings: number;
+  applicationsThisWeek: number;
+  averageReviewHours: number | null;
+};
 
 export const Route = createFileRoute("/employers/")({
   head: () => ({
@@ -23,6 +32,22 @@ export const Route = createFileRoute("/employers/")({
 });
 
 function Employers() {
+  const statsQuery = useQuery({
+    queryKey: ["stats", "public"],
+    queryFn: () => api.get<PublicStats>("/stats/public"),
+  });
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => api.get<ApiCategory[]>("/categories"),
+  });
+
+  const reviewTime =
+    statsQuery.data?.averageReviewHours == null
+      ? "—"
+      : statsQuery.data.averageReviewHours < 1
+        ? "< 1h"
+        : `${Math.round(statsQuery.data.averageReviewHours)}h`;
+
   return (
     <SiteShell>
       <PageIntro
@@ -48,10 +73,10 @@ function Employers() {
       <DashNav items={EMPLOYER_NAV} />
 
       <div className="grid gap-3 pb-8 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Monthly reach" value="48k" />
-        <StatTile label="Verified employers" value="120+" />
-        <StatTile label="Median review time" value="6h" />
-        <StatTile label="Categories" value="6" />
+        <StatTile label="Published listings" value={String(statsQuery.data?.publishedListings ?? "—")} />
+        <StatTile label="Verified employers" value={String(statsQuery.data?.verifiedOrganisations ?? "—")} />
+        <StatTile label="Average review time" value={reviewTime} />
+        <StatTile label="Categories" value={String(categoriesQuery.data?.length ?? "—")} />
       </div>
 
       <section className="grid gap-4 pb-14 lg:grid-cols-3">

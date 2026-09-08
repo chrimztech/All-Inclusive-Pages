@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
-import { AUDIT_EVENTS } from "@/lib/eoz-data";
+import { api, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/audit")({
   head: () => ({
@@ -21,7 +22,24 @@ export const Route = createFileRoute("/admin/audit")({
   component: Audit,
 });
 
+type AuditEvent = {
+  id: string;
+  actorName: string;
+  action: string;
+  entityType: string;
+  entityId: string | null;
+  summary: string | null;
+  occurredAt: string;
+};
+
 function Audit() {
+  const auditQuery = useQuery({
+    queryKey: ["admin", "audit"],
+    queryFn: () => api.get<PageResponse<AuditEvent>>("/admin/audit", { size: 50 }),
+    retry: false,
+  });
+  const events = auditQuery.data?.items ?? [];
+
   return (
     <SiteShell>
       <PageIntro
@@ -31,13 +49,25 @@ function Audit() {
       />
       <DashNav items={ADMIN_NAV} />
 
+      {isUnauthenticated(auditQuery.error) ? (
+        <Panel className="mb-4">
+          <p className="text-sm text-muted">Sign in with an admin or auditor account to view the audit log.</p>
+        </Panel>
+      ) : null}
+
       <Panel className="mb-14">
+        {events.length === 0 ? <p className="text-sm text-muted">No audit events yet.</p> : null}
         <ul className="space-y-4 text-sm">
-          {AUDIT_EVENTS.map((a) => (
-            <li key={a.id} className="grid gap-1 border-t border-line pt-4 first:border-0 first:pt-0 sm:grid-cols-12">
-              <div className="font-mono text-xs text-accent-soft sm:col-span-3">{a.at}</div>
-              <div className="sm:col-span-3">{a.actor}</div>
-              <div className="text-muted sm:col-span-6">{a.action}</div>
+          {events.map((e) => (
+            <li key={e.id} className="grid gap-1 border-t border-line pt-4 first:border-0 first:pt-0 sm:grid-cols-12">
+              <div className="font-mono text-xs text-accent-soft sm:col-span-3">
+                {new Date(e.occurredAt).toLocaleString()}
+              </div>
+              <div className="sm:col-span-3">{e.actorName}</div>
+              <div className="text-muted sm:col-span-6">
+                {e.action} · {e.entityType}
+                {e.summary ? ` — ${e.summary}` : ""}
+              </div>
             </li>
           ))}
         </ul>

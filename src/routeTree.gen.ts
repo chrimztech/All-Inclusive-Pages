@@ -15,15 +15,19 @@ import { Route as AboutRouteImport } from './routes/about'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CandidatesRouteImport } from './routes/candidates'
 import { Route as ContactRouteImport } from './routes/contact'
+import { Route as ContentRouteImport } from './routes/content'
 import { Route as CookieNoticeRouteImport } from './routes/cookie-notice'
 import { Route as FaqRouteImport } from './routes/faq'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
 import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ReportRouteImport } from './routes/report'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ScamWarningRouteImport } from './routes/scam-warning'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as VerificationRouteImport } from './routes/verification'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
@@ -33,6 +37,7 @@ import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminOpportunitiesRouteImport } from './routes/admin.opportunities'
 import { Route as AdminOrganisationsRouteImport } from './routes/admin.organisations'
+import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
 import { Route as AdminRecruitmentRouteImport } from './routes/admin.recruitment'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminServicesRouteImport } from './routes/admin.services'
@@ -66,6 +71,8 @@ import { Route as OrganisationsIndexRouteImport } from './routes/organisations.i
 import { Route as OrganisationsOrganisationIdRouteImport } from './routes/organisations.$organisationId'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as ServicesServiceSlugRouteImport } from './routes/services.$serviceSlug'
+import { Route as AdminRecruitmentProjectIdRouteImport } from './routes/admin.recruitment.$projectId'
+import { Route as AdminRecruitmentTalentPoolRouteImport } from './routes/admin.recruitment.talent-pool'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -97,6 +104,11 @@ const ContactRoute = ContactRouteImport.update({
   path: '/contact',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ContentRoute = ContentRouteImport.update({
+  id: '/content',
+  path: '/content',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CookieNoticeRoute = CookieNoticeRouteImport.update({
   id: '/cookie-notice',
   path: '/cookie-notice',
@@ -105,6 +117,11 @@ const CookieNoticeRoute = CookieNoticeRouteImport.update({
 const FaqRoute = FaqRouteImport.update({
   id: '/faq',
   path: '/faq',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HowItWorksRoute = HowItWorksRouteImport.update({
@@ -127,6 +144,11 @@ const ReportRoute = ReportRouteImport.update({
   path: '/report',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ScamWarningRoute = ScamWarningRouteImport.update({
   id: '/scam-warning',
   path: '/scam-warning',
@@ -140,6 +162,11 @@ const TermsRoute = TermsRouteImport.update({
 const VerificationRoute = VerificationRouteImport.update({
   id: '/verification',
   path: '/verification',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminIndexRoute = AdminIndexRouteImport.update({
@@ -185,6 +212,11 @@ const AdminOpportunitiesRoute = AdminOpportunitiesRouteImport.update({
 const AdminOrganisationsRoute = AdminOrganisationsRouteImport.update({
   id: '/admin/organisations',
   path: '/admin/organisations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminPermissionsRoute = AdminPermissionsRouteImport.update({
+  id: '/admin/permissions',
+  path: '/admin/permissions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRecruitmentRoute = AdminRecruitmentRouteImport.update({
@@ -354,6 +386,18 @@ const ServicesServiceSlugRoute = ServicesServiceSlugRouteImport.update({
   path: '/services/$serviceSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRecruitmentProjectIdRoute =
+  AdminRecruitmentProjectIdRouteImport.update({
+    id: '/$projectId',
+    path: '/$projectId',
+    getParentRoute: () => AdminRecruitmentRoute,
+  } as any)
+const AdminRecruitmentTalentPoolRoute =
+  AdminRecruitmentTalentPoolRouteImport.update({
+    id: '/talent-pool',
+    path: '/talent-pool',
+    getParentRoute: () => AdminRecruitmentRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -362,15 +406,19 @@ export interface FileRoutesByFullPath {
   '/auth': typeof AuthRoute
   '/candidates': typeof CandidatesRoute
   '/contact': typeof ContactRoute
+  '/content': typeof ContentRoute
   '/cookie-notice': typeof CookieNoticeRoute
   '/faq': typeof FaqRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/scam-warning': typeof ScamWarningRoute
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/finance': typeof AdminFinanceRoute
@@ -379,7 +427,8 @@ export interface FileRoutesByFullPath {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/organisations': typeof AdminOrganisationsRoute
-  '/admin/recruitment': typeof AdminRecruitmentRoute
+  '/admin/permissions': typeof AdminPermissionsRoute
+  '/admin/recruitment': typeof AdminRecruitmentRouteWithChildren
   '/admin/reports': typeof AdminReportsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -413,6 +462,8 @@ export interface FileRoutesByFullPath {
   '/opportunities/': typeof OpportunitiesIndexRoute
   '/organisations/': typeof OrganisationsIndexRoute
   '/services/': typeof ServicesIndexRoute
+  '/admin/recruitment/$projectId': typeof AdminRecruitmentProjectIdRoute
+  '/admin/recruitment/talent-pool': typeof AdminRecruitmentTalentPoolRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -421,15 +472,19 @@ export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/candidates': typeof CandidatesRoute
   '/contact': typeof ContactRoute
+  '/content': typeof ContentRoute
   '/cookie-notice': typeof CookieNoticeRoute
   '/faq': typeof FaqRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/scam-warning': typeof ScamWarningRoute
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/finance': typeof AdminFinanceRoute
@@ -438,7 +493,8 @@ export interface FileRoutesByTo {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/organisations': typeof AdminOrganisationsRoute
-  '/admin/recruitment': typeof AdminRecruitmentRoute
+  '/admin/permissions': typeof AdminPermissionsRoute
+  '/admin/recruitment': typeof AdminRecruitmentRouteWithChildren
   '/admin/reports': typeof AdminReportsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -472,6 +528,8 @@ export interface FileRoutesByTo {
   '/opportunities': typeof OpportunitiesIndexRoute
   '/organisations': typeof OrganisationsIndexRoute
   '/services': typeof ServicesIndexRoute
+  '/admin/recruitment/$projectId': typeof AdminRecruitmentProjectIdRoute
+  '/admin/recruitment/talent-pool': typeof AdminRecruitmentTalentPoolRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -481,15 +539,19 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/candidates': typeof CandidatesRoute
   '/contact': typeof ContactRoute
+  '/content': typeof ContentRoute
   '/cookie-notice': typeof CookieNoticeRoute
   '/faq': typeof FaqRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/scam-warning': typeof ScamWarningRoute
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/admin/audit': typeof AdminAuditRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/finance': typeof AdminFinanceRoute
@@ -498,7 +560,8 @@ export interface FileRoutesById {
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/organisations': typeof AdminOrganisationsRoute
-  '/admin/recruitment': typeof AdminRecruitmentRoute
+  '/admin/permissions': typeof AdminPermissionsRoute
+  '/admin/recruitment': typeof AdminRecruitmentRouteWithChildren
   '/admin/reports': typeof AdminReportsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -532,6 +595,8 @@ export interface FileRoutesById {
   '/opportunities/': typeof OpportunitiesIndexRoute
   '/organisations/': typeof OrganisationsIndexRoute
   '/services/': typeof ServicesIndexRoute
+  '/admin/recruitment/$projectId': typeof AdminRecruitmentProjectIdRoute
+  '/admin/recruitment/talent-pool': typeof AdminRecruitmentTalentPoolRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -542,15 +607,19 @@ export interface FileRouteTypes {
     | '/auth'
     | '/candidates'
     | '/contact'
+    | '/content'
     | '/cookie-notice'
     | '/faq'
+    | '/forgot-password'
     | '/how-it-works'
     | '/partners'
     | '/privacy'
     | '/report'
+    | '/reset-password'
     | '/scam-warning'
     | '/terms'
     | '/verification'
+    | '/verify-email'
     | '/admin/audit'
     | '/admin/content'
     | '/admin/finance'
@@ -559,6 +628,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/opportunities'
     | '/admin/organisations'
+    | '/admin/permissions'
     | '/admin/recruitment'
     | '/admin/reports'
     | '/admin/services'
@@ -593,6 +663,8 @@ export interface FileRouteTypes {
     | '/opportunities/'
     | '/organisations/'
     | '/services/'
+    | '/admin/recruitment/$projectId'
+    | '/admin/recruitment/talent-pool'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -601,15 +673,19 @@ export interface FileRouteTypes {
     | '/auth'
     | '/candidates'
     | '/contact'
+    | '/content'
     | '/cookie-notice'
     | '/faq'
+    | '/forgot-password'
     | '/how-it-works'
     | '/partners'
     | '/privacy'
     | '/report'
+    | '/reset-password'
     | '/scam-warning'
     | '/terms'
     | '/verification'
+    | '/verify-email'
     | '/admin/audit'
     | '/admin/content'
     | '/admin/finance'
@@ -618,6 +694,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/opportunities'
     | '/admin/organisations'
+    | '/admin/permissions'
     | '/admin/recruitment'
     | '/admin/reports'
     | '/admin/services'
@@ -652,6 +729,8 @@ export interface FileRouteTypes {
     | '/opportunities'
     | '/organisations'
     | '/services'
+    | '/admin/recruitment/$projectId'
+    | '/admin/recruitment/talent-pool'
   id:
     | '__root__'
     | '/'
@@ -660,15 +739,19 @@ export interface FileRouteTypes {
     | '/auth'
     | '/candidates'
     | '/contact'
+    | '/content'
     | '/cookie-notice'
     | '/faq'
+    | '/forgot-password'
     | '/how-it-works'
     | '/partners'
     | '/privacy'
     | '/report'
+    | '/reset-password'
     | '/scam-warning'
     | '/terms'
     | '/verification'
+    | '/verify-email'
     | '/admin/audit'
     | '/admin/content'
     | '/admin/finance'
@@ -677,6 +760,7 @@ export interface FileRouteTypes {
     | '/admin/notifications'
     | '/admin/opportunities'
     | '/admin/organisations'
+    | '/admin/permissions'
     | '/admin/recruitment'
     | '/admin/reports'
     | '/admin/services'
@@ -711,6 +795,8 @@ export interface FileRouteTypes {
     | '/opportunities/'
     | '/organisations/'
     | '/services/'
+    | '/admin/recruitment/$projectId'
+    | '/admin/recruitment/talent-pool'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -720,15 +806,19 @@ export interface RootRouteChildren {
   AuthRoute: typeof AuthRoute
   CandidatesRoute: typeof CandidatesRoute
   ContactRoute: typeof ContactRoute
+  ContentRoute: typeof ContentRoute
   CookieNoticeRoute: typeof CookieNoticeRoute
   FaqRoute: typeof FaqRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   HowItWorksRoute: typeof HowItWorksRoute
   PartnersRoute: typeof PartnersRoute
   PrivacyRoute: typeof PrivacyRoute
   ReportRoute: typeof ReportRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   ScamWarningRoute: typeof ScamWarningRoute
   TermsRoute: typeof TermsRoute
   VerificationRoute: typeof VerificationRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   AdminAuditRoute: typeof AdminAuditRoute
   AdminContentRoute: typeof AdminContentRoute
   AdminFinanceRoute: typeof AdminFinanceRoute
@@ -737,7 +827,8 @@ export interface RootRouteChildren {
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminOpportunitiesRoute: typeof AdminOpportunitiesRoute
   AdminOrganisationsRoute: typeof AdminOrganisationsRoute
-  AdminRecruitmentRoute: typeof AdminRecruitmentRoute
+  AdminPermissionsRoute: typeof AdminPermissionsRoute
+  AdminRecruitmentRoute: typeof AdminRecruitmentRouteWithChildren
   AdminReportsRoute: typeof AdminReportsRoute
   AdminServicesRoute: typeof AdminServicesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -817,6 +908,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ContactRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/content': {
+      id: '/content'
+      path: '/content'
+      fullPath: '/content'
+      preLoaderRoute: typeof ContentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/cookie-notice': {
       id: '/cookie-notice'
       path: '/cookie-notice'
@@ -829,6 +927,13 @@ declare module '@tanstack/react-router' {
       path: '/faq'
       fullPath: '/faq'
       preLoaderRoute: typeof FaqRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/how-it-works': {
@@ -859,6 +964,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ReportRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/scam-warning': {
       id: '/scam-warning'
       path: '/scam-warning'
@@ -878,6 +990,13 @@ declare module '@tanstack/react-router' {
       path: '/verification'
       fullPath: '/verification'
       preLoaderRoute: typeof VerificationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/': {
@@ -941,6 +1060,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/organisations'
       fullPath: '/admin/organisations'
       preLoaderRoute: typeof AdminOrganisationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/permissions': {
+      id: '/admin/permissions'
+      path: '/admin/permissions'
+      fullPath: '/admin/permissions'
+      preLoaderRoute: typeof AdminPermissionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/recruitment': {
@@ -1174,8 +1300,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesServiceSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/recruitment/$projectId': {
+      id: '/admin/recruitment/$projectId'
+      path: '/$projectId'
+      fullPath: '/admin/recruitment/$projectId'
+      preLoaderRoute: typeof AdminRecruitmentProjectIdRouteImport
+      parentRoute: typeof AdminRecruitmentRoute
+    }
+    '/admin/recruitment/talent-pool': {
+      id: '/admin/recruitment/talent-pool'
+      path: '/talent-pool'
+      fullPath: '/admin/recruitment/talent-pool'
+      preLoaderRoute: typeof AdminRecruitmentTalentPoolRouteImport
+      parentRoute: typeof AdminRecruitmentRoute
+    }
   }
 }
+
+interface AdminRecruitmentRouteChildren {
+  AdminRecruitmentProjectIdRoute: typeof AdminRecruitmentProjectIdRoute
+  AdminRecruitmentTalentPoolRoute: typeof AdminRecruitmentTalentPoolRoute
+}
+
+const AdminRecruitmentRouteChildren: AdminRecruitmentRouteChildren = {
+  AdminRecruitmentProjectIdRoute: AdminRecruitmentProjectIdRoute,
+  AdminRecruitmentTalentPoolRoute: AdminRecruitmentTalentPoolRoute,
+}
+
+const AdminRecruitmentRouteWithChildren =
+  AdminRecruitmentRoute._addFileChildren(AdminRecruitmentRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -1184,15 +1337,19 @@ const rootRouteChildren: RootRouteChildren = {
   AuthRoute: AuthRoute,
   CandidatesRoute: CandidatesRoute,
   ContactRoute: ContactRoute,
+  ContentRoute: ContentRoute,
   CookieNoticeRoute: CookieNoticeRoute,
   FaqRoute: FaqRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   HowItWorksRoute: HowItWorksRoute,
   PartnersRoute: PartnersRoute,
   PrivacyRoute: PrivacyRoute,
   ReportRoute: ReportRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   ScamWarningRoute: ScamWarningRoute,
   TermsRoute: TermsRoute,
   VerificationRoute: VerificationRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   AdminAuditRoute: AdminAuditRoute,
   AdminContentRoute: AdminContentRoute,
   AdminFinanceRoute: AdminFinanceRoute,
@@ -1201,7 +1358,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminOpportunitiesRoute: AdminOpportunitiesRoute,
   AdminOrganisationsRoute: AdminOrganisationsRoute,
-  AdminRecruitmentRoute: AdminRecruitmentRoute,
+  AdminPermissionsRoute: AdminPermissionsRoute,
+  AdminRecruitmentRoute: AdminRecruitmentRouteWithChildren,
   AdminReportsRoute: AdminReportsRoute,
   AdminServicesRoute: AdminServicesRoute,
   AdminSettingsRoute: AdminSettingsRoute,

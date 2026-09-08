@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { ORG } from "@/lib/eoz-data";
+import { useOrgSettings } from "@/lib/use-org-settings";
 
 const FAQS = [
   {
@@ -65,6 +66,7 @@ export const Route = createFileRoute("/faq")({
 });
 
 function Faq() {
+  const org = useOrgSettings();
   return (
     <SiteShell>
       <PageIntro
@@ -75,7 +77,7 @@ function Faq() {
           <Panel>
             <div className="label-mono mb-2">Still stuck?</div>
             <p className="text-sm text-muted">
-              {ORG.phone} · {ORG.email}
+              {org.phone} · {org.email}
             </p>
             <Link to="/contact" className="mt-3 inline-block text-sm text-accent-soft">
               Contact EOZ →

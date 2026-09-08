@@ -2,21 +2,125 @@ export const ORG = {
   name: "Echo Opportunities Zambia",
   short: "EOZ",
   tagline: "Connecting Talent. Creating Opportunities. Building Futures.",
+  country: "Republic of Zambia",
+  vision:
+    "To become a trusted and leading recruitment, career development, business support and opportunities platform in Zambia and beyond.",
+  mission:
+    "To connect people and organisations to meaningful opportunities, professional services, skills development and reliable information that support employment, education, entrepreneurship and sustainable growth.",
   location: "Lusaka, Zambia",
   phone: "0771 538 765",
   email: "echoopportunitieszambia@gmail.com",
+  social: {
+    whatsapp: "https://whatsapp.com/channel/0029Vb6cAbO7z4kmbz8ii90I",
+    facebook: "https://www.facebook.com/share/192MkwvvMi/?mibextid=wwXIfr",
+    linkedin: "https://www.linkedin.com/company/echo-opportunities-zambia/",
+    tiktok: "https://www.tiktok.com/@echo.opportunitie?_r=1&_t=ZS-97uZaCEmAQp",
+  },
+  whatsappWording: "Follow the Echo Opportunities Zambia channel on WhatsApp",
   disclaimer:
     "Echo Opportunities Zambia is a distribution and curation platform. All applications must be made directly with the employer through their official channel. EOZ does not accept, store, or forward candidate applications.",
+  recruitmentRole:
+    "EOZ operates as a bridge between employers and potential candidates. Our opportunity-sharing function focuses on making relevant vacancies and opportunities easier to discover, while directing applicants to the employer's stated application process.",
+  advertiserDistinction:
+    "EOZ distributes and connects people to opportunities; the organisation advertising the vacancy or programme determines the official eligibility requirements, application process, closing date and recruitment/selection decision. EOZ does not create the impression that it is the employer unless EOZ itself is the hiring organisation.",
+  serviceContactRule:
+    "This service is booked directly with the EOZ services desk. It is never the application channel for a vacancy — if you are applying for a job, scholarship, grant or tender, use the official application route stated on that listing.",
 };
+
+export const WHY_CHOOSE_EOZ = [
+  "Registered recruitment agency",
+  "Professional & reliable service",
+  "Timely service delivery",
+  "Affordable solutions",
+  "Dedicated to connecting talent with opportunities",
+  "Trusted by individuals, businesses and organisations",
+] as const;
+
+export const CONTENT_SERIES = [
+  {
+    time: "Morning",
+    title: "Devotion, reflection & encouragement",
+    description:
+      "A thoughtful start to the day for the EOZ community, shared with care and respect.",
+  },
+  {
+    time: "Afternoon",
+    title: "HR, career & education",
+    description:
+      "Practical advice, application guidance, employability information and learning opportunities.",
+  },
+  {
+    time: "Evening",
+    title: "Devotional content & community",
+    description:
+      "An encouraging close to the day alongside useful professional and opportunity updates.",
+  },
+] as const;
+
+export const PILLARS = [
+  {
+    title: "Employment & Recruitment",
+    description:
+      "Connecting job seekers with employers while helping organisations access reliable talent.",
+  },
+  {
+    title: "Education & Scholarships",
+    description:
+      "Sharing scholarships, training, short courses, internships and learning opportunities.",
+  },
+  {
+    title: "Career Development & Professional Support",
+    description:
+      "Practical career information, job-search guidance and professional development support.",
+  },
+  {
+    title: "Entrepreneurship & Business Opportunities",
+    description:
+      "Access to grants, consultancies, networking and opportunities for entrepreneurs and SMEs.",
+  },
+  {
+    title: "Information & Opportunity Access",
+    description:
+      "Reliable, timely and accessible information that helps people act on useful opportunities.",
+  },
+] as const;
+
+export const BRAND_VALUES = [
+  "Opportunity access",
+  "Professionalism",
+  "Reliable information",
+  "Accessibility",
+  "Talent development",
+  "Career growth",
+  "Entrepreneurship",
+  "Connection and networking",
+  "National development",
+  "Practical support",
+] as const;
+
+export const AUDIENCES = [
+  "Job seekers and unemployed graduates",
+  "Students and young professionals",
+  "People seeking internships and work experience",
+  "Professionals seeking career advancement",
+  "Entrepreneurs and SMEs",
+  "Employers and recruiters",
+  "People seeking scholarships and training",
+  "Organisations seeking grants, consultancies and business opportunities",
+] as const;
 
 export const CATEGORIES = [
   "All",
   "Jobs",
   "Internships",
   "Scholarships",
+  "NGO Opportunities",
   "Grants",
+  "Consultancies",
   "Tenders",
   "Training",
+  "Events",
+  "Business Opportunities",
 ] as const;
 
 export type Category = (typeof CATEGORIES)[number];
@@ -124,7 +228,8 @@ export const OPPORTUNITIES: Opportunity[] = [
     value: "K 2,000",
     valueUnit: "/month",
     source: "zambezibuild.co.zm/jobs",
-    applyMethod: "Email CV and cover letter to the employer recruitment address listed on their site",
+    applyMethod:
+      "Email CV and cover letter to the employer recruitment address listed on their site",
     reference: "ZBC-INT-08",
     summary:
       "Six-month structured internship on active civil works in Kitwe, supervised by chartered engineers.",
@@ -289,6 +394,33 @@ export const SERVICES: ServiceItem[] = [
       "Sourcing, screening and shortlisting managed by EOZ for organisations hiring in Zambia.",
     includes: ["Role scoping", "Screened shortlist", "Interview coordination"],
   },
+  {
+    slug: "career-guidance",
+    name: "Career Guidance & Application Support",
+    price: "K 250",
+    turnaround: "60-minute session",
+    description:
+      "Practical guidance on role targeting, applications and next steps for students, graduates and professionals.",
+    includes: ["Career direction session", "Application review", "Action plan"],
+  },
+  {
+    slug: "marketing-promotion",
+    name: "Marketing & Business Promotion",
+    price: "From K 600",
+    turnaround: "Agreed per campaign",
+    description:
+      "Promote a business, service or opportunity to relevant EOZ audiences through planned content distribution.",
+    includes: ["Campaign scoping", "Channel-ready copy", "Distribution report"],
+  },
+  {
+    slug: "skills-training",
+    name: "Capacity Building & Skills Training",
+    price: "From K 1,500",
+    turnaround: "Agreed per programme",
+    description:
+      "Practical workshops and training programmes that build employability, workplace and business capability.",
+    includes: ["Needs assessment", "Facilitated session", "Participant resources"],
+  },
 ];
 
 export const APPLICATIONS = [
@@ -361,25 +493,75 @@ export const MODERATION_QUEUE = [
 export const ORGANISATIONS = [
   { id: "org-1", name: "Mfumu Analytics", state: "VERIFIED", posts: 12, contact: "People Office" },
   { id: "org-2", name: "Zambezi Build Co.", state: "VERIFIED", posts: 7, contact: "HR Department" },
-  { id: "org-3", name: "Chobe Foundation", state: "UNDER_REVIEW", posts: 3, contact: "Grants Desk" },
+  {
+    id: "org-3",
+    name: "Chobe Foundation",
+    state: "UNDER_REVIEW",
+    posts: 3,
+    contact: "Grants Desk",
+  },
   { id: "org-4", name: "Copper Logistics Ltd", state: "PENDING", posts: 1, contact: "Operations" },
-  { id: "org-5", name: "Kalulu Development Trust", state: "VERIFIED", posts: 9, contact: "Programmes" },
+  {
+    id: "org-5",
+    name: "Kalulu Development Trust",
+    state: "VERIFIED",
+    posts: 9,
+    contact: "Programmes",
+  },
 ];
 
 export const USERS = [
-  { id: "u-1", name: "Chanda Mwansa", email: "chanda@example.zm", role: "CANDIDATE", state: "Active" },
-  { id: "u-2", name: "Natasha Phiri", email: "natasha@mfumu.zm", role: "EMPLOYER", state: "Active" },
+  {
+    id: "u-1",
+    name: "Chanda Mwansa",
+    email: "chanda@example.zm",
+    role: "CANDIDATE",
+    state: "Active",
+  },
+  {
+    id: "u-2",
+    name: "Natasha Phiri",
+    email: "natasha@mfumu.zm",
+    role: "EMPLOYER",
+    state: "Active",
+  },
   { id: "u-3", name: "Joseph Banda", email: "joseph@eoz.zm", role: "STAFF", state: "Active" },
   { id: "u-4", name: "Mutale Zulu", email: "mutale@eoz.zm", role: "ADMIN", state: "Active" },
-  { id: "u-5", name: "Grace Tembo", email: "grace@example.zm", role: "CANDIDATE", state: "Suspended" },
+  {
+    id: "u-5",
+    name: "Grace Tembo",
+    email: "grace@example.zm",
+    role: "CANDIDATE",
+    state: "Suspended",
+  },
   { id: "u-6", name: "Audit Service", email: "audit@eoz.zm", role: "AUDITOR", state: "Active" },
 ];
 
 export const AUDIT_EVENTS = [
-  { id: "a-1", actor: "Joseph Banda", action: "APPROVED opportunity MFA-2026-041", at: "Today 09:12 UTC" },
-  { id: "a-2", actor: "Mutale Zulu", action: "GRANTED role STAFF to Joseph Banda", at: "Yesterday 16:40 UTC" },
-  { id: "a-3", actor: "Natasha Phiri", action: "SUBMITTED opportunity for review", at: "Yesterday 11:05 UTC" },
-  { id: "a-4", actor: "System", action: "EXPIRED 6 opportunities past deadline", at: "Yesterday 00:00 UTC" },
+  {
+    id: "a-1",
+    actor: "Joseph Banda",
+    action: "APPROVED opportunity MFA-2026-041",
+    at: "Today 09:12 UTC",
+  },
+  {
+    id: "a-2",
+    actor: "Mutale Zulu",
+    action: "GRANTED role STAFF to Joseph Banda",
+    at: "Yesterday 16:40 UTC",
+  },
+  {
+    id: "a-3",
+    actor: "Natasha Phiri",
+    action: "SUBMITTED opportunity for review",
+    at: "Yesterday 11:05 UTC",
+  },
+  {
+    id: "a-4",
+    actor: "System",
+    action: "EXPIRED 6 opportunities past deadline",
+    at: "Yesterday 00:00 UTC",
+  },
 ];
 
 export function categoryOf(id: string) {

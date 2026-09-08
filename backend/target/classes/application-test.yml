@@ -1,0 +1,7 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/eoz_db_test
+    username: postgres
+    password: 11111111
+  flyway:
+    clean-disabled: false

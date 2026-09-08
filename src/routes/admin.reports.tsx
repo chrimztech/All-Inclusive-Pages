@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
-import { CATEGORIES, REGIONS } from "@/lib/eoz-data";
+import { api, isUnauthenticated } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/reports")({
   head: () => ({
@@ -21,34 +22,31 @@ export const Route = createFileRoute("/admin/reports")({
   component: Reports,
 });
 
-const CATEGORY_MIX = [
-  { name: "Jobs", pct: 38 },
-  { name: "Internships", pct: 18 },
-  { name: "Scholarships", pct: 16 },
-  { name: "Grants", pct: 11 },
-  { name: "Tenders", pct: 10 },
-  { name: "Training", pct: 7 },
-];
+type NameCount = { name: string; count: number };
+type Overview = {
+  publishedOpportunities: number;
+  pendingReview: number;
+  archivedOrRejected: number;
+  categoryMix: NameCount[];
+  regionMix: NameCount[];
+  applicationsByStatus: NameCount[];
+  serviceOrdersByStatus: NameCount[];
+  unpaidInvoices: number;
+  paidInvoices: number;
+};
 
-const REGION_MIX = [
-  { name: "Lusaka", pct: 44 },
-  { name: "Copperbelt", pct: 21 },
-  { name: "Central", pct: 12 },
-  { name: "Southern", pct: 9 },
-  { name: "National", pct: 14 },
-];
-
-function Bars({ data }: { data: { name: string; pct: number }[] }) {
+function Bars({ data }: { data: NameCount[] }) {
+  const total = data.reduce((sum, d) => sum + d.count, 0) || 1;
   return (
     <ul className="space-y-3">
       {data.map((d) => (
         <li key={d.name}>
           <div className="mb-1 flex justify-between text-xs">
             <span>{d.name}</span>
-            <span className="font-mono text-muted">{d.pct}%</span>
+            <span className="font-mono text-muted">{d.count}</span>
           </div>
           <div className="h-1.5 rounded-full bg-line">
-            <div className="accent-gradient h-1.5 rounded-full" style={{ width: `${d.pct}%` }} />
+            <div className="accent-gradient h-1.5 rounded-full" style={{ width: `${(d.count / total) * 100}%` }} />
           </div>
         </li>
       ))}
@@ -57,6 +55,13 @@ function Bars({ data }: { data: { name: string; pct: number }[] }) {
 }
 
 function Reports() {
+  const overviewQuery = useQuery({
+    queryKey: ["admin", "reports", "overview"],
+    queryFn: () => api.get<Overview>("/admin/reports/overview"),
+    retry: false,
+  });
+  const data = overviewQuery.data;
+
   return (
     <SiteShell>
       <PageIntro
@@ -66,21 +71,43 @@ function Reports() {
       />
       <DashNav items={ADMIN_NAV} />
 
+      {isUnauthenticated(overviewQuery.error) ? (
+        <Panel className="mb-6">
+          <p className="text-sm text-muted">Sign in with a manager, admin or auditor account to view reports.</p>
+        </Panel>
+      ) : null}
+
       <div className="grid gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Published (30d)" value="142" />
-        <StatTile label="Rejected (30d)" value="19" tone="text-rose" />
-        <StatTile label="Median review" value="6h" />
-        <StatTile label="Categories covered" value={String(CATEGORIES.length - 1)} />
+        <StatTile label="Published" value={String(data?.publishedOpportunities ?? "—")} />
+        <StatTile label="Pending review" value={String(data?.pendingReview ?? "—")} tone="text-amber" />
+        <StatTile label="Rejected / archived" value={String(data?.archivedOrRejected ?? "—")} tone="text-rose" />
+        <StatTile label="Paid invoices" value={String(data?.paidInvoices ?? "—")} />
       </div>
 
       <section className="grid gap-6 pb-14 lg:grid-cols-2">
         <Panel>
           <div className="label-mono mb-4">Listings by category</div>
-          <Bars data={CATEGORY_MIX} />
+          {data && data.categoryMix.length > 0 ? <Bars data={data.categoryMix} /> : <p className="text-sm text-muted">No published listings yet.</p>}
         </Panel>
         <Panel>
-          <div className="label-mono mb-4">Reach by region ({REGIONS.length} regions)</div>
-          <Bars data={REGION_MIX} />
+          <div className="label-mono mb-4">Reach by region</div>
+          {data && data.regionMix.length > 0 ? <Bars data={data.regionMix} /> : <p className="text-sm text-muted">No regional data yet.</p>}
+        </Panel>
+        <Panel>
+          <div className="label-mono mb-4">Applications by status</div>
+          {data && data.applicationsByStatus.length > 0 ? (
+            <Bars data={data.applicationsByStatus} />
+          ) : (
+            <p className="text-sm text-muted">No EOZ-hosted applications yet.</p>
+          )}
+        </Panel>
+        <Panel>
+          <div className="label-mono mb-4">Service orders by status</div>
+          {data && data.serviceOrdersByStatus.length > 0 ? (
+            <Bars data={data.serviceOrdersByStatus} />
+          ) : (
+            <p className="text-sm text-muted">No service orders yet.</p>
+          )}
         </Panel>
       </section>
     </SiteShell>

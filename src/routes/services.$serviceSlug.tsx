@@ -1,12 +1,33 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
-import { ORG, SERVICES } from "@/lib/eoz-data";
+import { ORG } from "@/lib/eoz-data";
+import { useOrgSettings } from "@/lib/use-org-settings";
+import { api, ApiError } from "@/lib/api-client";
+import { useToast } from "@/lib/toast";
+
+type ApiServicePackage = {
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  turnaround: string;
+  includes: string[];
+};
 
 export const Route = createFileRoute("/services/$serviceSlug")({
-  loader: ({ params }) => {
-    const service = SERVICES.find((s) => s.slug === params.serviceSlug);
-    if (!service) throw notFound();
-    return { service };
+  loader: async ({ params }) => {
+    try {
+      const service = await api.get<ApiServicePackage>(`/services/${params.serviceSlug}`);
+      return { service };
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 404) {
+        throw notFound();
+      }
+      throw error;
+    }
   },
   head: ({ loaderData }) => {
     if (!loaderData) {
@@ -46,7 +67,13 @@ function ServiceMissing() {
 
 function ServiceDetail() {
   const { service } = Route.useLoaderData();
-  const others = SERVICES.filter((s) => s.slug !== service.slug).slice(0, 3);
+  const org = useOrgSettings();
+
+  const othersQuery = useQuery({
+    queryKey: ["services"],
+    queryFn: () => api.get<ApiServicePackage[]>("/services"),
+  });
+  const others = (othersQuery.data ?? []).filter((s) => s.slug !== service.slug).slice(0, 3);
 
   return (
     <SiteShell>
@@ -57,17 +84,15 @@ function ServiceDetail() {
         aside={
           <Panel>
             <div className="label-mono mb-2">Fixed price</div>
-            <div className="font-display text-3xl text-amber">{service.price}</div>
+            <div className="font-display text-3xl text-amber">
+              {service.currency} {service.price.toLocaleString()}
+            </div>
             <div className="label-mono mt-2">Turnaround · {service.turnaround}</div>
-            <Link
-              to="/contact"
-              className="accent-gradient mt-4 inline-block rounded-md px-4 py-2 text-sm font-medium text-ink"
-            >
-              Book this service
-            </Link>
+            <BookServiceForm slug={service.slug} />
             <p className="mt-3 text-xs text-muted">
-              Call {ORG.phone} or email {ORG.email}. Payment is arranged before work begins.
+              Prefer to talk first? Call {org.phone} or email {org.email}.
             </p>
+            <p className="mt-3 text-xs text-amber">{ORG.serviceContactRule}</p>
           </Panel>
         }
       />
@@ -103,7 +128,9 @@ function ServiceDetail() {
               <Panel className="h-full transition-colors hover:ring-accent/40">
                 <div className="flex items-start justify-between gap-3">
                   <h2 className="font-display text-lg tracking-tight">{s.name}</h2>
-                  <Chip tone="amber">{s.price}</Chip>
+                  <Chip tone="amber">
+                    {s.currency} {s.price.toLocaleString()}
+                  </Chip>
                 </div>
                 <p className="mt-3 text-sm text-muted">{s.description}</p>
               </Panel>
@@ -112,5 +139,43 @@ function ServiceDetail() {
         </div>
       </section>
     </SiteShell>
+  );
+}
+
+function BookServiceForm({ slug }: { slug: string }) {
+  const { toast } = useToast();
+  const [requirements, setRequirements] = useState("");
+  const mutation = useMutation({
+    mutationFn: () => api.post("/services/orders", { slug, requirements: requirements || undefined }),
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Sign in to book this service.", "error"),
+  });
+
+  if (mutation.isSuccess) {
+    return <p className="mt-4 text-sm text-emerald-400">Order submitted — track it from your dashboard.</p>;
+  }
+
+  return (
+    <form
+      className="mt-4 grid gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        mutation.mutate();
+      }}
+    >
+      <textarea
+        value={requirements}
+        onChange={(e) => setRequirements(e.target.value)}
+        placeholder="Briefly describe what you need (optional)"
+        rows={3}
+        className="w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line"
+      />
+      <button
+        type="submit"
+        disabled={mutation.isPending}
+        className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
+      >
+        {mutation.isPending ? "Submitting…" : "Book this service"}
+      </button>
+    </form>
   );
 }

@@ -1,8 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { SiteShell, Panel, PageIntro } from "@/components/eoz/SiteShell";
 import { CANDIDATE_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
 import { OpportunityCard } from "@/components/eoz/OpportunityCard";
-import { APPLICATIONS, OPPORTUNITIES, ORG } from "@/lib/eoz-data";
+import { ORG } from "@/lib/eoz-data";
+import { api, type ApiApplication, type ApiOpportunitySummary, type PageResponse } from "@/lib/api-client";
 
 export const Route = createFileRoute("/candidate/")({
   head: () => ({
@@ -24,7 +26,18 @@ export const Route = createFileRoute("/candidate/")({
 });
 
 function CandidateHome() {
-  const closingSoon = [...OPPORTUNITIES].sort((a, b) => a.closesInDays - b.closesInDays).slice(0, 3);
+  const opportunitiesQuery = useQuery({
+    queryKey: ["opportunities", "closing-soon"],
+    queryFn: () =>
+      api.get<PageResponse<ApiOpportunitySummary>>("/opportunities", { deadlineWithinDays: 30, size: 3 }),
+  });
+  const applicationsQuery = useQuery({
+    queryKey: ["candidate", "applications"],
+    queryFn: () => api.get<ApiApplication[]>("/candidate/applications"),
+    retry: false,
+  });
+  const closingSoon = opportunitiesQuery.data?.items ?? [];
+  const applications = applicationsQuery.data ?? [];
 
   return (
     <SiteShell>
@@ -36,10 +49,8 @@ function CandidateHome() {
       <DashNav items={CANDIDATE_NAV} />
 
       <div className="grid gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Matched" value="24" />
-        <StatTile label="Saved" value="6" />
-        <StatTile label="Tracked applications" value={String(APPLICATIONS.length)} />
-        <StatTile label="Closing this week" value="3" tone="text-amber" />
+        <StatTile label="Tracked applications" value={String(applications.length)} />
+        <StatTile label="Closing this month" value={String(closingSoon.length)} tone="text-amber" />
       </div>
 
       <section className="grid gap-6 pb-14 lg:grid-cols-12">
@@ -55,16 +66,22 @@ function CandidateHome() {
         <aside className="space-y-4 lg:col-span-4">
           <Panel>
             <div className="label-mono mb-3">Recent activity</div>
-            <ul className="space-y-3 text-sm">
-              {APPLICATIONS.map((a) => (
-                <li key={a.id} className="border-t border-line pt-3 first:border-0 first:pt-0">
-                  <div>{a.role}</div>
-                  <div className="text-xs text-muted">
-                    {a.status} · {a.updated}
-                  </div>
-                </li>
-              ))}
-            </ul>
+            {applications.length === 0 ? (
+              <p className="text-sm text-muted">
+                No EOZ-hosted applications yet — most opportunities are applied for directly with the employer.
+              </p>
+            ) : (
+              <ul className="space-y-3 text-sm">
+                {applications.map((a) => (
+                  <li key={a.id} className="border-t border-line pt-3 first:border-0 first:pt-0">
+                    <div>{a.opportunityTitle}</div>
+                    <div className="text-xs text-muted">
+                      {a.status} · {a.organisationName}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Panel>
           <Panel>
             <div className="label-mono mb-2">How applications work</div>

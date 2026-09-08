@@ -1,6 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useMutation } from "@tanstack/react-query";
+import { useState } from "react";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
-import { ORG } from "@/lib/eoz-data";
+import { useOrgSettings } from "@/lib/use-org-settings";
+import { api, ApiError } from "@/lib/api-client";
+import { useToast } from "@/lib/toast";
 
 const REASONS = [
   "Suspected scam or fraud",
@@ -36,6 +40,26 @@ export const Route = createFileRoute("/report")({
 });
 
 function ReportPage() {
+  const org = useOrgSettings();
+  const { toast } = useToast();
+  const [listingReference, setListingReference] = useState("");
+  const [reason, setReason] = useState(REASONS[0]);
+  const [description, setDescription] = useState("");
+  const [reporterName, setReporterName] = useState("");
+  const [reporterEmail, setReporterEmail] = useState("");
+
+  const mutation = useMutation({
+    mutationFn: () =>
+      api.post("/fraud-reports", {
+        listingReference: listingReference || undefined,
+        reason,
+        description: description || undefined,
+        reporterName: reporterName || undefined,
+        reporterEmail: reporterEmail || undefined,
+      }),
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not submit this report.", "error"),
+  });
+
   return (
     <SiteShell>
       <PageIntro
@@ -47,7 +71,7 @@ function ReportPage() {
             <Chip tone="rose">Urgent</Chip>
             <p className="mt-3 text-sm text-muted">
               If money has already changed hands, contact the Zambia Police in addition to reporting here. Reach us on{" "}
-              {ORG.phone}.
+              {org.phone}.
             </p>
           </Panel>
         }
@@ -55,40 +79,80 @@ function ReportPage() {
 
       <section className="grid gap-4 pb-14 lg:grid-cols-3">
         <Panel className="lg:col-span-2">
-          <form className="space-y-4" onSubmit={(e) => e.preventDefault()}>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <label className="block text-sm">
-                <span className="label-mono">Listing reference or link</span>
-                <input className={field} placeholder="EOZ-2026-0148" />
-              </label>
-              <label className="block text-sm">
-                <span className="label-mono">Reason</span>
-                <select className={field} defaultValue={REASONS[0]}>
-                  {REASONS.map((r) => (
-                    <option key={r}>{r}</option>
-                  ))}
-                </select>
-              </label>
+          {mutation.isSuccess ? (
+            <div className="py-6 text-sm">
+              <p className="text-emerald-400">
+                Report submitted. A moderator will re-check this listing shortly.
+              </p>
+              <p className="mt-2 text-muted">Reports can be anonymous — we never share your details with the organisation.</p>
             </div>
-            <label className="block text-sm">
-              <span className="label-mono">What happened?</span>
-              <textarea rows={6} className={field} placeholder="Describe what you saw, including any numbers or accounts used." />
-            </label>
-            <div className="grid gap-4 sm:grid-cols-2">
+          ) : (
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                mutation.mutate();
+              }}
+            >
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-sm">
+                  <span className="label-mono">Listing reference or link</span>
+                  <input
+                    className={field}
+                    placeholder="EOZ-2026-0148"
+                    value={listingReference}
+                    onChange={(e) => setListingReference(e.target.value)}
+                  />
+                </label>
+                <label className="block text-sm">
+                  <span className="label-mono">Reason</span>
+                  <select className={field} value={reason} onChange={(e) => setReason(e.target.value)}>
+                    {REASONS.map((r) => (
+                      <option key={r}>{r}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
               <label className="block text-sm">
-                <span className="label-mono">Your name (optional)</span>
-                <input className={field} placeholder="Optional" />
+                <span className="label-mono">What happened?</span>
+                <textarea
+                  rows={6}
+                  className={field}
+                  placeholder="Describe what you saw, including any numbers or accounts used."
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                />
               </label>
-              <label className="block text-sm">
-                <span className="label-mono">Email or phone (optional)</span>
-                <input className={field} placeholder="So we can follow up" />
-              </label>
-            </div>
-            <button type="submit" className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink">
-              Submit report
-            </button>
-            <p className="text-xs text-muted">Reports can be anonymous. We never share your details with the organisation.</p>
-          </form>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <label className="block text-sm">
+                  <span className="label-mono">Your name (optional)</span>
+                  <input
+                    className={field}
+                    placeholder="Optional"
+                    value={reporterName}
+                    onChange={(e) => setReporterName(e.target.value)}
+                  />
+                </label>
+                <label className="block text-sm">
+                  <span className="label-mono">Email or phone (optional)</span>
+                  <input
+                    className={field}
+                    placeholder="So we can follow up"
+                    value={reporterEmail}
+                    onChange={(e) => setReporterEmail(e.target.value)}
+                  />
+                </label>
+              </div>
+              <button
+                type="submit"
+                disabled={mutation.isPending}
+                className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
+              >
+                {mutation.isPending ? "Submitting…" : "Submit report"}
+              </button>
+              <p className="text-xs text-muted">Reports can be anonymous. We never share your details with the organisation.</p>
+            </form>
+          )}
         </Panel>
 
         <Panel>

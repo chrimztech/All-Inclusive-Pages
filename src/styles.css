@@ -3,10 +3,10 @@
 @import "tw-animate-css";
 
 @theme {
-  --color-ink: #020c07;
-  --color-surface: #06180f;
-  --color-surface-2: #0b2617;
-  --color-line: rgba(250, 204, 21, 0.16);
+  --color-ink: #0e2a1a;
+  --color-surface: #0a2113;
+  --color-surface-2: #17402a;
+  --color-line: rgba(255, 255, 255, 0.1);
   --color-fg: #eaf3e9;
   --color-muted: #8ba18f;
   --color-accent: #24b45c;

@@ -1,6 +1,19 @@
 import { createFileRoute } from "@tanstack/react-router";
+import { useState } from "react";
 import { PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
 import { SettingToggle } from "@/components/eoz/PortalKit";
+
+const STORAGE_KEY = "eoz-cookie-preferences";
+
+function loadStoredPreferences(): { preferences: boolean; performance: boolean } {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { preferences: true, performance: false };
+    return JSON.parse(raw);
+  } catch {
+    return { preferences: true, performance: false };
+  }
+}
 
 export const Route = createFileRoute("/cookie-notice")({
   head: () => ({
@@ -13,6 +26,11 @@ export const Route = createFileRoute("/cookie-notice")({
 });
 
 function CookieNotice() {
+  const stored = loadStoredPreferences();
+  const [preferences, setPreferences] = useState(stored.preferences);
+  const [performance, setPerformance] = useState(stored.performance);
+  const [saved, setSaved] = useState(false);
+
   return (
     <SiteShell>
       <PageIntro
@@ -56,19 +74,36 @@ function CookieNotice() {
           <SettingToggle
             title="Preferences"
             description="Remember filters and display choices on this device."
+            initial={preferences}
+            onChange={(value) => {
+              setPreferences(value);
+              setSaved(false);
+            }}
           />
           <SettingToggle
             title="Performance"
             description="Allow privacy-respecting, aggregated measurement."
-            initial={false}
+            initial={performance}
+            onChange={(value) => {
+              setPerformance(value);
+              setSaved(false);
+            }}
           />
           <button
             type="button"
+            onClick={() => {
+              try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({ preferences, performance }));
+              } catch {
+                // Storage may be unavailable (private browsing); preference still applies for this session.
+              }
+              setSaved(true);
+            }}
             className="accent-gradient mt-5 w-full rounded-md px-4 py-2 text-sm font-medium text-ink"
           >
             Save preferences
           </button>
-          <p className="mt-3 text-xs text-muted">Last updated: 5 September 2026</p>
+          {saved ? <p className="mt-3 text-xs text-emerald-400">Preferences saved on this device.</p> : null}
         </Panel>
       </section>
     </SiteShell>

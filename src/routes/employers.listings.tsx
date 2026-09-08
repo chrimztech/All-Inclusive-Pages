@@ -1,7 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { useQuery } from "@tanstack/react-query";
 import { DashNav, EMPLOYER_NAV, StatTile } from "@/components/eoz/DashNav";
-import { WorkspaceList, type WorkspaceRecord } from "@/components/eoz/PortalKit";
-import { PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
+import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
+import { api, daysUntil, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 
 export const Route = createFileRoute("/employers/listings")({
   head: () => ({
@@ -16,46 +17,52 @@ export const Route = createFileRoute("/employers/listings")({
   component: EmployerListings,
 });
 
-const LISTINGS: WorkspaceRecord[] = [
-  {
-    id: "EOZ-OPP-2026-000041",
-    title: "Senior Data Analyst",
-    subtitle: "Mfumu Analytics · Hybrid · Lusaka",
-    status: "Published",
-    tone: "emerald",
-    details: ["Closes 7 Sep 2026", "1,924 views", "External employer portal"],
-    action: "Manage",
-  },
-  {
-    id: "EOZ-OPP-2026-000058",
-    title: "Product Support Associate",
-    subtitle: "Mfumu Analytics · On-site · Lusaka",
-    status: "Pending review",
-    tone: "amber",
-    details: ["Submitted today", "Source confirmed", "Employer email"],
-    action: "Review submission",
-  },
-  {
-    id: "EOZ-OPP-2026-000033",
-    title: "Junior Research Assistant",
-    subtitle: "Mfumu Analytics · Hybrid · Lusaka",
-    status: "Draft",
-    tone: "muted",
-    details: ["Last edited yesterday", "3 fields incomplete", "Application route missing"],
-    action: "Continue editing",
-  },
-  {
-    id: "EOZ-OPP-2026-000012",
-    title: "Data Graduate Internship",
-    subtitle: "Mfumu Analytics · Full-time · Lusaka",
-    status: "Closed",
-    tone: "rose",
-    details: ["Closed 18 Aug 2026", "3,206 views", "Eligible for renewal"],
-    action: "Duplicate or renew",
-  },
-];
+type EmployerOpportunity = {
+  id: string;
+  reference: string;
+  slug: string;
+  title: string;
+  categoryName: string;
+  organisationName: string;
+  region: string | null;
+  workMode: string | null;
+  status: string;
+  verified: boolean;
+  viewsCount: number;
+  savesCount: number;
+  deadline: string | null;
+  publishedAt: string | null;
+  createdAt: string;
+};
+
+type Stats = { published: number; pendingReview: number; drafts: number; closed: number };
+
+const STATUS_TONE: Record<string, "emerald" | "amber" | "muted" | "rose"> = {
+  PUBLISHED: "emerald",
+  PENDING_REVIEW: "amber",
+  APPROVED: "amber",
+  SCHEDULED: "amber",
+  DRAFT: "muted",
+  CLOSED: "rose",
+  EXPIRED: "rose",
+  ARCHIVED: "muted",
+};
 
 function EmployerListings() {
+  const listingsQuery = useQuery({
+    queryKey: ["employer", "opportunities", "mine"],
+    queryFn: () => api.get<PageResponse<EmployerOpportunity>>("/opportunities/mine", { size: 50 }),
+    retry: false,
+  });
+  const statsQuery = useQuery({
+    queryKey: ["employer", "opportunities", "mine", "stats"],
+    queryFn: () => api.get<Stats>("/opportunities/mine/stats"),
+    retry: false,
+  });
+
+  const listings = listingsQuery.data?.items ?? [];
+  const stats = statsQuery.data;
+
   return (
     <SiteShell>
       <PageIntro
@@ -74,17 +81,62 @@ function EmployerListings() {
         }
       />
       <DashNav items={EMPLOYER_NAV} />
+
+      {isUnauthenticated(listingsQuery.error) ? (
+        <Panel className="mb-6">
+          <p className="text-sm text-muted">Sign in as an employer to see your listings.</p>
+        </Panel>
+      ) : null}
+
       <div className="grid gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Published" value="4" />
-        <StatTile label="Pending review" value="1" tone="text-amber" />
-        <StatTile label="Drafts" value="2" />
-        <StatTile label="Closed" value="11" />
+        <StatTile label="Published" value={String(stats?.published ?? "—")} />
+        <StatTile label="Pending review" value={String(stats?.pendingReview ?? "—")} tone="text-amber" />
+        <StatTile label="Drafts" value={String(stats?.drafts ?? "—")} />
+        <StatTile label="Closed" value={String(stats?.closed ?? "—")} />
       </div>
-      <div className="pb-14">
-        <WorkspaceList
-          records={LISTINGS}
-          searchLabel="Search listings by title, reference or status"
-        />
+
+      <div className="space-y-3 pb-14">
+        {listingsQuery.isLoading ? (
+          <Panel className="py-10 text-center text-sm text-muted">Loading your listings…</Panel>
+        ) : listings.length === 0 ? (
+          <Panel className="py-10 text-center text-sm text-muted">
+            You haven't submitted any opportunities yet.
+          </Panel>
+        ) : (
+          listings.map((o) => {
+            const closesIn = daysUntil(o.deadline);
+            return (
+              <Panel key={o.id}>
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                      <Chip tone={STATUS_TONE[o.status] ?? "muted"}>{o.status.replace(/_/g, " ")}</Chip>
+                      <span className="font-mono text-[10px] text-muted">{o.reference}</span>
+                    </div>
+                    <h2 className="font-display text-xl tracking-tight">{o.title}</h2>
+                    <p className="mt-1 text-sm text-muted">
+                      {o.categoryName} · {o.region ?? "National"} {o.workMode ? `· ${o.workMode}` : ""}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 border-t border-line pt-3 text-xs text-muted">
+                      <span>{closesIn !== null ? `Closes in ${closesIn} days` : "No deadline set"}</span>
+                      <span>{o.viewsCount} views</span>
+                      <span>{o.savesCount} saves</span>
+                    </div>
+                  </div>
+                  {o.status === "PUBLISHED" ? (
+                    <Link
+                      to="/opportunities/$opportunityId"
+                      params={{ opportunityId: o.slug }}
+                      className="rounded-md px-3 py-2 text-xs text-fg ring-1 ring-line transition-colors hover:bg-surface-2 hover:text-accent-soft"
+                    >
+                      View listing
+                    </Link>
+                  ) : null}
+                </div>
+              </Panel>
+            );
+          })
+        )}
       </div>
     </SiteShell>
   );
