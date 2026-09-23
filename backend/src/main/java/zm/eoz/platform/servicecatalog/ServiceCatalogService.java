@@ -111,14 +111,21 @@ public class ServiceCatalogService {
         order = orderRepository.save(order);
         auditService.record(
                 customer, "ORDER_CREATED", "ServiceOrder", order.getReference(), "Ordered \"" + pkg.getName() + "\"");
-        return ServiceOrderResponse.from(order);
+        return toResponse(order);
     }
 
     @Transactional(readOnly = true)
     public List<ServiceOrderResponse> listMine(UUID customerId) {
         return orderRepository.findByCustomerIdOrderByCreatedAtDesc(customerId).stream()
-                .map(ServiceOrderResponse::from)
+                .map(this::toResponse)
                 .toList();
+    }
+
+    private ServiceOrderResponse toResponse(ServiceOrder order) {
+        Quote latest = quoteRepository.findByOrderIdOrderByIssuedAtDesc(order.getId()).stream()
+                .findFirst()
+                .orElse(null);
+        return ServiceOrderResponse.from(order, latest);
     }
 
     @Transactional(readOnly = true)
@@ -169,7 +176,7 @@ public class ServiceCatalogService {
 
     @Transactional(readOnly = true)
     public Page<ServiceOrderResponse> listAll(Pageable pageable) {
-        return orderRepository.findAllByOrderByCreatedAtDesc(pageable).map(ServiceOrderResponse::from);
+        return orderRepository.findAllByOrderByCreatedAtDesc(pageable).map(this::toResponse);
     }
 
     @Transactional
@@ -182,7 +189,7 @@ public class ServiceCatalogService {
         order.setAssignedOfficer(officer);
         order.setStatus(ServiceOrderStatus.ASSIGNED);
         auditService.record(actor, "ORDER_ASSIGNED", "ServiceOrder", order.getReference(), "Assigned to " + officer.getFullName());
-        return ServiceOrderResponse.from(order);
+        return toResponse(order);
     }
 
     @Transactional
@@ -197,7 +204,7 @@ public class ServiceCatalogService {
         }
         order.setStatus(target);
         auditService.record(actor, "ORDER_STATUS_CHANGED", "ServiceOrder", order.getReference(), "Moved to " + target);
-        return ServiceOrderResponse.from(order);
+        return toResponse(order);
     }
 
     @Transactional
@@ -324,6 +331,19 @@ public class ServiceCatalogService {
     @Transactional(readOnly = true)
     public Page<InvoiceResponse> listInvoices(Pageable pageable) {
         return invoiceRepository.findAllByOrderByIssuedAtDesc(pageable).map(InvoiceResponse::from);
+    }
+
+    private static final Set<String> ASSIGNABLE_STAFF_ROLES = Set.of("SERVICE_OFFICER", "MANAGER", "ADMIN");
+
+    @Transactional(readOnly = true)
+    public List<zm.eoz.platform.servicecatalog.dto.StaffOptionResponse> searchAssignableStaff(String query) {
+        String q = query == null ? "" : query;
+        return userRepository.findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
+                        q, q, org.springframework.data.domain.PageRequest.of(0, 10))
+                .stream()
+                .filter(u -> u.getRoles().stream().anyMatch(r -> ASSIGNABLE_STAFF_ROLES.contains(r.getName())))
+                .map(zm.eoz.platform.servicecatalog.dto.StaffOptionResponse::from)
+                .toList();
     }
 
     @Transactional(readOnly = true)

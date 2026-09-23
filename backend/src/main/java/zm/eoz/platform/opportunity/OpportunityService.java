@@ -61,6 +61,9 @@ public class OpportunityService {
             Boolean verifiedOnly,
             Integer deadlineWithinDays,
             java.util.UUID organisationId,
+            String employmentType,
+            String workArrangement,
+            String experienceLevel,
             Pageable pageable) {
         String normalizedCategory = (categoryCode == null || categoryCode.isBlank() || categoryCode.equalsIgnoreCase("All"))
                 ? null
@@ -94,6 +97,15 @@ public class OpportunityService {
             }
             if (organisationId != null) {
                 predicates.add(cb.equal(root.get("organisation").get("id"), organisationId));
+            }
+            if (employmentType != null && !employmentType.isBlank()) {
+                predicates.add(cb.equal(root.get("employmentType"), parseEnum(EmploymentType.class, employmentType, "employmentType")));
+            }
+            if (workArrangement != null && !workArrangement.isBlank()) {
+                predicates.add(cb.equal(root.get("workArrangement"), parseEnum(WorkArrangement.class, workArrangement, "workArrangement")));
+            }
+            if (experienceLevel != null && !experienceLevel.isBlank()) {
+                predicates.add(cb.equal(root.get("experienceLevel"), parseEnum(ExperienceLevel.class, experienceLevel, "experienceLevel")));
             }
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
@@ -137,8 +149,13 @@ public class OpportunityService {
         opportunity.setLocation(request.location());
         opportunity.setRegion(request.region());
         opportunity.setWorkMode(request.workMode());
+        opportunity.setEmploymentType(parseEnum(EmploymentType.class, request.employmentType(), "employmentType"));
+        opportunity.setWorkArrangement(parseEnum(WorkArrangement.class, request.workArrangement(), "workArrangement"));
+        opportunity.setExperienceLevel(parseEnum(ExperienceLevel.class, request.experienceLevel(), "experienceLevel"));
         opportunity.setOpportunityValue(request.opportunityValue());
         opportunity.setOpportunityValueUnit(request.opportunityValueUnit());
+        opportunity.setSalaryMin(request.salaryMin());
+        opportunity.setSalaryMax(request.salaryMax());
         opportunity.setSalaryVisible(request.salaryVisible());
         opportunity.setDeadline(request.deadline());
         opportunity.setApplicationMode(mode);
@@ -410,6 +427,17 @@ public class OpportunityService {
     @Transactional
     public int closeExpired() {
         return opportunityRepository.closeExpired(Instant.now());
+    }
+
+    private <E extends Enum<E>> E parseEnum(Class<E> type, String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Enum.valueOf(type, value);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Unknown " + fieldName + ": " + value);
+        }
     }
 
     private String slugify(String title) {

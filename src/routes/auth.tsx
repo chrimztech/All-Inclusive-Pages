@@ -10,10 +10,11 @@ import { useToast } from "@/lib/toast";
 type Mode = "signin" | "signup" | "register";
 
 export const Route = createFileRoute("/auth")({
-  validateSearch: (search: Record<string, unknown>) => {
+  validateSearch: (search: Record<string, unknown>): { mode: Mode; redirect?: string } => {
     const raw = search["mode"];
     const mode: Mode = raw === "signup" || raw === "register" ? "signup" : "signin";
-    return { mode };
+    const redirect = typeof search["redirect"] === "string" ? search["redirect"] : undefined;
+    return redirect ? { mode, redirect } : { mode };
   },
   head: () => ({
     meta: [
@@ -48,8 +49,36 @@ function passwordStrength(password: string): { label: string; tone: string; perc
   return { label: "Strong", tone: "bg-emerald", percent: 100 };
 }
 
+const BUSINESS_TYPE_OPTIONS = [
+  {
+    value: "INFORMAL_SME",
+    label: "Small or informal business — no registration number yet, that's OK",
+  },
+  { value: "SOLE_PROPRIETORSHIP", label: "Sole proprietorship" },
+  { value: "PARTNERSHIP", label: "Partnership" },
+  { value: "LIMITED_COMPANY", label: "Limited company" },
+  { value: "COOPERATIVE", label: "Cooperative" },
+  { value: "NGO_NONPROFIT", label: "NGO / non-profit" },
+  { value: "GOVERNMENT", label: "Government" },
+  { value: "OTHER", label: "Other" },
+] as const;
+
+const SIZE_BAND_OPTIONS = [
+  { value: "MICRO_1_4", label: "1–4 people" },
+  { value: "SMALL_5_49", label: "5–49 people" },
+  { value: "MEDIUM_50_249", label: "50–249 people" },
+  { value: "LARGE_250_PLUS", label: "250+ people" },
+] as const;
+
+const AVAILABILITY_OPTIONS = [
+  { value: "IMMEDIATE", label: "Immediately" },
+  { value: "TWO_WEEKS", label: "Within 2 weeks" },
+  { value: "ONE_MONTH", label: "Within a month" },
+  { value: "NEGOTIABLE", label: "Negotiable" },
+] as const;
+
 function Auth() {
-  const { mode } = Route.useSearch();
+  const { mode, redirect } = Route.useSearch();
   const isSignup = mode === "signup";
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -63,18 +92,30 @@ function Auth() {
   const [accountType, setAccountType] = useState<"CANDIDATE" | "EMPLOYER">("CANDIDATE");
   const [location, setLocation] = useState("");
   const [headline, setHeadline] = useState("");
+  const [skills, setSkills] = useState("");
+  const [availability, setAvailability] = useState("");
   const [organisationName, setOrganisationName] = useState("");
   const [organisationSector, setOrganisationSector] = useState("");
+  const [organisationRegistrationNumber, setOrganisationRegistrationNumber] = useState("");
+  const [organisationWebsite, setOrganisationWebsite] = useState("");
+  const [organisationBusinessType, setOrganisationBusinessType] = useState<string>("INFORMAL_SME");
+  const [organisationSizeBand, setOrganisationSizeBand] = useState("");
   const [agreed, setAgreed] = useState(false);
   const [passwordMismatch, setPasswordMismatch] = useState(false);
+
+  const landingTo = (user: ApiUser) => redirect ?? landingRouteFor(user);
 
   const loginMutation = useMutation({
     mutationFn: () => api.post<ApiUser>("/auth/login", { email, password }),
     onSuccess: async (user) => {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
-      navigate({ to: landingRouteFor(user) });
+      navigate({ to: landingTo(user) });
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Something went wrong. Please try again.", "error"),
+    onError: (error) =>
+      toast(
+        error instanceof ApiError ? error.message : "Something went wrong. Please try again.",
+        "error",
+      ),
   });
 
   const registerMutation = useMutation({
@@ -87,13 +128,28 @@ function Auth() {
         phone: phone || undefined,
         location: accountType === "CANDIDATE" ? location || undefined : undefined,
         headline: accountType === "CANDIDATE" ? headline || undefined : undefined,
+        skills: accountType === "CANDIDATE" ? skills || undefined : undefined,
+        availability: accountType === "CANDIDATE" ? availability || undefined : undefined,
         organisationName: accountType === "EMPLOYER" ? organisationName || undefined : undefined,
-        organisationSector: accountType === "EMPLOYER" ? organisationSector || undefined : undefined,
+        organisationSector:
+          accountType === "EMPLOYER" ? organisationSector || undefined : undefined,
+        organisationRegistrationNumber:
+          accountType === "EMPLOYER" ? organisationRegistrationNumber || undefined : undefined,
+        organisationWebsite:
+          accountType === "EMPLOYER" ? organisationWebsite || undefined : undefined,
+        organisationBusinessType:
+          accountType === "EMPLOYER" ? organisationBusinessType || undefined : undefined,
+        organisationSizeBand:
+          accountType === "EMPLOYER" ? organisationSizeBand || undefined : undefined,
       }),
     onSuccess: () => {
       loginMutation.mutate();
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Something went wrong. Please try again.", "error"),
+    onError: (error) =>
+      toast(
+        error instanceof ApiError ? error.message : "Something went wrong. Please try again.",
+        "error",
+      ),
   });
 
   const pending = loginMutation.isPending || registerMutation.isPending;
@@ -155,12 +211,23 @@ function Auth() {
               {isSignup ? (
                 <label className="sm:col-span-2">
                   <span className="label-mono">Full name</span>
-                  <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputCls} />
+                  <input
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className={inputCls}
+                  />
                 </label>
               ) : null}
               <label className={isSignup ? "" : "sm:col-span-2"}>
                 <span className="label-mono">Email</span>
-                <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
+                <input
+                  required
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className={inputCls}
+                />
               </label>
               {isSignup ? (
                 <label>
@@ -180,7 +247,12 @@ function Auth() {
               <div className="grid gap-4 border-t border-line pt-4 sm:grid-cols-2">
                 <label>
                   <span className="label-mono">Current location (optional)</span>
-                  <input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="e.g. Lusaka" className={inputCls} />
+                  <input
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="e.g. Lusaka"
+                    className={inputCls}
+                  />
                 </label>
                 <label>
                   <span className="label-mono">Headline (optional)</span>
@@ -191,6 +263,34 @@ function Auth() {
                     className={inputCls}
                   />
                 </label>
+                <label>
+                  <span className="label-mono">Top skills (optional)</span>
+                  <input
+                    value={skills}
+                    onChange={(e) => setSkills(e.target.value)}
+                    placeholder="e.g. SQL, Excel, Power BI"
+                    className={inputCls}
+                  />
+                </label>
+                <label>
+                  <span className="label-mono">Availability (optional)</span>
+                  <select
+                    value={availability}
+                    onChange={(e) => setAvailability(e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="">Prefer not to say</option>
+                    {AVAILABILITY_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <p className="text-xs text-muted sm:col-span-2">
+                  You can add your photo, CV and full work history after signing up, from your
+                  profile.
+                </p>
               </div>
             ) : null}
 
@@ -215,8 +315,57 @@ function Auth() {
                     className={inputCls}
                   />
                 </label>
+                <label className="sm:col-span-2">
+                  <span className="label-mono">Business type</span>
+                  <select
+                    value={organisationBusinessType}
+                    onChange={(e) => setOrganisationBusinessType(e.target.value)}
+                    className={inputCls}
+                  >
+                    {BUSINESS_TYPE_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span className="label-mono">Team size (optional)</span>
+                  <select
+                    value={organisationSizeBand}
+                    onChange={(e) => setOrganisationSizeBand(e.target.value)}
+                    className={inputCls}
+                  >
+                    <option value="">Prefer not to say</option>
+                    {SIZE_BAND_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>
+                        {o.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  <span className="label-mono">Registration number (optional)</span>
+                  <input
+                    value={organisationRegistrationNumber}
+                    onChange={(e) => setOrganisationRegistrationNumber(e.target.value)}
+                    placeholder="PACRA number, if you have one"
+                    className={inputCls}
+                  />
+                </label>
+                <label className="sm:col-span-2">
+                  <span className="label-mono">Website (optional)</span>
+                  <input
+                    value={organisationWebsite}
+                    onChange={(e) => setOrganisationWebsite(e.target.value)}
+                    placeholder="e.g. https://example.zm"
+                    className={inputCls}
+                  />
+                </label>
                 <p className="text-xs text-muted sm:col-span-2">
-                  Your organisation will be registered immediately and marked pending verification by EOZ staff.
+                  Your organisation will be registered immediately and marked pending verification
+                  by EOZ staff — small and informal businesses are welcome and can post
+                  opportunities right away.
                 </p>
               </div>
             ) : null}
@@ -235,7 +384,10 @@ function Auth() {
                 {isSignup && password ? (
                   <div className="mt-2">
                     <div className="h-1 rounded-full bg-line">
-                      <div className={`h-1 rounded-full ${strength.tone}`} style={{ width: `${strength.percent}%` }} />
+                      <div
+                        className={`h-1 rounded-full ${strength.tone}`}
+                        style={{ width: `${strength.percent}%` }}
+                      />
                     </div>
                     <div className="mt-1 text-[10px] text-muted">{strength.label} password</div>
                   </div>
@@ -258,11 +410,19 @@ function Auth() {
                 </label>
               ) : null}
             </div>
-            {passwordMismatch ? <p className="text-xs text-rose-400">Passwords do not match.</p> : null}
+            {passwordMismatch ? (
+              <p className="text-xs text-rose-400">Passwords do not match.</p>
+            ) : null}
 
             {isSignup ? (
               <label className="flex items-start gap-2 text-xs text-muted">
-                <input required type="checkbox" checked={agreed} onChange={(e) => setAgreed(e.target.checked)} className="mt-0.5 size-3.5" />
+                <input
+                  required
+                  type="checkbox"
+                  checked={agreed}
+                  onChange={(e) => setAgreed(e.target.checked)}
+                  className="mt-0.5 size-3.5"
+                />
                 <span>
                   I agree to the{" "}
                   <Link to="/terms" className="text-accent-soft hover:text-fg">
@@ -298,7 +458,7 @@ function Auth() {
           {isSignup ? "Already registered? " : "No account yet? "}
           <Link
             to="/auth"
-            search={{ mode: isSignup ? "signin" : "signup" }}
+            search={{ mode: isSignup ? "signin" : "signup", ...(redirect ? { redirect } : {}) }}
             className="text-accent-soft"
           >
             {isSignup ? "Sign in" : "Create one"}

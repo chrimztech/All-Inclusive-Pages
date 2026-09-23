@@ -45,9 +45,11 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const payload = await response.json().catch(() => null);
 
   if (!response.ok) {
-    const problem = payload as
-      | { detail?: string; title?: string; fieldErrors?: Record<string, string> }
-      | null;
+    const problem = payload as {
+      detail?: string;
+      title?: string;
+      fieldErrors?: Record<string, string>;
+    } | null;
     throw new ApiError(
       response.status,
       problem?.detail ?? problem?.title ?? "Something went wrong. Please try again.",
@@ -104,6 +106,34 @@ export type PageResponse<T> = {
   totalPages: number;
 };
 
+export type EmploymentType =
+  "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP" | "GIG_FREELANCE" | "VOLUNTEER";
+export type WorkArrangement = "ONSITE" | "REMOTE" | "HYBRID";
+export type ExperienceLevel = "ENTRY" | "JUNIOR" | "MID" | "SENIOR" | "EXECUTIVE";
+
+export const EMPLOYMENT_TYPE_LABELS: Record<EmploymentType, string> = {
+  FULL_TIME: "Full-time",
+  PART_TIME: "Part-time",
+  CONTRACT: "Contract",
+  INTERNSHIP: "Internship",
+  GIG_FREELANCE: "Gig / freelance",
+  VOLUNTEER: "Volunteer",
+};
+
+export const WORK_ARRANGEMENT_LABELS: Record<WorkArrangement, string> = {
+  ONSITE: "On-site",
+  REMOTE: "Remote",
+  HYBRID: "Hybrid",
+};
+
+export const EXPERIENCE_LEVEL_LABELS: Record<ExperienceLevel, string> = {
+  ENTRY: "Entry-level",
+  JUNIOR: "Junior",
+  MID: "Mid-level",
+  SENIOR: "Senior",
+  EXECUTIVE: "Executive",
+};
+
 export type ApiOpportunitySummary = {
   id: string;
   reference: string;
@@ -115,9 +145,15 @@ export type ApiOpportunitySummary = {
   location: string | null;
   region: string | null;
   workMode: string | null;
+  employmentType: EmploymentType | null;
+  workArrangement: WorkArrangement | null;
+  experienceLevel: ExperienceLevel | null;
   verified: boolean;
   opportunityValue: string | null;
   opportunityValueUnit: string | null;
+  salaryMin: number | null;
+  salaryMax: number | null;
+  currency: string | null;
   deadline: string | null;
   publishedAt: string | null;
 };
@@ -154,10 +190,73 @@ export type ApiApplication = {
   opportunityId: string;
   opportunityTitle: string;
   organisationName: string;
+  candidateId: string;
+  candidateName: string;
+  candidateEmail: string;
+  resumeFileId: string | null;
+  coverNote: string | null;
   status: string;
   submittedAt: string;
   updatedAt: string;
 };
+
+export type BusinessType =
+  | "SOLE_PROPRIETORSHIP"
+  | "PARTNERSHIP"
+  | "LIMITED_COMPANY"
+  | "COOPERATIVE"
+  | "NGO_NONPROFIT"
+  | "GOVERNMENT"
+  | "INFORMAL_SME"
+  | "OTHER";
+
+export const BUSINESS_TYPE_LABELS: Record<BusinessType, string> = {
+  SOLE_PROPRIETORSHIP: "Sole proprietorship",
+  PARTNERSHIP: "Partnership",
+  LIMITED_COMPANY: "Limited company",
+  COOPERATIVE: "Cooperative",
+  NGO_NONPROFIT: "NGO / non-profit",
+  GOVERNMENT: "Government",
+  INFORMAL_SME: "Small / informal business",
+  OTHER: "Other",
+};
+
+export type OrganisationSizeBand = "MICRO_1_4" | "SMALL_5_49" | "MEDIUM_50_249" | "LARGE_250_PLUS";
+
+export const SIZE_BAND_LABELS: Record<OrganisationSizeBand, string> = {
+  MICRO_1_4: "1–4 people",
+  SMALL_5_49: "5–49 people",
+  MEDIUM_50_249: "50–249 people",
+  LARGE_250_PLUS: "250+ people",
+};
+
+export type ApiOrganisation = {
+  id: string;
+  legalName: string;
+  tradingName: string | null;
+  registrationNumber: string | null;
+  sector: string | null;
+  size: string | null;
+  website: string | null;
+  address: string | null;
+  description: string | null;
+  verificationStatus: string;
+  listingsCount: number;
+  logoFileId: string | null;
+  businessType: BusinessType | null;
+  sizeBand: OrganisationSizeBand | null;
+  tpin: string | null;
+  foundedYear: number | null;
+  contactPersonName: string | null;
+  contactPersonRole: string | null;
+  contactPhone: string | null;
+  linkedinUrl: string | null;
+  facebookUrl: string | null;
+};
+
+export function organisationLogoUrl(organisationId: string): string {
+  return `${API_BASE_URL}/organisations/${organisationId}/logo`;
+}
 
 export function daysUntil(deadline: string | null): number | null {
   if (!deadline) return null;

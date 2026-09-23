@@ -4,7 +4,16 @@ import { useMemo, useState } from "react";
 import { SiteShell, Panel, PageIntro } from "@/components/eoz/SiteShell";
 import { OpportunityCard } from "@/components/eoz/OpportunityCard";
 import { REGIONS } from "@/lib/eoz-data";
-import { api, type ApiCategory, type ApiOpportunitySummary, type PageResponse } from "@/lib/api-client";
+import {
+  api,
+  EMPLOYMENT_TYPE_LABELS,
+  WORK_ARRANGEMENT_LABELS,
+  type ApiCategory,
+  type ApiOpportunitySummary,
+  type EmploymentType,
+  type PageResponse,
+  type WorkArrangement,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/opportunities/")({
   head: () => ({
@@ -18,7 +27,8 @@ export const Route = createFileRoute("/opportunities/")({
       { property: "og:title", content: "Opportunity Board — Echo Opportunities Zambia" },
       {
         property: "og:description",
-        content: "Filter opportunities across Zambia by category, region, deadline and verification.",
+        content:
+          "Filter opportunities across Zambia by category, region, deadline and verification.",
       },
     ],
   }),
@@ -30,6 +40,8 @@ function Board() {
   const [region, setRegion] = useState("All regions");
   const [sort, setSort] = useState("newest");
   const [query, setQuery] = useState("");
+  const [employmentType, setEmploymentType] = useState("");
+  const [workArrangement, setWorkArrangement] = useState("");
 
   const categoriesQuery = useQuery({
     queryKey: ["categories"],
@@ -37,12 +49,14 @@ function Board() {
   });
 
   const opportunitiesQuery = useQuery({
-    queryKey: ["opportunities", category, region, query],
+    queryKey: ["opportunities", category, region, query, employmentType, workArrangement],
     queryFn: () =>
       api.get<PageResponse<ApiOpportunitySummary>>("/opportunities", {
         category,
         region,
         q: query || undefined,
+        employmentType: employmentType || undefined,
+        workArrangement: workArrangement || undefined,
         size: 50,
       }),
   });
@@ -93,7 +107,7 @@ function Board() {
               ))}
             </div>
             <div className="label-mono mb-2">Region</div>
-            <div className="space-y-1">
+            <div className="mb-5 space-y-1">
               {["All regions", ...REGIONS].map((r) => (
                 <label key={r} className="flex items-center gap-2 py-0.5 text-sm">
                   <input
@@ -107,6 +121,32 @@ function Board() {
                 </label>
               ))}
             </div>
+            <div className="label-mono mb-2">Employment type</div>
+            <select
+              value={employmentType}
+              onChange={(e) => setEmploymentType(e.target.value)}
+              className="mb-5 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line"
+            >
+              <option value="">All</option>
+              {(Object.keys(EMPLOYMENT_TYPE_LABELS) as EmploymentType[]).map((key) => (
+                <option key={key} value={key}>
+                  {EMPLOYMENT_TYPE_LABELS[key]}
+                </option>
+              ))}
+            </select>
+            <div className="label-mono mb-2">Work arrangement</div>
+            <select
+              value={workArrangement}
+              onChange={(e) => setWorkArrangement(e.target.value)}
+              className="w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line"
+            >
+              <option value="">All</option>
+              {(Object.keys(WORK_ARRANGEMENT_LABELS) as WorkArrangement[]).map((key) => (
+                <option key={key} value={key}>
+                  {WORK_ARRANGEMENT_LABELS[key]}
+                </option>
+              ))}
+            </select>
           </Panel>
         </aside>
 

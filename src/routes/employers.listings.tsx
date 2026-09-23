@@ -2,7 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { DashNav, EMPLOYER_NAV, StatTile } from "@/components/eoz/DashNav";
 import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
-import { api, daysUntil, isUnauthenticated, type PageResponse } from "@/lib/api-client";
+import { DeadlineChip } from "@/components/eoz/OpportunityCard";
+import { api, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 
 export const Route = createFileRoute("/employers/listings")({
   head: () => ({
@@ -90,7 +91,11 @@ function EmployerListings() {
 
       <div className="grid gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Published" value={String(stats?.published ?? "—")} />
-        <StatTile label="Pending review" value={String(stats?.pendingReview ?? "—")} tone="text-amber" />
+        <StatTile
+          label="Pending review"
+          value={String(stats?.pendingReview ?? "—")}
+          tone="text-amber"
+        />
         <StatTile label="Drafts" value={String(stats?.drafts ?? "—")} />
         <StatTile label="Closed" value={String(stats?.closed ?? "—")} />
       </div>
@@ -104,21 +109,23 @@ function EmployerListings() {
           </Panel>
         ) : (
           listings.map((o) => {
-            const closesIn = daysUntil(o.deadline);
             return (
               <Panel key={o.id}>
                 <div className="flex flex-wrap items-start justify-between gap-4">
                   <div className="min-w-0 flex-1">
                     <div className="mb-2 flex flex-wrap items-center gap-2">
-                      <Chip tone={STATUS_TONE[o.status] ?? "muted"}>{o.status.replace(/_/g, " ")}</Chip>
+                      <Chip tone={STATUS_TONE[o.status] ?? "muted"}>
+                        {o.status.replace(/_/g, " ")}
+                      </Chip>
+                      {o.status === "PUBLISHED" ? <DeadlineChip deadline={o.deadline} /> : null}
                       <span className="font-mono text-[10px] text-muted">{o.reference}</span>
                     </div>
                     <h2 className="font-display text-xl tracking-tight">{o.title}</h2>
                     <p className="mt-1 text-sm text-muted">
-                      {o.categoryName} · {o.region ?? "National"} {o.workMode ? `· ${o.workMode}` : ""}
+                      {o.categoryName} · {o.region ?? "National"}{" "}
+                      {o.workMode ? `· ${o.workMode}` : ""}
                     </p>
                     <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 border-t border-line pt-3 text-xs text-muted">
-                      <span>{closesIn !== null ? `Closes in ${closesIn} days` : "No deadline set"}</span>
                       <span>{o.viewsCount} views</span>
                       <span>{o.savesCount} saves</span>
                     </div>

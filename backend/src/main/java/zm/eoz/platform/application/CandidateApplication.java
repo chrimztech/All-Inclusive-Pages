@@ -46,6 +46,9 @@ public class CandidateApplication {
     @Column(name = "cover_note")
     private String coverNote;
 
+    @Column(name = "resume_file_id")
+    private UUID resumeFileId;
+
     @Column(name = "submitted_at", nullable = false, updatable = false)
     private Instant submittedAt;
 

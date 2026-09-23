@@ -3,7 +3,12 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Building2, MapPin, Search } from "lucide-react";
 import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
-import { api, type PageResponse } from "@/lib/api-client";
+import {
+  api,
+  organisationLogoUrl,
+  type ApiOrganisation,
+  type PageResponse,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/organisations/")({
   head: () => ({
@@ -17,18 +22,6 @@ export const Route = createFileRoute("/organisations/")({
   }),
   component: OrganisationDirectory,
 });
-
-type ApiOrganisation = {
-  id: string;
-  legalName: string;
-  tradingName: string | null;
-  sector: string | null;
-  website: string | null;
-  address: string | null;
-  description: string | null;
-  verificationStatus: string;
-  listingsCount: number;
-};
 
 function OrganisationDirectory() {
   const [query, setQuery] = useState("");
@@ -77,9 +70,17 @@ function OrganisationDirectory() {
             return (
               <Panel key={profile.id} className="flex min-h-56 flex-col">
                 <div className="flex items-start justify-between gap-3">
-                  <div className="grid size-10 place-items-center rounded-lg bg-accent/10 text-accent-soft ring-1 ring-accent/25">
-                    <Building2 aria-hidden="true" className="size-5" />
-                  </div>
+                  {profile.logoFileId ? (
+                    <img
+                      src={organisationLogoUrl(profile.id)}
+                      alt=""
+                      className="size-10 shrink-0 rounded-lg object-cover ring-1 ring-line"
+                    />
+                  ) : (
+                    <div className="grid size-10 place-items-center rounded-lg bg-accent/10 text-accent-soft ring-1 ring-accent/25">
+                      <Building2 aria-hidden="true" className="size-5" />
+                    </div>
+                  )}
                   <Chip tone={verified ? "emerald" : "amber"}>
                     {verified ? "Verified" : "Under review"}
                   </Chip>

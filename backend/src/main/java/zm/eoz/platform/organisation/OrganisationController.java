@@ -14,9 +14,14 @@ import zm.eoz.platform.organisation.dto.OrganisationResponse;
 import zm.eoz.platform.organisation.dto.OrganisationUpdateRequest;
 import zm.eoz.platform.organisation.dto.VerificationDecisionRequest;
 import zm.eoz.platform.security.UserPrincipal;
+import zm.eoz.platform.storage.FileAsset;
+import zm.eoz.platform.storage.FileStorageService;
 
 import jakarta.validation.Valid;
 import java.util.List;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -40,16 +45,19 @@ public class OrganisationController {
     private final OrganisationService organisationService;
     private final UserRepository userRepository;
     private final OpportunityRepository opportunityRepository;
+    private final FileStorageService fileStorageService;
 
     public OrganisationController(
             OrganisationRepository organisationRepository,
             OrganisationService organisationService,
             UserRepository userRepository,
-            OpportunityRepository opportunityRepository) {
+            OpportunityRepository opportunityRepository,
+            FileStorageService fileStorageService) {
         this.organisationRepository = organisationRepository;
         this.organisationService = organisationService;
         this.userRepository = userRepository;
         this.opportunityRepository = opportunityRepository;
+        this.fileStorageService = fileStorageService;
     }
 
     @GetMapping
@@ -87,6 +95,35 @@ public class OrganisationController {
             @PathVariable UUID id, @Valid @RequestBody OrganisationUpdateRequest request) {
         return ApiResponse.of(organisationService.update(id, request, currentUser()));
     }
+
+    @PatchMapping("/{id}/logo")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<OrganisationResponse> setLogo(@PathVariable UUID id, @Valid @RequestBody SetLogoRequest request) {
+        return ApiResponse.of(organisationService.setLogo(id, request.fileId(), currentUser()));
+    }
+
+    /**
+     * Unauthenticated by design (falls under the permitAll "/api/v1/organisations/**" matcher) — an
+     * organisation's logo is public data shown on its listing/profile pages to anonymous visitors, unlike
+     * other files behind {@code FileStorageService.getForDownload}'s uploader-or-staff restriction.
+     */
+    @GetMapping("/{id}/logo")
+    public ResponseEntity<Resource> logo(@PathVariable UUID id) {
+        var org = organisationRepository
+                .findById(id)
+                .orElseThrow(() -> new NotFoundException("Organisation not found: " + id));
+        if (org.getLogoFileId() == null) {
+            throw new NotFoundException("Organisation has no logo.");
+        }
+        FileAsset asset = fileStorageService.get(org.getLogoFileId());
+        Resource resource = fileStorageService.load(asset);
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(asset.getContentType()))
+                .header(HttpHeaders.CACHE_CONTROL, "public, max-age=3600")
+                .body(resource);
+    }
+
+    public record SetLogoRequest(@jakarta.validation.constraints.NotNull UUID fileId) {}
 
     @PatchMapping("/{id}/verification")
     @PreAuthorize("hasAuthority('ORGANISATION_VERIFY')")

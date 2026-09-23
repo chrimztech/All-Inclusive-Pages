@@ -16,6 +16,12 @@ public record RegisterRequest(
         // CANDIDATE-only, all optional:
         String location,
         String headline,
-        // EMPLOYER-only: providing this registers the organisation and makes the new user its owner.
+        String skills,
+        String availability,
+        // EMPLOYER-only: providing organisationName registers the organisation and makes the new user its owner.
         String organisationName,
-        String organisationSector) {}
+        String organisationSector,
+        String organisationRegistrationNumber,
+        String organisationWebsite,
+        String organisationBusinessType,
+        String organisationSizeBand) {}

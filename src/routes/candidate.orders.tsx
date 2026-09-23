@@ -1,9 +1,10 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
 import { CANDIDATE_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
 import { PageIntro, Panel, SiteShell, Chip } from "@/components/eoz/SiteShell";
-import { api, isUnauthenticated } from "@/lib/api-client";
+import { api, ApiError, isUnauthenticated } from "@/lib/api-client";
+import { useToast } from "@/lib/toast";
 
 export const Route = createFileRoute("/candidate/orders")({
   head: () => ({
@@ -25,6 +26,9 @@ type Order = {
   status: string;
   assignedOfficerName: string | null;
   revisionCount: number;
+  latestQuoteAmount: number | null;
+  latestQuoteCurrency: string | null;
+  latestQuoteAccepted: boolean;
   updatedAt: string;
 };
 
@@ -35,12 +39,23 @@ const STATUS_TONE: Record<string, "emerald" | "amber" | "muted"> = {
 };
 
 function ServiceOrders() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
   const ordersQuery = useQuery({
     queryKey: ["candidate", "service-orders"],
     queryFn: () => api.get<Order[]>("/services/orders/mine"),
     retry: false,
   });
   const orders = ordersQuery.data ?? [];
+
+  const acceptQuote = useMutation({
+    mutationFn: (orderId: string) => api.post(`/services/orders/${orderId}/accept-quote`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidate", "service-orders"] });
+      toast("Quote accepted — an invoice has been raised. We'll be in touch about payment.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not accept this quote.", "error"),
+  });
   const active = orders.filter((o) => !["COMPLETED", "CANCELLED"].includes(o.status)).length;
   const awaiting = orders.filter((o) => o.status === "QUOTED" || o.status === "PAYMENT_PENDING").length;
   const completed = orders.filter((o) => o.status === "COMPLETED").length;
@@ -95,6 +110,24 @@ function ServiceOrders() {
                 </div>
                 <Chip tone={STATUS_TONE[o.status] ?? "muted"}>{o.status}</Chip>
               </div>
+              {o.status === "QUOTED" && o.latestQuoteAmount != null ? (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+                  <div>
+                    <div className="label-mono">Quoted</div>
+                    <div className="font-display text-xl text-amber">
+                      {o.latestQuoteCurrency} {o.latestQuoteAmount.toLocaleString()}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    disabled={acceptQuote.isPending}
+                    onClick={() => acceptQuote.mutate(o.id)}
+                    className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
+                  >
+                    {acceptQuote.isPending ? "Accepting…" : "Accept quote"}
+                  </button>
+                </div>
+              ) : null}
             </Panel>
           ))}
         </div>

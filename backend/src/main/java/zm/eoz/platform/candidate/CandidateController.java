@@ -21,6 +21,10 @@ import zm.eoz.platform.candidate.dto.AlertSubscriptionRequest;
 import zm.eoz.platform.candidate.dto.AlertSubscriptionResponse;
 import zm.eoz.platform.candidate.dto.CandidateProfileRequest;
 import zm.eoz.platform.candidate.dto.CandidateProfileResponse;
+import zm.eoz.platform.candidate.dto.EducationRequest;
+import zm.eoz.platform.candidate.dto.EducationResponse;
+import zm.eoz.platform.candidate.dto.WorkExperienceRequest;
+import zm.eoz.platform.candidate.dto.WorkExperienceResponse;
 import zm.eoz.platform.common.ApiResponse;
 import zm.eoz.platform.identity.User;
 import zm.eoz.platform.identity.UserRepository;
@@ -47,6 +51,61 @@ public class CandidateController {
     @PatchMapping("/profile")
     public ApiResponse<CandidateProfileResponse> updateProfile(@RequestBody CandidateProfileRequest request) {
         return ApiResponse.of(candidateService.updateProfile(request, currentUser()));
+    }
+
+    @PatchMapping("/profile/photo")
+    public ApiResponse<CandidateProfileResponse> setPhoto(@RequestBody SetFileRequest request) {
+        return ApiResponse.of(candidateService.setPhoto(request.fileId(), currentUser()));
+    }
+
+    @PatchMapping("/profile/resume")
+    public ApiResponse<CandidateProfileResponse> setResume(@RequestBody SetFileRequest request) {
+        return ApiResponse.of(candidateService.setResume(request.fileId(), currentUser()));
+    }
+
+    public record SetFileRequest(@jakarta.validation.constraints.NotNull UUID fileId) {}
+
+    @GetMapping("/profile/experience")
+    public ApiResponse<List<WorkExperienceResponse>> listWorkExperience() {
+        return ApiResponse.of(candidateService.listWorkExperience(currentUser().getId()));
+    }
+
+    @PostMapping("/profile/experience")
+    public ApiResponse<WorkExperienceResponse> addWorkExperience(@Valid @RequestBody WorkExperienceRequest request) {
+        return ApiResponse.of(candidateService.addWorkExperience(request, currentUser()));
+    }
+
+    @PatchMapping("/profile/experience/{id}")
+    public ApiResponse<WorkExperienceResponse> updateWorkExperience(
+            @PathVariable UUID id, @Valid @RequestBody WorkExperienceRequest request) {
+        return ApiResponse.of(candidateService.updateWorkExperience(id, request, currentUser()));
+    }
+
+    @DeleteMapping("/profile/experience/{id}")
+    public ResponseEntity<Void> deleteWorkExperience(@PathVariable UUID id) {
+        candidateService.deleteWorkExperience(id, currentUser());
+        return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/profile/education")
+    public ApiResponse<List<EducationResponse>> listEducation() {
+        return ApiResponse.of(candidateService.listEducation(currentUser().getId()));
+    }
+
+    @PostMapping("/profile/education")
+    public ApiResponse<EducationResponse> addEducation(@Valid @RequestBody EducationRequest request) {
+        return ApiResponse.of(candidateService.addEducation(request, currentUser()));
+    }
+
+    @PatchMapping("/profile/education/{id}")
+    public ApiResponse<EducationResponse> updateEducation(@PathVariable UUID id, @Valid @RequestBody EducationRequest request) {
+        return ApiResponse.of(candidateService.updateEducation(id, request, currentUser()));
+    }
+
+    @DeleteMapping("/profile/education/{id}")
+    public ResponseEntity<Void> deleteEducation(@PathVariable UUID id) {
+        candidateService.deleteEducation(id, currentUser());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/alerts")

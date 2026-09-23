@@ -60,11 +60,29 @@ public class Opportunity {
     @Column(name = "work_mode")
     private String workMode;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "employment_type")
+    private EmploymentType employmentType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "work_arrangement")
+    private WorkArrangement workArrangement;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "experience_level")
+    private ExperienceLevel experienceLevel;
+
     @Column(name = "opportunity_value")
     private String opportunityValue;
 
     @Column(name = "opportunity_value_unit")
     private String opportunityValueUnit;
+
+    @Column(name = "salary_min")
+    private java.math.BigDecimal salaryMin;
+
+    @Column(name = "salary_max")
+    private java.math.BigDecimal salaryMax;
 
     @Column(name = "salary_visible", nullable = false)
     private boolean salaryVisible;

@@ -2,28 +2,50 @@ import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bookmark, BookmarkCheck } from "lucide-react";
 import { Chip } from "./SiteShell";
-import { api, ApiError, daysUntil, type ApiOpportunitySummary } from "@/lib/api-client";
+import {
+  api,
+  ApiError,
+  EMPLOYMENT_TYPE_LABELS,
+  WORK_ARRANGEMENT_LABELS,
+  type ApiOpportunitySummary,
+} from "@/lib/api-client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useToast } from "@/lib/toast";
+import { useCountdown, formatCountdown, countdownTone } from "@/lib/use-countdown";
 
-export function deadlineTone(days: number) {
-  if (days <= 3) return "rose" as const;
-  if (days <= 10) return "amber" as const;
-  return "accent" as const;
+export function DeadlineChip({
+  deadline,
+  intervalMs,
+}: {
+  deadline: string | null;
+  intervalMs?: number;
+}) {
+  const countdown = useCountdown(deadline, intervalMs);
+  return <Chip tone={countdownTone(countdown)}>{formatCountdown(countdown)}</Chip>;
 }
 
-export function OpportunityCard({ item, delay = 0 }: { item: ApiOpportunitySummary; delay?: number }) {
-  const closesInDays = daysUntil(item.deadline) ?? 0;
+export function OpportunityCard({
+  item,
+  delay = 0,
+}: {
+  item: ApiOpportunitySummary;
+  delay?: number;
+}) {
+  const countdown = useCountdown(item.deadline);
   const { user } = useCurrentUser();
   const isCandidate = user?.roles.includes("CANDIDATE") ?? false;
 
   return (
     <div
-      className="glass group relative rounded-xl p-5 ring-1 ring-line transition-all hover:ring-accent/40 fade-in"
+      className={`glass group relative rounded-xl p-5 ring-1 ring-line transition-all hover:ring-accent/40 fade-in ${countdown.expired ? "opacity-60" : ""}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       {isCandidate ? <SaveToggle opportunityId={item.id} /> : null}
-      <Link to="/opportunities/$opportunityId" params={{ opportunityId: item.slug }} className="block">
+      <Link
+        to="/opportunities/$opportunityId"
+        params={{ opportunityId: item.slug }}
+        className="block"
+      >
         <div className="flex flex-wrap items-start justify-between gap-3 pr-8">
           <div className="min-w-0 flex-1">
             <div className="mb-2 flex flex-wrap items-center gap-2">
@@ -33,7 +55,13 @@ export function OpportunityCard({ item, delay = 0 }: { item: ApiOpportunitySumma
               ) : (
                 <Chip tone="rose">Unverified</Chip>
               )}
-              <Chip tone={deadlineTone(closesInDays)}>Closes in {closesInDays} days</Chip>
+              <Chip tone={countdownTone(countdown)}>{formatCountdown(countdown)}</Chip>
+              {item.employmentType ? (
+                <Chip tone="muted">{EMPLOYMENT_TYPE_LABELS[item.employmentType]}</Chip>
+              ) : null}
+              {item.workArrangement ? (
+                <Chip tone="muted">{WORK_ARRANGEMENT_LABELS[item.workArrangement]}</Chip>
+              ) : null}
             </div>
             <h3 className="font-display text-xl tracking-tight">{item.title}</h3>
             <div className="mt-1 text-sm text-muted">
@@ -78,12 +106,18 @@ export function SaveToggle({
 
   const toggle = useMutation({
     mutationFn: () =>
-      isSaved ? api.del(`/candidate/saved/${opportunityId}`) : api.post(`/candidate/saved/${opportunityId}`),
+      isSaved
+        ? api.del(`/candidate/saved/${opportunityId}`)
+        : api.post(`/candidate/saved/${opportunityId}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["candidate", "saved"] });
       toast(isSaved ? "Removed from saved." : "Saved.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update saved listings.", "error"),
+    onError: (error) =>
+      toast(
+        error instanceof ApiError ? error.message : "Could not update saved listings.",
+        "error",
+      ),
   });
 
   return (
@@ -99,7 +133,11 @@ export function SaveToggle({
       }}
       className={`${className} rounded-md p-1.5 text-muted ring-1 ring-line transition-colors hover:text-accent-soft disabled:opacity-60`}
     >
-      {isSaved ? <BookmarkCheck className="size-4 text-accent-soft" /> : <Bookmark className="size-4" />}
+      {isSaved ? (
+        <BookmarkCheck className="size-4 text-accent-soft" />
+      ) : (
+        <Bookmark className="size-4" />
+      )}
     </button>
   );
 }

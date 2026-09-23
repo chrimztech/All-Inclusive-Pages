@@ -87,17 +87,40 @@ public class AuthService {
         user = userRepository.save(user);
 
         if ("CANDIDATE".equals(request.accountType())
-                && (notBlank(request.location()) || notBlank(request.headline()))) {
+                && (notBlank(request.location()) || notBlank(request.headline()) || notBlank(request.skills()))) {
             CandidateProfile profile = new CandidateProfile(user.getId());
             profile.setLocation(request.location());
             profile.setHeadline(request.headline());
+            profile.setSkills(request.skills());
+            if (notBlank(request.availability())) {
+                try {
+                    profile.setAvailability(zm.eoz.platform.candidate.Availability.valueOf(request.availability()));
+                } catch (IllegalArgumentException ignored) {
+                    // Leave unset rather than fail registration over an invalid enum value from an older client.
+                }
+            }
             candidateProfileRepository.save(profile);
         }
 
         if ("EMPLOYER".equals(request.accountType()) && notBlank(request.organisationName())) {
             organisationService.register(
                     new OrganisationCreateRequest(
-                            request.organisationName(), null, null, request.organisationSector(), null, null, null),
+                            request.organisationName(),
+                            null,
+                            request.organisationRegistrationNumber(),
+                            request.organisationSector(),
+                            null,
+                            request.organisationWebsite(),
+                            null,
+                            request.organisationBusinessType(),
+                            request.organisationSizeBand(),
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null,
+                            null),
                     user);
         }
 

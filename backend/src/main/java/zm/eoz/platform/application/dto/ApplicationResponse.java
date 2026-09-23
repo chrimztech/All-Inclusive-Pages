@@ -10,6 +10,11 @@ public record ApplicationResponse(
         UUID opportunityId,
         String opportunityTitle,
         String organisationName,
+        UUID candidateId,
+        String candidateName,
+        String candidateEmail,
+        UUID resumeFileId,
+        String coverNote,
         String status,
         Instant submittedAt,
         Instant updatedAt) {
@@ -21,6 +26,11 @@ public record ApplicationResponse(
                 a.getOpportunity().getId(),
                 a.getOpportunity().getTitle(),
                 a.getOpportunity().getOrganisationName(),
+                a.getCandidate().getId(),
+                a.getCandidate().getFullName(),
+                a.getCandidate().getEmail(),
+                a.getResumeFileId(),
+                a.getCoverNote(),
                 a.getStatus().name(),
                 a.getSubmittedAt(),
                 a.getUpdatedAt());

@@ -15,9 +15,15 @@ public record OpportunitySummaryResponse(
         String location,
         String region,
         String workMode,
+        String employmentType,
+        String workArrangement,
+        String experienceLevel,
         boolean verified,
         String opportunityValue,
         String opportunityValueUnit,
+        java.math.BigDecimal salaryMin,
+        java.math.BigDecimal salaryMax,
+        String currency,
         Instant deadline,
         Instant publishedAt) {
 
@@ -33,9 +39,15 @@ public record OpportunitySummaryResponse(
                 o.getLocation(),
                 o.getRegion(),
                 o.getWorkMode(),
+                o.getEmploymentType() != null ? o.getEmploymentType().name() : null,
+                o.getWorkArrangement() != null ? o.getWorkArrangement().name() : null,
+                o.getExperienceLevel() != null ? o.getExperienceLevel().name() : null,
                 o.isVerified(),
                 o.getOpportunityValue(),
                 o.getOpportunityValueUnit(),
+                o.getSalaryMin(),
+                o.getSalaryMax(),
+                o.getCurrency(),
                 o.getDeadline(),
                 o.getPublishedAt());
     }

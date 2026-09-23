@@ -44,9 +44,13 @@ public class OpportunityController {
             @RequestParam(required = false) Boolean verifiedOnly,
             @RequestParam(required = false) Integer deadlineWithinDays,
             @RequestParam(required = false) UUID organisationId,
+            @RequestParam(required = false) String employmentType,
+            @RequestParam(required = false) String workArrangement,
+            @RequestParam(required = false) String experienceLevel,
             Pageable pageable) {
         return ApiResponse.of(PageResponse.from(opportunityService.search(
-                category, region, q, verifiedOnly, deadlineWithinDays, organisationId, pageable)));
+                category, region, q, verifiedOnly, deadlineWithinDays, organisationId, employmentType, workArrangement,
+                experienceLevel, pageable)));
     }
 
     @GetMapping("/{slug}")

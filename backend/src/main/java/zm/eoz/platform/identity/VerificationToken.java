@@ -24,7 +24,9 @@ public class VerificationToken {
 
     public enum Type {
         EMAIL_VERIFY,
-        PASSWORD_RESET
+        PASSWORD_RESET,
+        /** Reserved for phone OTP verification once an SMS provider is wired up — not issued yet. */
+        PHONE_VERIFY
     }
 
     @Id

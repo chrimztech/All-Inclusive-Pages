@@ -44,9 +44,11 @@ function Header() {
     <header className="sticky top-0 z-50 border-b border-line bg-ink/70 backdrop-blur-xl">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
         <Link to="/" className="flex items-center gap-3">
-          <div className="accent-gradient grid size-8 place-items-center rounded-md font-display text-sm font-semibold text-ink">
-            E
-          </div>
+          <img
+            src="/logo-mark.png"
+            alt="Echo Opportunities Zambia"
+            className="size-8 rounded-md object-cover"
+          />
           <div className="leading-tight">
             <div className="font-display text-[15px] font-medium tracking-tight">
               Echo Opportunities <span className="font-sans text-xs text-muted">Zambia</span>
@@ -246,9 +248,11 @@ function Footer() {
         <div className="grid gap-10 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <Link to="/" className="flex items-center gap-3">
-              <div className="accent-gradient grid size-8 place-items-center rounded-md font-display text-sm font-semibold text-ink">
-                E
-              </div>
+              <img
+                src="/logo-mark.png"
+                alt="Echo Opportunities Zambia"
+                className="size-8 rounded-md object-cover"
+              />
               <div className="leading-tight">
                 <div className="font-display text-[15px] font-medium tracking-tight">
                   Echo Opportunities <span className="font-sans text-xs text-muted">Zambia</span>

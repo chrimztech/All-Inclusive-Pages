@@ -2,19 +2,16 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Globe2, MapPin, ShieldCheck } from "lucide-react";
 import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
-import { api, daysUntil, type ApiOpportunitySummary, type PageResponse } from "@/lib/api-client";
-
-type ApiOrganisation = {
-  id: string;
-  legalName: string;
-  tradingName: string | null;
-  sector: string | null;
-  website: string | null;
-  address: string | null;
-  description: string | null;
-  verificationStatus: string;
-  listingsCount: number;
-};
+import { useCountdown, formatCountdown } from "@/lib/use-countdown";
+import {
+  api,
+  organisationLogoUrl,
+  BUSINESS_TYPE_LABELS,
+  SIZE_BAND_LABELS,
+  type ApiOpportunitySummary,
+  type ApiOrganisation,
+  type PageResponse,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/organisations/$organisationId")({
   head: () => ({
@@ -73,16 +70,31 @@ function OrganisationProfile() {
     <SiteShell>
       <PageIntro
         eyebrow="Public organisation profile"
-        title={name}
+        title={
+          <span className="flex items-center gap-4">
+            {profile.logoFileId ? (
+              <img
+                src={organisationLogoUrl(profile.id)}
+                alt=""
+                className="size-12 shrink-0 rounded-lg object-cover ring-1 ring-line"
+              />
+            ) : null}
+            {name}
+          </span>
+        }
         lead={profile.description ?? "This organisation has not added a public description yet."}
         aside={
           <Panel>
             <Chip tone={verified ? "emerald" : "amber"}>
-              {verified ? "EOZ verified" : "Verification in progress"}
+              {verified ? "EOZ verified" : "New business — unverified"}
             </Chip>
+            {profile.businessType ? (
+              <Chip tone="muted">{BUSINESS_TYPE_LABELS[profile.businessType]}</Chip>
+            ) : null}
             <p className="mt-3 text-xs leading-5 text-muted">
-              Verification confirms submitted organisation evidence. It does not guarantee a hiring
-              outcome.
+              {verified
+                ? "Verification confirms submitted organisation evidence. It does not guarantee a hiring outcome."
+                : "This organisation is still going through EOZ's verification review. Small and new businesses can post opportunities while this is pending."}
             </p>
           </Panel>
         }
@@ -105,33 +117,25 @@ function OrganisationProfile() {
               <div className="mt-3 label-mono">Sector</div>
               <div className="mt-1 text-sm">{profile.sector ?? "Not listed"}</div>
             </Panel>
+            {profile.sizeBand ? (
+              <Panel>
+                <div className="label-mono">Team size</div>
+                <div className="mt-1 text-sm">{SIZE_BAND_LABELS[profile.sizeBand]}</div>
+              </Panel>
+            ) : null}
+            {profile.foundedYear ? (
+              <Panel>
+                <div className="label-mono">Founded</div>
+                <div className="mt-1 text-sm">{profile.foundedYear}</div>
+              </Panel>
+            ) : null}
           </div>
           <Panel>
             <div className="label-mono mb-4">Active opportunities</div>
             {listingsQuery.isLoading ? (
               <p className="text-sm text-muted">Loading listings…</p>
             ) : listings.length ? (
-              listings.map((listing) => {
-                const closesIn = daysUntil(listing.deadline);
-                return (
-                  <Link
-                    key={listing.id}
-                    to="/opportunities/$opportunityId"
-                    params={{ opportunityId: listing.slug }}
-                    className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-4 first:border-0 first:pt-0"
-                  >
-                    <span>
-                      <span className="block text-sm">{listing.title}</span>
-                      <span className="text-xs text-muted">
-                        {listing.categoryName} · {listing.region ?? "National"}
-                      </span>
-                    </span>
-                    <span className="font-mono text-xs text-accent-soft">
-                      {closesIn !== null ? `Closes in ${closesIn} days →` : "Open →"}
-                    </span>
-                  </Link>
-                );
-              })
+              listings.map((listing) => <OrgListingRow key={listing.id} listing={listing} />)
             ) : (
               <p className="text-sm text-muted">
                 No active EOZ listings from this organisation right now.
@@ -152,5 +156,24 @@ function OrganisationProfile() {
         </Panel>
       </section>
     </SiteShell>
+  );
+}
+
+function OrgListingRow({ listing }: { listing: ApiOpportunitySummary }) {
+  const countdown = useCountdown(listing.deadline);
+  return (
+    <Link
+      to="/opportunities/$opportunityId"
+      params={{ opportunityId: listing.slug }}
+      className="flex flex-wrap items-center justify-between gap-2 border-t border-line py-4 first:border-0 first:pt-0"
+    >
+      <span>
+        <span className="block text-sm">{listing.title}</span>
+        <span className="text-xs text-muted">
+          {listing.categoryName} · {listing.region ?? "National"}
+        </span>
+      </span>
+      <span className="font-mono text-xs text-accent-soft">{formatCountdown(countdown)} →</span>
+    </Link>
   );
 }

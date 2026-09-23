@@ -94,6 +94,13 @@ public class ServiceCatalogController {
         return ApiResponse.of(serviceCatalogService.issueQuote(id, request, currentUser()));
     }
 
+    @GetMapping("/api/v1/admin/services/officers")
+    @PreAuthorize("hasAuthority('SERVICE_MANAGE')")
+    public ApiResponse<List<zm.eoz.platform.servicecatalog.dto.StaffOptionResponse>> searchOfficers(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String q) {
+        return ApiResponse.of(serviceCatalogService.searchAssignableStaff(q));
+    }
+
     @PostMapping("/api/v1/admin/services/orders/{id}/assign")
     @PreAuthorize("hasAuthority('SERVICE_MANAGE')")
     public ApiResponse<ServiceOrderResponse> assign(

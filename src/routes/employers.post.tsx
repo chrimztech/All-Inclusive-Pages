@@ -4,7 +4,18 @@ import { useState } from "react";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { DashNav, EMPLOYER_NAV } from "@/components/eoz/DashNav";
 import { ORG, REGIONS } from "@/lib/eoz-data";
-import { api, ApiError, type ApiCategory, type ApiOpportunityDetail } from "@/lib/api-client";
+import {
+  api,
+  ApiError,
+  EMPLOYMENT_TYPE_LABELS,
+  WORK_ARRANGEMENT_LABELS,
+  EXPERIENCE_LEVEL_LABELS,
+  type ApiCategory,
+  type ApiOpportunityDetail,
+  type EmploymentType,
+  type WorkArrangement,
+  type ExperienceLevel,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/employers/post")({
   head: () => ({
@@ -32,6 +43,7 @@ const APPLICATION_MODES = [
   { value: "EXTERNAL_URL", label: "Employer application URL" },
   { value: "EMPLOYER_EMAIL", label: "Employer email address" },
   { value: "PHYSICAL_ADDRESS", label: "Physical / postal submission" },
+  { value: "EOZ_HOSTED", label: "Apply through EOZ (candidates apply here, with their CV)" },
 ] as const;
 
 type ApplicationMode = (typeof APPLICATION_MODES)[number]["value"];
@@ -53,6 +65,11 @@ function PostOpportunity() {
   const [source, setSource] = useState("");
   const [description, setDescription] = useState("");
   const [requirements, setRequirements] = useState("");
+  const [employmentType, setEmploymentType] = useState("");
+  const [workArrangement, setWorkArrangement] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState("");
+  const [salaryMin, setSalaryMin] = useState("");
+  const [salaryMax, setSalaryMax] = useState("");
 
   const submitMutation = useMutation({
     mutationFn: () =>
@@ -67,13 +84,18 @@ function PostOpportunity() {
           .filter(Boolean)
           .join("; "),
         region,
+        employmentType: employmentType || undefined,
+        workArrangement: workArrangement || undefined,
+        experienceLevel: experienceLevel || undefined,
+        salaryMin: salaryMin ? Number(salaryMin) : undefined,
+        salaryMax: salaryMax ? Number(salaryMax) : undefined,
         deadline: deadline ? new Date(deadline).toISOString() : undefined,
         applicationMode,
         applicationUrl: applicationMode === "EXTERNAL_URL" ? routeValue : undefined,
         applicationEmail: applicationMode === "EMPLOYER_EMAIL" ? routeValue : undefined,
         applicationAddress: applicationMode === "PHYSICAL_ADDRESS" ? routeValue : undefined,
         source,
-        salaryVisible: false,
+        salaryVisible: Boolean(salaryMin || salaryMax),
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["opportunities"] });
@@ -149,7 +171,11 @@ function PostOpportunity() {
               </label>
               <label>
                 <span className="label-mono">Region</span>
-                <select value={region} onChange={(e) => setRegion(e.target.value)} className={inputCls}>
+                <select
+                  value={region}
+                  onChange={(e) => setRegion(e.target.value)}
+                  className={inputCls}
+                >
                   {REGIONS.map((r) => (
                     <option key={r}>{r}</option>
                   ))}
@@ -188,16 +214,25 @@ function PostOpportunity() {
                   ))}
                 </select>
               </label>
-              <label>
-                <span className="label-mono">{routeFieldLabel} (required)</span>
-                <input
-                  required
-                  value={routeValue}
-                  onChange={(e) => setRouteValue(e.target.value)}
-                  className={inputCls}
-                  placeholder={applicationMode === "EMPLOYER_EMAIL" ? "careers@employer.zm" : "https://"}
-                />
-              </label>
+              {applicationMode === "EOZ_HOSTED" ? (
+                <p className="text-sm text-muted">
+                  No external link needed — candidates apply directly on EOZ, with their profile CV
+                  attached, and you'll see and screen every applicant from your Applicants page.
+                </p>
+              ) : (
+                <label>
+                  <span className="label-mono">{routeFieldLabel} (required)</span>
+                  <input
+                    required
+                    value={routeValue}
+                    onChange={(e) => setRouteValue(e.target.value)}
+                    className={inputCls}
+                    placeholder={
+                      applicationMode === "EMPLOYER_EMAIL" ? "careers@employer.zm" : "https://"
+                    }
+                  />
+                </label>
+              )}
               <label className="sm:col-span-2">
                 <span className="label-mono">Source link for verification</span>
                 <input
@@ -227,6 +262,82 @@ function PostOpportunity() {
                   className={inputCls}
                 />
               </label>
+
+              <details className="sm:col-span-2 rounded-md ring-1 ring-line">
+                <summary className="cursor-pointer px-3 py-2 text-sm text-muted">
+                  More details (optional) — employment type, work arrangement, salary range
+                </summary>
+                <div className="grid gap-4 border-t border-line p-3 sm:grid-cols-2">
+                  <label>
+                    <span className="label-mono">Employment type</span>
+                    <select
+                      value={employmentType}
+                      onChange={(e) => setEmploymentType(e.target.value)}
+                      className={inputCls}
+                    >
+                      <option value="">Not specified</option>
+                      {(Object.keys(EMPLOYMENT_TYPE_LABELS) as EmploymentType[]).map((key) => (
+                        <option key={key} value={key}>
+                          {EMPLOYMENT_TYPE_LABELS[key]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="label-mono">Work arrangement</span>
+                    <select
+                      value={workArrangement}
+                      onChange={(e) => setWorkArrangement(e.target.value)}
+                      className={inputCls}
+                    >
+                      <option value="">Not specified</option>
+                      {(Object.keys(WORK_ARRANGEMENT_LABELS) as WorkArrangement[]).map((key) => (
+                        <option key={key} value={key}>
+                          {WORK_ARRANGEMENT_LABELS[key]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="label-mono">Experience level</span>
+                    <select
+                      value={experienceLevel}
+                      onChange={(e) => setExperienceLevel(e.target.value)}
+                      className={inputCls}
+                    >
+                      <option value="">Not specified</option>
+                      {(Object.keys(EXPERIENCE_LEVEL_LABELS) as ExperienceLevel[]).map((key) => (
+                        <option key={key} value={key}>
+                          {EXPERIENCE_LEVEL_LABELS[key]}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <label>
+                      <span className="label-mono">Salary min (ZMW)</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={salaryMin}
+                        onChange={(e) => setSalaryMin(e.target.value)}
+                        className={inputCls}
+                      />
+                    </label>
+                    <label>
+                      <span className="label-mono">Salary max (ZMW)</span>
+                      <input
+                        type="number"
+                        min={0}
+                        value={salaryMax}
+                        onChange={(e) => setSalaryMax(e.target.value)}
+                        className={inputCls}
+                      />
+                    </label>
+                  </div>
+                </div>
+              </details>
+
               {submitMutation.isError ? (
                 <p className="text-xs text-rose-400 sm:col-span-2">
                   {submitMutation.error instanceof ApiError

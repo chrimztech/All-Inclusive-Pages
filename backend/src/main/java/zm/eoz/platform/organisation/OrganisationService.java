@@ -56,6 +56,15 @@ public class OrganisationService {
         org.setSize(request.size());
         org.setWebsite(request.website());
         org.setAddress(request.address());
+        org.setBusinessType(parseBusinessType(request.businessType()));
+        org.setSizeBand(parseSizeBand(request.sizeBand()));
+        org.setTpin(request.tpin());
+        org.setFoundedYear(request.foundedYear());
+        org.setContactPersonName(request.contactPersonName());
+        org.setContactPersonRole(request.contactPersonRole());
+        org.setContactPhone(request.contactPhone());
+        org.setLinkedinUrl(request.linkedinUrl());
+        org.setFacebookUrl(request.facebookUrl());
         org.setCreatedBy(createdBy);
         org.setVerificationStatus(VerificationStatus.PENDING);
         org = organisationRepository.save(org);
@@ -86,15 +95,59 @@ public class OrganisationService {
         Organisation org = requireOrganisation(organisationId);
         org.setLegalName(request.legalName());
         org.setTradingName(request.tradingName());
+        org.setRegistrationNumber(request.registrationNumber());
         org.setSector(request.sector());
+        org.setSize(request.size());
         org.setWebsite(request.website());
         org.setAddress(request.address());
         org.setDescription(request.description());
+        org.setBusinessType(parseBusinessType(request.businessType()));
+        org.setSizeBand(parseSizeBand(request.sizeBand()));
+        org.setTpin(request.tpin());
+        org.setFoundedYear(request.foundedYear());
+        org.setContactPersonName(request.contactPersonName());
+        org.setContactPersonRole(request.contactPersonRole());
+        org.setContactPhone(request.contactPhone());
+        org.setLinkedinUrl(request.linkedinUrl());
+        org.setFacebookUrl(request.facebookUrl());
         organisationRepository.save(org);
         auditService.record(
                 actor, "UPDATED", "Organisation", organisationId.toString(), "Updated profile for \"" + org.getLegalName() + "\"");
         return OrganisationResponse.from(
                 org, opportunityRepository.countByOrganisationIdAndStatus(organisationId, OpportunityStatus.PUBLISHED));
+    }
+
+    @Transactional
+    public OrganisationResponse setLogo(UUID organisationId, UUID logoFileId, User actor) {
+        requireMemberAccess(organisationId, actor);
+        Organisation org = requireOrganisation(organisationId);
+        org.setLogoFileId(logoFileId);
+        organisationRepository.save(org);
+        auditService.record(actor, "LOGO_UPDATED", "Organisation", organisationId.toString(), "Updated logo for \"" + org.getLegalName() + "\"");
+        return OrganisationResponse.from(
+                org, opportunityRepository.countByOrganisationIdAndStatus(organisationId, OpportunityStatus.PUBLISHED));
+    }
+
+    private BusinessType parseBusinessType(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return BusinessType.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Unknown business type: " + value);
+        }
+    }
+
+    private OrganisationSizeBand parseSizeBand(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return OrganisationSizeBand.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Unknown size band: " + value);
+        }
     }
 
     @Transactional(readOnly = true)

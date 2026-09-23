@@ -3,16 +3,28 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { SiteShell, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ORG } from "@/lib/eoz-data";
-import { deadlineTone, SaveToggle } from "@/components/eoz/OpportunityCard";
+import { DeadlineChip, SaveToggle } from "@/components/eoz/OpportunityCard";
 import { useCurrentUser } from "@/lib/use-current-user";
 import {
   api,
-  daysUntil,
   ApiError,
+  EMPLOYMENT_TYPE_LABELS,
+  WORK_ARRANGEMENT_LABELS,
+  EXPERIENCE_LEVEL_LABELS,
   type ApiOpportunityDetail,
   type PageResponse,
   type ApiOpportunitySummary,
 } from "@/lib/api-client";
+
+function salaryRangeLabel(item: ApiOpportunityDetail): string | null {
+  if (item.salaryMin == null && item.salaryMax == null) return null;
+  const currency = item.currency ?? "ZMW";
+  if (item.salaryMin != null && item.salaryMax != null) {
+    return `${currency} ${item.salaryMin.toLocaleString()} – ${item.salaryMax.toLocaleString()}`;
+  }
+  const value = item.salaryMin ?? item.salaryMax;
+  return `${currency} ${value?.toLocaleString()}`;
+}
 
 export const Route = createFileRoute("/opportunities/$opportunityId")({
   loader: async ({ params }) => {
@@ -83,7 +95,6 @@ function applyMethodLabel(item: ApiOpportunityDetail) {
 
 function Detail() {
   const { item } = Route.useLoaderData();
-  const closesInDays = daysUntil(item.deadline) ?? 0;
   const { user } = useCurrentUser();
   const isCandidate = user?.roles.includes("CANDIDATE") ?? false;
 
@@ -103,8 +114,21 @@ function Detail() {
         <div className="lg:col-span-8">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <Chip>{item.categoryName.replace(/s$/, "")}</Chip>
-            {item.verified ? <Chip tone="emerald">Verified source</Chip> : <Chip tone="rose">Unverified</Chip>}
-            <Chip tone={deadlineTone(closesInDays)}>Closes in {closesInDays} days</Chip>
+            {item.verified ? (
+              <Chip tone="emerald">Verified source</Chip>
+            ) : (
+              <Chip tone="rose">Unverified</Chip>
+            )}
+            <DeadlineChip deadline={item.deadline} intervalMs={1000} />
+            {item.employmentType ? (
+              <Chip tone="muted">{EMPLOYMENT_TYPE_LABELS[item.employmentType]}</Chip>
+            ) : null}
+            {item.workArrangement ? (
+              <Chip tone="muted">{WORK_ARRANGEMENT_LABELS[item.workArrangement]}</Chip>
+            ) : null}
+            {item.experienceLevel ? (
+              <Chip tone="muted">{EXPERIENCE_LEVEL_LABELS[item.experienceLevel]}</Chip>
+            ) : null}
             <span className="label-mono">Ref {item.reference}</span>
           </div>
           <div className="flex items-start justify-between gap-3">
@@ -142,7 +166,9 @@ function Detail() {
             <div className="label-mono mb-2">Official application route</div>
             <p className="text-sm">{applyMethodLabel(item)}</p>
             <p className="mt-4 text-xs text-muted">{ORG.disclaimer}</p>
-            {item.applicationMode === "EOZ_HOSTED" ? <EozHostedApplyForm opportunityId={item.id} /> : null}
+            {item.applicationMode === "EOZ_HOSTED" ? (
+              <EozHostedApplyForm opportunityId={item.id} />
+            ) : null}
           </Panel>
         </div>
 
@@ -151,10 +177,21 @@ function Detail() {
             <div className="label-mono">Value</div>
             <div className="font-display text-3xl">{item.opportunityValue}</div>
             <div className="text-xs text-muted">{item.opportunityValueUnit}</div>
+            {salaryRangeLabel(item) ? (
+              <div className="mt-1 text-xs text-accent-soft">{salaryRangeLabel(item)}</div>
+            ) : null}
             <div className="mt-5 space-y-2 text-sm">
               <Row label="Organisation" value={item.organisationName} />
               <Row label="Region" value={item.region ?? "—"} />
               <Row label="Mode" value={item.workMode ?? "—"} />
+              <Row
+                label="Employment"
+                value={item.employmentType ? EMPLOYMENT_TYPE_LABELS[item.employmentType] : "—"}
+              />
+              <Row
+                label="Experience"
+                value={item.experienceLevel ? EXPERIENCE_LEVEL_LABELS[item.experienceLevel] : "—"}
+              />
               <Row label="Source" value={item.source ?? "—"} />
               <Row label="Reference" value={item.reference} />
             </div>
@@ -176,16 +213,7 @@ function Detail() {
           <h2 className="mb-4 font-display text-2xl tracking-tight">Similar opportunities</h2>
           <div className="grid gap-3 lg:grid-cols-3">
             {related.map((o) => (
-              <Link
-                key={o.id}
-                to="/opportunities/$opportunityId"
-                params={{ opportunityId: o.slug }}
-                className="glass rounded-xl p-4 ring-1 ring-line transition-colors hover:ring-accent/40"
-              >
-                <div className="label-mono">{o.organisationName}</div>
-                <div className="mt-1 font-display text-lg tracking-tight">{o.title}</div>
-                <div className="mt-2 text-xs text-muted">Closes in {daysUntil(o.deadline) ?? 0} days</div>
-              </Link>
+              <RelatedCard key={o.id} item={o} />
             ))}
           </div>
         </section>
@@ -194,14 +222,74 @@ function Detail() {
   );
 }
 
+function RelatedCard({ item }: { item: ApiOpportunitySummary }) {
+  return (
+    <Link
+      to="/opportunities/$opportunityId"
+      params={{ opportunityId: item.slug }}
+      className="glass rounded-xl p-4 ring-1 ring-line transition-colors hover:ring-accent/40"
+    >
+      <div className="label-mono">{item.organisationName}</div>
+      <div className="mt-1 font-display text-lg tracking-tight">{item.title}</div>
+      <div className="mt-2">
+        <DeadlineChip deadline={item.deadline} />
+      </div>
+    </Link>
+  );
+}
+
 function EozHostedApplyForm({ opportunityId }: { opportunityId: string }) {
+  const { user, isLoading } = useCurrentUser();
   const [coverNote, setCoverNote] = useState("");
   const mutation = useMutation({
     mutationFn: () => api.post(`/opportunities/${opportunityId}/applications`, { coverNote }),
   });
 
+  if (isLoading) {
+    return null;
+  }
+
+  if (!user) {
+    return (
+      <div className="mt-4 rounded-md bg-surface-2 p-4 ring-1 ring-line">
+        <p className="text-sm">Sign in or create a free account to apply.</p>
+        <p className="mt-1 text-xs text-muted">
+          Your profile and CV carry over to every application, so employers can screen you properly.
+        </p>
+        <div className="mt-3 flex gap-2">
+          <Link
+            to="/auth"
+            search={{ mode: "signup", redirect: `/opportunities/${opportunityId}` }}
+            className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink"
+          >
+            Create account
+          </Link>
+          <Link
+            to="/auth"
+            search={{ mode: "signin", redirect: `/opportunities/${opportunityId}` }}
+            className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg"
+          >
+            Sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user.roles.includes("CANDIDATE")) {
+    return (
+      <p className="mt-4 text-sm text-muted">
+        Sign in with a candidate account to apply to this opportunity.
+      </p>
+    );
+  }
+
   if (mutation.isSuccess) {
-    return <p className="mt-4 text-sm text-emerald-400">Application submitted — track it from your dashboard.</p>;
+    return (
+      <p className="mt-4 text-sm text-emerald-400">
+        Application submitted — track it from your dashboard.
+      </p>
+    );
   }
 
   return (
@@ -219,6 +307,13 @@ function EozHostedApplyForm({ opportunityId }: { opportunityId: string }) {
         rows={3}
         className="w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line"
       />
+      <p className="text-xs text-muted">
+        The CV on your{" "}
+        <Link to="/candidate/profile" className="text-accent-soft hover:text-fg">
+          profile
+        </Link>{" "}
+        will be attached automatically.
+      </p>
       <button
         type="submit"
         disabled={mutation.isPending}
@@ -228,7 +323,9 @@ function EozHostedApplyForm({ opportunityId }: { opportunityId: string }) {
       </button>
       {mutation.isError ? (
         <p className="text-xs text-rose-400">
-          {mutation.error instanceof ApiError ? mutation.error.message : "Sign in to apply."}
+          {mutation.error instanceof ApiError
+            ? mutation.error.message
+            : "Something went wrong. Please try again."}
         </p>
       ) : null}
     </form>

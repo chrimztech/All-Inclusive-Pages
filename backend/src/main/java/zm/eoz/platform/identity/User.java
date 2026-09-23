@@ -51,6 +51,10 @@ public class User {
     @Column(name = "email_verified", nullable = false)
     private boolean emailVerified = false;
 
+    /** No live OTP-send flow yet — set only once phone verification (SMS) is wired up. */
+    @Column(name = "phone_verified", nullable = false)
+    private boolean phoneVerified = false;
+
     @Column(name = "opportunity_alerts_enabled", nullable = false)
     private boolean opportunityAlertsEnabled = true;
 

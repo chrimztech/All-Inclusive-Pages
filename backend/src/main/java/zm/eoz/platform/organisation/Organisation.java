@@ -48,6 +48,37 @@ public class Organisation {
     @Column(name = "verification_status", nullable = false)
     private VerificationStatus verificationStatus = VerificationStatus.PENDING;
 
+    @Column(name = "logo_file_id")
+    private UUID logoFileId;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "business_type")
+    private BusinessType businessType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "size_band")
+    private OrganisationSizeBand sizeBand;
+
+    private String tpin;
+
+    @Column(name = "founded_year")
+    private Integer foundedYear;
+
+    @Column(name = "contact_person_name")
+    private String contactPersonName;
+
+    @Column(name = "contact_person_role")
+    private String contactPersonRole;
+
+    @Column(name = "contact_phone")
+    private String contactPhone;
+
+    @Column(name = "linkedin_url")
+    private String linkedinUrl;
+
+    @Column(name = "facebook_url")
+    private String facebookUrl;
+
     @ManyToOne
     @jakarta.persistence.JoinColumn(name = "created_by")
     private User createdBy;

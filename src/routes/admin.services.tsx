@@ -60,7 +60,7 @@ function Services() {
 
   const officersQuery = useQuery({
     queryKey: ["admin", "service-officer-search", officerSearch],
-    queryFn: () => api.get<PageResponse<UserOption>>("/admin/users", { q: officerSearch, size: 10 }),
+    queryFn: () => api.get<UserOption[]>("/admin/services/officers", { q: officerSearch }),
     enabled: officerSearch.length > 1,
   });
 
@@ -188,7 +188,7 @@ function Services() {
                     />
                     {officerSearch.length > 1 ? (
                       <div className="mt-1 max-h-32 overflow-y-auto rounded-md bg-surface-2 ring-1 ring-line">
-                        {(officersQuery.data?.items ?? []).map((u) => (
+                        {(officersQuery.data ?? []).map((u) => (
                           <button
                             type="button"
                             key={u.id}
@@ -199,7 +199,7 @@ function Services() {
                             {u.fullName} <span className="text-muted">({u.roles.join(", ")})</span>
                           </button>
                         ))}
-                        {officersQuery.isSuccess && (officersQuery.data?.items ?? []).length === 0 ? (
+                        {officersQuery.isSuccess && (officersQuery.data ?? []).length === 0 ? (
                           <div className="px-3 py-2 text-xs text-muted">No matches.</div>
                         ) : null}
                       </div>

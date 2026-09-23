@@ -2,8 +2,9 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
-import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
+import { api, ApiError, isUnauthenticated, BUSINESS_TYPE_LABELS, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
+import type { BusinessType } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/organisations")({
   head: () => ({
@@ -30,6 +31,8 @@ type OrganisationRow = {
   sector: string | null;
   website: string | null;
   verificationStatus: string;
+  businessType: BusinessType | null;
+  registrationNumber: string | null;
 };
 
 const tone: Record<string, "emerald" | "amber" | "muted" | "rose"> = {
@@ -82,6 +85,8 @@ function Organisations() {
             <tr className="label-mono">
               <th className="pb-3">Organisation</th>
               <th className="pb-3">State</th>
+              <th className="pb-3">Business type</th>
+              <th className="pb-3">Reg. number</th>
               <th className="pb-3">Sector</th>
               <th className="pb-3">Website</th>
               <th className="pb-3">Action</th>
@@ -94,6 +99,10 @@ function Organisations() {
                 <td className="py-3 pr-4">
                   <Chip tone={tone[o.verificationStatus] ?? "muted"}>{o.verificationStatus}</Chip>
                 </td>
+                <td className="py-3 pr-4 text-muted">
+                  {o.businessType ? BUSINESS_TYPE_LABELS[o.businessType] : "—"}
+                </td>
+                <td className="py-3 pr-4 text-muted">{o.registrationNumber ?? "—"}</td>
                 <td className="py-3 pr-4 text-muted">{o.sector ?? "—"}</td>
                 <td className="py-3 pr-4 text-muted">{o.website ?? "—"}</td>
                 <td className="py-3">

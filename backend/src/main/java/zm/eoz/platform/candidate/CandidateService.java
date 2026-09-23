@@ -11,6 +11,10 @@ import zm.eoz.platform.candidate.dto.AlertSubscriptionRequest;
 import zm.eoz.platform.candidate.dto.AlertSubscriptionResponse;
 import zm.eoz.platform.candidate.dto.CandidateProfileRequest;
 import zm.eoz.platform.candidate.dto.CandidateProfileResponse;
+import zm.eoz.platform.candidate.dto.EducationRequest;
+import zm.eoz.platform.candidate.dto.EducationResponse;
+import zm.eoz.platform.candidate.dto.WorkExperienceRequest;
+import zm.eoz.platform.candidate.dto.WorkExperienceResponse;
 import zm.eoz.platform.common.exception.BadRequestException;
 import zm.eoz.platform.common.exception.NotFoundException;
 import zm.eoz.platform.identity.User;
@@ -26,6 +30,8 @@ public class CandidateService {
     private final AlertSubscriptionRepository alertRepository;
     private final OpportunityCategoryRepository categoryRepository;
     private final CandidateApplicationRepository applicationRepository;
+    private final CandidateWorkExperienceRepository workExperienceRepository;
+    private final CandidateEducationRepository educationRepository;
     private final FileStorageService fileStorageService;
     private final AuditService auditService;
 
@@ -34,19 +40,23 @@ public class CandidateService {
             AlertSubscriptionRepository alertRepository,
             OpportunityCategoryRepository categoryRepository,
             CandidateApplicationRepository applicationRepository,
+            CandidateWorkExperienceRepository workExperienceRepository,
+            CandidateEducationRepository educationRepository,
             FileStorageService fileStorageService,
             AuditService auditService) {
         this.profileRepository = profileRepository;
         this.alertRepository = alertRepository;
         this.categoryRepository = categoryRepository;
         this.applicationRepository = applicationRepository;
+        this.workExperienceRepository = workExperienceRepository;
+        this.educationRepository = educationRepository;
         this.fileStorageService = fileStorageService;
         this.auditService = auditService;
     }
 
     @Transactional
     public CandidateProfileResponse getProfile(User user) {
-        return CandidateProfileResponse.from(profileRepository.findById(user.getId()).orElseGet(() -> new CandidateProfile(user.getId())));
+        return toResponse(profileRepository.findById(user.getId()).orElseGet(() -> new CandidateProfile(user.getId())), user.getId());
     }
 
     @Transactional
@@ -58,8 +68,126 @@ public class CandidateService {
         profile.setEducationSummary(request.educationSummary());
         profile.setExperienceSummary(request.experienceSummary());
         profile.setSkills(request.skills());
+        profile.setAvailability(parseAvailability(request.availability()));
+        profile.setSalaryExpectationMin(request.salaryExpectationMin());
+        profile.setSalaryExpectationMax(request.salaryExpectationMax());
+        profile.setSalaryCurrency(request.salaryCurrency());
+        profile.setLinkedinUrl(request.linkedinUrl());
+        profile.setPortfolioUrl(request.portfolioUrl());
         profile.setUpdatedAt(java.time.Instant.now());
-        return CandidateProfileResponse.from(profileRepository.save(profile));
+        return toResponse(profileRepository.save(profile), user.getId());
+    }
+
+    @Transactional
+    public CandidateProfileResponse setPhoto(UUID fileId, User user) {
+        CandidateProfile profile = profileRepository.findById(user.getId()).orElseGet(() -> new CandidateProfile(user.getId()));
+        profile.setPhotoFileId(fileId);
+        profile.setUpdatedAt(java.time.Instant.now());
+        return toResponse(profileRepository.save(profile), user.getId());
+    }
+
+    @Transactional
+    public CandidateProfileResponse setResume(UUID fileId, User user) {
+        CandidateProfile profile = profileRepository.findById(user.getId()).orElseGet(() -> new CandidateProfile(user.getId()));
+        profile.setResumeFileId(fileId);
+        profile.setUpdatedAt(java.time.Instant.now());
+        return toResponse(profileRepository.save(profile), user.getId());
+    }
+
+    private CandidateProfileResponse toResponse(CandidateProfile profile, UUID candidateUserId) {
+        List<WorkExperienceResponse> workExperience = listWorkExperience(candidateUserId);
+        List<EducationResponse> education = listEducation(candidateUserId);
+        return CandidateProfileResponse.from(profile, workExperience, education);
+    }
+
+    private Availability parseAvailability(String value) {
+        if (value == null || value.isBlank()) {
+            return null;
+        }
+        try {
+            return Availability.valueOf(value);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Unknown availability: " + value);
+        }
+    }
+
+    @Transactional(readOnly = true)
+    public List<WorkExperienceResponse> listWorkExperience(UUID candidateUserId) {
+        return workExperienceRepository.findByCandidateUserIdOrderByDisplayOrderAscStartDateDesc(candidateUserId).stream()
+                .map(WorkExperienceResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public WorkExperienceResponse addWorkExperience(WorkExperienceRequest request, User user) {
+        CandidateWorkExperience entry = new CandidateWorkExperience();
+        entry.setCandidateUserId(user.getId());
+        applyWorkExperience(entry, request);
+        return WorkExperienceResponse.from(workExperienceRepository.save(entry));
+    }
+
+    @Transactional
+    public WorkExperienceResponse updateWorkExperience(UUID id, WorkExperienceRequest request, User user) {
+        CandidateWorkExperience entry = workExperienceRepository
+                .findById(id)
+                .filter(e -> e.getCandidateUserId().equals(user.getId()))
+                .orElseThrow(() -> new NotFoundException("Work experience entry not found: " + id));
+        applyWorkExperience(entry, request);
+        return WorkExperienceResponse.from(workExperienceRepository.save(entry));
+    }
+
+    private void applyWorkExperience(CandidateWorkExperience entry, WorkExperienceRequest request) {
+        entry.setTitle(request.title());
+        entry.setEmployerName(request.employerName());
+        entry.setStartDate(request.startDate());
+        entry.setEndDate(request.current() ? null : request.endDate());
+        entry.setCurrent(request.current());
+        entry.setDescription(request.description());
+        entry.setDisplayOrder(request.displayOrder());
+    }
+
+    @Transactional
+    public void deleteWorkExperience(UUID id, User user) {
+        workExperienceRepository.deleteByCandidateUserIdAndId(user.getId(), id);
+    }
+
+    @Transactional(readOnly = true)
+    public List<EducationResponse> listEducation(UUID candidateUserId) {
+        return educationRepository.findByCandidateUserIdOrderByDisplayOrderAscStartDateDesc(candidateUserId).stream()
+                .map(EducationResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public EducationResponse addEducation(EducationRequest request, User user) {
+        CandidateEducation entry = new CandidateEducation();
+        entry.setCandidateUserId(user.getId());
+        applyEducation(entry, request);
+        return EducationResponse.from(educationRepository.save(entry));
+    }
+
+    @Transactional
+    public EducationResponse updateEducation(UUID id, EducationRequest request, User user) {
+        CandidateEducation entry = educationRepository
+                .findById(id)
+                .filter(e -> e.getCandidateUserId().equals(user.getId()))
+                .orElseThrow(() -> new NotFoundException("Education entry not found: " + id));
+        applyEducation(entry, request);
+        return EducationResponse.from(educationRepository.save(entry));
+    }
+
+    private void applyEducation(CandidateEducation entry, EducationRequest request) {
+        entry.setInstitution(request.institution());
+        entry.setQualification(request.qualification());
+        entry.setFieldOfStudy(request.fieldOfStudy());
+        entry.setStartDate(request.startDate());
+        entry.setEndDate(request.endDate());
+        entry.setDisplayOrder(request.displayOrder());
+    }
+
+    @Transactional
+    public void deleteEducation(UUID id, User user) {
+        educationRepository.deleteByCandidateUserIdAndId(user.getId(), id);
     }
 
     @Transactional
