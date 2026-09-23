@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ChevronDown, LogOut, User as UserIcon } from "lucide-react";
 import { ORG } from "@/lib/eoz-data";
@@ -40,14 +40,29 @@ export function Ambience() {
 }
 
 function Header() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
-    <header className="sticky top-0 z-50 border-b border-line bg-ink/70 backdrop-blur-xl">
+    <header
+      className={`sticky top-0 z-50 border-b transition-all duration-300 ${
+        scrolled
+          ? "border-line bg-ink/90 shadow-lg shadow-black/20 backdrop-blur-2xl"
+          : "border-transparent bg-ink/60 backdrop-blur-xl"
+      }`}
+    >
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
-        <Link to="/" className="flex items-center gap-3">
+        <Link to="/" className="group flex items-center gap-3">
           <img
             src="/logo-mark.png"
             alt="Echo Opportunities Zambia"
-            className="size-8 rounded-md object-cover"
+            className="size-8 rounded-md object-cover transition-transform duration-300 group-hover:scale-110"
           />
           <div className="leading-tight">
             <div className="font-display text-[15px] font-medium tracking-tight">
@@ -61,11 +76,12 @@ function Header() {
             <Link
               key={item.to}
               to={item.to}
-              className="text-muted transition-colors hover:text-fg"
+              className="group relative py-1 text-muted transition-colors hover:text-fg"
               activeProps={{ className: "text-fg" }}
               activeOptions={{ exact: item.to === "/" }}
             >
               {item.label}
+              <span className="absolute inset-x-0 -bottom-0.5 h-px origin-left scale-x-0 accent-gradient transition-transform duration-300 group-hover:scale-x-100" />
             </Link>
           ))}
         </nav>
@@ -76,7 +92,7 @@ function Header() {
           <Link
             key={item.to}
             to={item.to}
-            className="shrink-0 text-muted"
+            className="shrink-0 text-muted transition-colors"
             activeProps={{ className: "text-fg" }}
             activeOptions={{ exact: item.to === "/" }}
           >
@@ -121,7 +137,7 @@ function AccountMenu() {
         <Link
           to="/auth"
           search={{ mode: "signup" }}
-          className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink"
+          className="press accent-gradient glow-ring rounded-md px-4 py-2 text-sm font-medium text-ink transition-transform hover:scale-[1.03]"
         >
           Get started
         </Link>
@@ -137,11 +153,14 @@ function AccountMenu() {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted ring-1 ring-line transition-colors hover:text-fg"
+        className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-muted ring-1 ring-line transition-all hover:text-fg hover:ring-accent/30"
       >
         <UserIcon aria-hidden="true" className="size-4" />
         <span className="hidden max-w-[12ch] truncate sm:inline">{user.fullName}</span>
-        <ChevronDown aria-hidden="true" className="size-3.5" />
+        <ChevronDown
+          aria-hidden="true"
+          className={`size-3.5 transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
       </button>
       {open ? (
         <>
@@ -151,7 +170,7 @@ function AccountMenu() {
             className="fixed inset-0 z-40 cursor-default"
             onClick={() => setOpen(false)}
           />
-          <div className="glass-strong absolute right-0 z-50 mt-2 w-56 rounded-lg p-2 text-sm ring-1 ring-line">
+          <div className="glass-strong fade-in absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-lg p-2 text-sm shadow-2xl shadow-black/40 ring-1 ring-line">
             {!user.emailVerified ? (
               <Link
                 to="/verify-email"
@@ -247,11 +266,11 @@ function Footer() {
       <div className="mx-auto max-w-7xl px-5 py-14 lg:px-8">
         <div className="grid gap-10 lg:grid-cols-12">
           <div className="lg:col-span-4">
-            <Link to="/" className="flex items-center gap-3">
+            <Link to="/" className="group flex items-center gap-3">
               <img
                 src="/logo-mark.png"
                 alt="Echo Opportunities Zambia"
-                className="size-8 rounded-md object-cover"
+                className="size-8 rounded-md object-cover transition-transform duration-300 group-hover:scale-110"
               />
               <div className="leading-tight">
                 <div className="font-display text-[15px] font-medium tracking-tight">
@@ -279,7 +298,7 @@ function Footer() {
                   rel="noreferrer"
                   aria-label={`EOZ on ${s.label}`}
                   title={s.label}
-                  className="flex size-8 items-center justify-center rounded-full text-accent-soft ring-1 ring-line transition-colors hover:text-fg hover:ring-accent/40"
+                  className="flex size-8 items-center justify-center rounded-full text-accent-soft ring-1 ring-line transition-all duration-300 hover:-translate-y-0.5 hover:text-fg hover:ring-accent/40 hover:shadow-[0_0_16px_-2px_rgba(124,227,164,0.5)]"
                 >
                   <s.Icon className="size-4" />
                 </a>
@@ -359,8 +378,23 @@ export function PageIntro({
   );
 }
 
-export function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <div className={`glass rounded-xl p-5 ring-1 ring-line ${className}`}>{children}</div>;
+export function Panel({
+  children,
+  className = "",
+  interactive = false,
+}: {
+  children: ReactNode;
+  className?: string;
+  /** Adds a hover lift + glow, for panels that act as clickable cards. */
+  interactive?: boolean;
+}) {
+  return (
+    <div
+      className={`glass rounded-xl p-5 ring-1 ring-line ${interactive ? "hover-lift" : ""} ${className}`}
+    >
+      {children}
+    </div>
+  );
 }
 
 export function Chip({
@@ -378,7 +412,9 @@ export function Chip({
     muted: "bg-line text-muted ring-line",
   };
   return (
-    <span className={`rounded px-2 py-0.5 font-mono text-[10px] ring-1 ${tones[tone]}`}>
+    <span
+      className={`rounded px-2 py-0.5 font-mono text-[10px] ring-1 transition-colors duration-200 ${tones[tone]}`}
+    >
       {children}
     </span>
   );

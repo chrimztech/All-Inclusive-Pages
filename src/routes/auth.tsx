@@ -1,11 +1,18 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { ShieldCheck, Sparkles, Users } from "lucide-react";
 import { SiteShell, Panel } from "@/components/eoz/SiteShell";
 import { ORG } from "@/lib/eoz-data";
 import { api, ApiError, type ApiUser } from "@/lib/api-client";
 import { landingRouteFor } from "@/lib/use-current-user";
 import { useToast } from "@/lib/toast";
+
+const TRUST_POINTS = [
+  { icon: ShieldCheck, text: "Every listing verified against its original source before it reaches you." },
+  { icon: Users, text: "One account for candidates, employers and SMEs — free to browse and apply." },
+  { icon: Sparkles, text: "You always apply through the employer's own official channel, never ours." },
+] as const;
 
 type Mode = "signin" | "signup" | "register";
 
@@ -157,18 +164,52 @@ function Auth() {
 
   return (
     <SiteShell>
-      <section className="mx-auto max-w-2xl py-14">
-        <div className="eyebrow mb-4">( 10 ) — Access</div>
-        <h1 className="font-display text-4xl tracking-tight">
-          {isSignup ? "Create your account" : "Welcome back"}
-        </h1>
-        <p className="mt-3 text-sm text-muted">
-          {isSignup
-            ? "One account covers candidate tracking, employer posting and staff review — your role is assigned after verification."
-            : "Sign in to your candidate, employer or staff portal."}
-        </p>
+      <section className="grid gap-10 py-10 lg:grid-cols-2 lg:items-center lg:gap-16 lg:py-16">
+        <div className="fade-in relative hidden overflow-hidden rounded-2xl p-10 ring-1 ring-line lg:block">
+          <div
+            className="absolute inset-0 -z-10"
+            style={{
+              background:
+                "linear-gradient(160deg, rgba(36,180,92,0.22), rgba(255,214,10,0.10) 55%, transparent 85%)",
+            }}
+          />
+          <div className="glow-pulse pointer-events-none absolute -right-16 -top-16 -z-10 size-72 rounded-full bg-accent/20 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-20 -left-10 -z-10 size-64 rounded-full bg-amber/10 blur-3xl" />
 
-        <Panel className="mt-6">
+          <img src="/logo-mark.png" alt="" className="size-14 rounded-xl object-cover ring-1 ring-line" />
+          <h2 className="mt-8 text-balance font-display text-4xl leading-[1.08] tracking-tight xl:text-5xl">
+            Every opportunity,
+            <br />
+            <em className="font-light italic text-accent-soft">verified</em> and within reach.
+          </h2>
+          <p className="mt-4 max-w-[38ch] text-pretty text-sm leading-6 text-muted">
+            Jobs, internships, scholarships, grants, tenders and training — curated for Zambian
+            talent, distributed for free.
+          </p>
+          <ul className="mt-10 space-y-5">
+            {TRUST_POINTS.map((point) => (
+              <li key={point.text} className="flex items-start gap-3">
+                <span className="glass mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-lg ring-1 ring-accent/30">
+                  <point.icon aria-hidden="true" className="size-4 text-accent-soft" />
+                </span>
+                <span className="text-sm leading-6 text-fg/90">{point.text}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        <div className="fade-in mx-auto w-full max-w-md lg:mx-0">
+          <div className="eyebrow mb-4">( 10 ) — Access</div>
+          <h1 className="font-display text-4xl tracking-tight">
+            {isSignup ? "Create your account" : "Welcome back"}
+          </h1>
+          <p className="mt-3 text-sm text-muted">
+            {isSignup
+              ? "One account covers candidate tracking, employer posting and staff review — your role is assigned after verification."
+              : "Sign in to your candidate, employer or staff portal."}
+          </p>
+
+          <Panel className="mt-6 shadow-2xl shadow-black/30">
           <form
             className="grid gap-4"
             onSubmit={(e) => {
@@ -196,8 +237,8 @@ function Auth() {
                       onClick={() => setAccountType(type)}
                       className={
                         accountType === type
-                          ? "accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink"
-                          : "rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg"
+                          ? "press accent-gradient glow-ring rounded-md px-4 py-2 text-sm font-medium text-ink transition-transform"
+                          : "press rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line transition-all hover:text-fg hover:ring-accent/30"
                       }
                     >
                       {type === "CANDIDATE" ? "Candidate / job seeker" : "Employer / organisation"}
@@ -441,7 +482,7 @@ function Auth() {
               <button
                 type="submit"
                 disabled={pending || (isSignup && !agreed)}
-                className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
+                className="press accent-gradient glow-ring rounded-md px-5 py-2.5 text-sm font-medium text-ink transition-transform hover:scale-[1.02] disabled:opacity-60 disabled:hover:scale-100"
               >
                 {pending ? "Please wait…" : isSignup ? "Create account" : "Sign in"}
               </button>
@@ -465,6 +506,7 @@ function Auth() {
           </Link>
         </p>
         <p className="mt-6 text-xs text-muted">{ORG.disclaimer}</p>
+        </div>
       </section>
     </SiteShell>
   );

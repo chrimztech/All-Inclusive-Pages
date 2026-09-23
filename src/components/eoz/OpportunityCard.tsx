@@ -37,9 +37,10 @@ export function OpportunityCard({
 
   return (
     <div
-      className={`glass group relative rounded-xl p-5 ring-1 ring-line transition-all hover:ring-accent/40 fade-in ${countdown.expired ? "opacity-60" : ""}`}
+      className={`hover-lift glass group relative overflow-hidden rounded-xl p-5 ring-1 ring-line transition-colors fade-in hover:ring-accent/40 ${countdown.expired ? "opacity-60" : ""}`}
       style={{ animationDelay: `${delay}ms` }}
     >
+      <div className="pointer-events-none absolute inset-x-0 top-0 h-px scale-x-0 accent-gradient transition-transform duration-500 group-hover:scale-x-100" />
       {isCandidate ? <SaveToggle opportunityId={item.id} /> : null}
       <Link
         to="/opportunities/$opportunityId"
@@ -55,7 +56,9 @@ export function OpportunityCard({
               ) : (
                 <Chip tone="rose">Unverified</Chip>
               )}
-              <Chip tone={countdownTone(countdown)}>{formatCountdown(countdown)}</Chip>
+              <span className={countdownTone(countdown) === "rose" && !countdown.expired ? "soft-pulse" : ""}>
+                <Chip tone={countdownTone(countdown)}>{formatCountdown(countdown)}</Chip>
+              </span>
               {item.employmentType ? (
                 <Chip tone="muted">{EMPLOYMENT_TYPE_LABELS[item.employmentType]}</Chip>
               ) : null}
@@ -63,7 +66,9 @@ export function OpportunityCard({
                 <Chip tone="muted">{WORK_ARRANGEMENT_LABELS[item.workArrangement]}</Chip>
               ) : null}
             </div>
-            <h3 className="font-display text-xl tracking-tight">{item.title}</h3>
+            <h3 className="font-display text-xl tracking-tight transition-colors group-hover:text-accent-soft">
+              {item.title}
+            </h3>
             <div className="mt-1 text-sm text-muted">
               {item.organisationName}
               {item.region ? ` · ${item.region}` : ""}
@@ -131,7 +136,7 @@ export function SaveToggle({
         e.stopPropagation();
         toggle.mutate();
       }}
-      className={`${className} rounded-md p-1.5 text-muted ring-1 ring-line transition-colors hover:text-accent-soft disabled:opacity-60`}
+      className={`${className} press rounded-md p-1.5 text-muted ring-1 ring-line backdrop-blur-sm transition-all hover:scale-110 hover:text-accent-soft hover:ring-accent/40 disabled:opacity-60`}
     >
       {isSaved ? (
         <BookmarkCheck className="size-4 text-accent-soft" />

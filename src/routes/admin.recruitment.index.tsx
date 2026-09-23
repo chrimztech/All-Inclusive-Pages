@@ -6,7 +6,7 @@ import { ADMIN_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
 
-export const Route = createFileRoute("/admin/recruitment")({ head: () => ({ meta: [{ title: "Recruitment Operations — EOZ Staff" }] }), component: Recruitment });
+export const Route = createFileRoute("/admin/recruitment/")({ head: () => ({ meta: [{ title: "Recruitment Operations — EOZ Staff" }] }), component: Recruitment });
 
 type ProjectRow = {
   id: string;

@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import type { ComponentType } from "react";
 
 type Item = { to: string; label: string };
 
@@ -9,8 +10,8 @@ export function DashNav({ items }: { items: readonly Item[] }) {
         <Link
           key={item.to}
           to={item.to}
-          className="shrink-0 rounded-full px-3 py-1.5 text-xs text-muted ring-1 ring-line transition-colors hover:text-fg"
-          activeProps={{ className: "accent-gradient text-ink font-medium ring-0" }}
+          className="press shrink-0 rounded-full px-3 py-1.5 text-xs text-muted ring-1 ring-line transition-all duration-200 hover:text-fg hover:ring-accent/30"
+          activeProps={{ className: "accent-gradient text-ink font-medium ring-0 shadow-md shadow-accent/20" }}
           activeOptions={{ exact: true }}
         >
           {item.label}
@@ -65,11 +66,25 @@ export const ADMIN_NAV = [
   { to: "/admin/health", label: "System health" },
 ] as const;
 
-export function StatTile({ label, value, tone }: { label: string; value: string; tone?: string }) {
+export function StatTile({
+  label,
+  value,
+  tone,
+  icon: Icon,
+}: {
+  label: string;
+  value: string;
+  tone?: string;
+  icon?: ComponentType<{ className?: string; "aria-hidden"?: boolean }>;
+}) {
   return (
-    <div className="glass rounded-lg p-4 ring-1 ring-line">
-      <div className="label-mono">{label}</div>
-      <div className={`mt-1 font-display text-2xl ${tone ?? ""}`}>{value}</div>
+    <div className="hover-lift glass group relative overflow-hidden rounded-lg p-4 ring-1 ring-line">
+      <div className="absolute inset-x-0 top-0 h-0.5 scale-x-0 accent-gradient transition-transform duration-300 group-hover:scale-x-100" />
+      <div className="flex items-center justify-between gap-2">
+        <div className="label-mono">{label}</div>
+        {Icon ? <Icon aria-hidden className="size-3.5 shrink-0 text-muted" /> : null}
+      </div>
+      <div className={`mt-1.5 font-display text-2xl ${tone ?? ""}`}>{value}</div>
     </div>
   );
 }

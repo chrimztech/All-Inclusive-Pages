@@ -38,7 +38,6 @@ import { Route as AdminNotificationsRouteImport } from './routes/admin.notificat
 import { Route as AdminOpportunitiesRouteImport } from './routes/admin.opportunities'
 import { Route as AdminOrganisationsRouteImport } from './routes/admin.organisations'
 import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
-import { Route as AdminRecruitmentRouteImport } from './routes/admin.recruitment'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminServicesRouteImport } from './routes/admin.services'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
@@ -71,6 +70,7 @@ import { Route as OrganisationsIndexRouteImport } from './routes/organisations.i
 import { Route as OrganisationsOrganisationIdRouteImport } from './routes/organisations.$organisationId'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as ServicesServiceSlugRouteImport } from './routes/services.$serviceSlug'
+import { Route as AdminRecruitmentIndexRouteImport } from './routes/admin.recruitment.index'
 import { Route as AdminRecruitmentProjectIdRouteImport } from './routes/admin.recruitment.$projectId'
 import { Route as AdminRecruitmentTalentPoolRouteImport } from './routes/admin.recruitment.talent-pool'
 
@@ -217,11 +217,6 @@ const AdminOrganisationsRoute = AdminOrganisationsRouteImport.update({
 const AdminPermissionsRoute = AdminPermissionsRouteImport.update({
   id: '/admin/permissions',
   path: '/admin/permissions',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const AdminRecruitmentRoute = AdminRecruitmentRouteImport.update({
-  id: '/admin/recruitment',
-  path: '/admin/recruitment',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminReportsRoute = AdminReportsRouteImport.update({
@@ -386,17 +381,22 @@ const ServicesServiceSlugRoute = ServicesServiceSlugRouteImport.update({
   path: '/services/$serviceSlug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminRecruitmentIndexRoute = AdminRecruitmentIndexRouteImport.update({
+  id: '/admin/recruitment/',
+  path: '/admin/recruitment/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminRecruitmentProjectIdRoute =
   AdminRecruitmentProjectIdRouteImport.update({
-    id: '/$projectId',
-    path: '/$projectId',
-    getParentRoute: () => AdminRecruitmentRoute,
+    id: '/admin/recruitment/$projectId',
+    path: '/admin/recruitment/$projectId',
+    getParentRoute: () => rootRouteImport,
   } as any)
 const AdminRecruitmentTalentPoolRoute =
   AdminRecruitmentTalentPoolRouteImport.update({
-    id: '/talent-pool',
-    path: '/talent-pool',
-    getParentRoute: () => AdminRecruitmentRoute,
+    id: '/admin/recruitment/talent-pool',
+    path: '/admin/recruitment/talent-pool',
+    getParentRoute: () => rootRouteImport,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -428,7 +428,6 @@ export interface FileRoutesByFullPath {
   '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/organisations': typeof AdminOrganisationsRoute
   '/admin/permissions': typeof AdminPermissionsRoute
-  '/admin/recruitment': typeof AdminRecruitmentRouteWithChildren
   '/admin/reports': typeof AdminReportsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -464,6 +463,7 @@ export interface FileRoutesByFullPath {
   '/services/': typeof ServicesIndexRoute
   '/admin/recruitment/$projectId': typeof AdminRecruitmentProjectIdRoute
   '/admin/recruitment/talent-pool': typeof AdminRecruitmentTalentPoolRoute
+  '/admin/recruitment/': typeof AdminRecruitmentIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -494,7 +494,6 @@ export interface FileRoutesByTo {
   '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/organisations': typeof AdminOrganisationsRoute
   '/admin/permissions': typeof AdminPermissionsRoute
-  '/admin/recruitment': typeof AdminRecruitmentRouteWithChildren
   '/admin/reports': typeof AdminReportsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -530,6 +529,7 @@ export interface FileRoutesByTo {
   '/services': typeof ServicesIndexRoute
   '/admin/recruitment/$projectId': typeof AdminRecruitmentProjectIdRoute
   '/admin/recruitment/talent-pool': typeof AdminRecruitmentTalentPoolRoute
+  '/admin/recruitment': typeof AdminRecruitmentIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -561,7 +561,6 @@ export interface FileRoutesById {
   '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/organisations': typeof AdminOrganisationsRoute
   '/admin/permissions': typeof AdminPermissionsRoute
-  '/admin/recruitment': typeof AdminRecruitmentRouteWithChildren
   '/admin/reports': typeof AdminReportsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
@@ -597,6 +596,7 @@ export interface FileRoutesById {
   '/services/': typeof ServicesIndexRoute
   '/admin/recruitment/$projectId': typeof AdminRecruitmentProjectIdRoute
   '/admin/recruitment/talent-pool': typeof AdminRecruitmentTalentPoolRoute
+  '/admin/recruitment/': typeof AdminRecruitmentIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -629,7 +629,6 @@ export interface FileRouteTypes {
     | '/admin/opportunities'
     | '/admin/organisations'
     | '/admin/permissions'
-    | '/admin/recruitment'
     | '/admin/reports'
     | '/admin/services'
     | '/admin/settings'
@@ -665,6 +664,7 @@ export interface FileRouteTypes {
     | '/services/'
     | '/admin/recruitment/$projectId'
     | '/admin/recruitment/talent-pool'
+    | '/admin/recruitment/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -695,7 +695,6 @@ export interface FileRouteTypes {
     | '/admin/opportunities'
     | '/admin/organisations'
     | '/admin/permissions'
-    | '/admin/recruitment'
     | '/admin/reports'
     | '/admin/services'
     | '/admin/settings'
@@ -731,6 +730,7 @@ export interface FileRouteTypes {
     | '/services'
     | '/admin/recruitment/$projectId'
     | '/admin/recruitment/talent-pool'
+    | '/admin/recruitment'
   id:
     | '__root__'
     | '/'
@@ -761,7 +761,6 @@ export interface FileRouteTypes {
     | '/admin/opportunities'
     | '/admin/organisations'
     | '/admin/permissions'
-    | '/admin/recruitment'
     | '/admin/reports'
     | '/admin/services'
     | '/admin/settings'
@@ -797,6 +796,7 @@ export interface FileRouteTypes {
     | '/services/'
     | '/admin/recruitment/$projectId'
     | '/admin/recruitment/talent-pool'
+    | '/admin/recruitment/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -828,7 +828,6 @@ export interface RootRouteChildren {
   AdminOpportunitiesRoute: typeof AdminOpportunitiesRoute
   AdminOrganisationsRoute: typeof AdminOrganisationsRoute
   AdminPermissionsRoute: typeof AdminPermissionsRoute
-  AdminRecruitmentRoute: typeof AdminRecruitmentRouteWithChildren
   AdminReportsRoute: typeof AdminReportsRoute
   AdminServicesRoute: typeof AdminServicesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
@@ -862,6 +861,9 @@ export interface RootRouteChildren {
   OpportunitiesIndexRoute: typeof OpportunitiesIndexRoute
   OrganisationsIndexRoute: typeof OrganisationsIndexRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
+  AdminRecruitmentProjectIdRoute: typeof AdminRecruitmentProjectIdRoute
+  AdminRecruitmentTalentPoolRoute: typeof AdminRecruitmentTalentPoolRoute
+  AdminRecruitmentIndexRoute: typeof AdminRecruitmentIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1067,13 +1069,6 @@ declare module '@tanstack/react-router' {
       path: '/admin/permissions'
       fullPath: '/admin/permissions'
       preLoaderRoute: typeof AdminPermissionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/admin/recruitment': {
-      id: '/admin/recruitment'
-      path: '/admin/recruitment'
-      fullPath: '/admin/recruitment'
-      preLoaderRoute: typeof AdminRecruitmentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/reports': {
@@ -1300,35 +1295,29 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ServicesServiceSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/recruitment/': {
+      id: '/admin/recruitment/'
+      path: '/admin/recruitment'
+      fullPath: '/admin/recruitment/'
+      preLoaderRoute: typeof AdminRecruitmentIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/recruitment/$projectId': {
       id: '/admin/recruitment/$projectId'
-      path: '/$projectId'
+      path: '/admin/recruitment/$projectId'
       fullPath: '/admin/recruitment/$projectId'
       preLoaderRoute: typeof AdminRecruitmentProjectIdRouteImport
-      parentRoute: typeof AdminRecruitmentRoute
+      parentRoute: typeof rootRouteImport
     }
     '/admin/recruitment/talent-pool': {
       id: '/admin/recruitment/talent-pool'
-      path: '/talent-pool'
+      path: '/admin/recruitment/talent-pool'
       fullPath: '/admin/recruitment/talent-pool'
       preLoaderRoute: typeof AdminRecruitmentTalentPoolRouteImport
-      parentRoute: typeof AdminRecruitmentRoute
+      parentRoute: typeof rootRouteImport
     }
   }
 }
-
-interface AdminRecruitmentRouteChildren {
-  AdminRecruitmentProjectIdRoute: typeof AdminRecruitmentProjectIdRoute
-  AdminRecruitmentTalentPoolRoute: typeof AdminRecruitmentTalentPoolRoute
-}
-
-const AdminRecruitmentRouteChildren: AdminRecruitmentRouteChildren = {
-  AdminRecruitmentProjectIdRoute: AdminRecruitmentProjectIdRoute,
-  AdminRecruitmentTalentPoolRoute: AdminRecruitmentTalentPoolRoute,
-}
-
-const AdminRecruitmentRouteWithChildren =
-  AdminRecruitmentRoute._addFileChildren(AdminRecruitmentRouteChildren)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -1359,7 +1348,6 @@ const rootRouteChildren: RootRouteChildren = {
   AdminOpportunitiesRoute: AdminOpportunitiesRoute,
   AdminOrganisationsRoute: AdminOrganisationsRoute,
   AdminPermissionsRoute: AdminPermissionsRoute,
-  AdminRecruitmentRoute: AdminRecruitmentRouteWithChildren,
   AdminReportsRoute: AdminReportsRoute,
   AdminServicesRoute: AdminServicesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
@@ -1393,6 +1381,9 @@ const rootRouteChildren: RootRouteChildren = {
   OpportunitiesIndexRoute: OpportunitiesIndexRoute,
   OrganisationsIndexRoute: OrganisationsIndexRoute,
   ServicesIndexRoute: ServicesIndexRoute,
+  AdminRecruitmentProjectIdRoute: AdminRecruitmentProjectIdRoute,
+  AdminRecruitmentTalentPoolRoute: AdminRecruitmentTalentPoolRoute,
+  AdminRecruitmentIndexRoute: AdminRecruitmentIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

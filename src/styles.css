@@ -32,6 +32,10 @@
     border-color: var(--color-line);
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     background-color: var(--color-ink);
     color: var(--color-fg);
@@ -41,6 +45,12 @@
 
   ::selection {
     background: #2ec86655;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-accent-soft);
+    outline-offset: 2px;
+    border-radius: 4px;
   }
 }
 
@@ -56,6 +66,47 @@
 
 @utility accent-gradient {
   background: linear-gradient(135deg, #ffd60a, #24b45c 65%);
+}
+
+/* Interactive lift: for cards/panels that should feel clickable and alive on hover. */
+@utility hover-lift {
+  transition:
+    transform 360ms var(--ease-eoz),
+    box-shadow 360ms var(--ease-eoz),
+    border-color 360ms var(--ease-eoz);
+}
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    0 20px 48px -18px rgba(0, 0, 0, 0.55),
+    0 0 0 1px rgba(124, 227, 164, 0.16);
+}
+
+/* Tactile press feedback for buttons. */
+@utility press {
+  transition: transform 150ms var(--ease-eoz);
+}
+.press:active {
+  transform: scale(0.97);
+}
+
+/* Skeleton shimmer for loading states — replaces plain "Loading…" text. */
+@utility skeleton {
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.09), transparent);
+  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+/* A soft ring-glow accent used to draw the eye to primary CTAs. */
+@utility glow-ring {
+  box-shadow: 0 0 0 1px rgba(124, 227, 164, 0.25), 0 8px 28px -10px rgba(36, 180, 92, 0.45);
 }
 
 @utility eyebrow {
@@ -96,8 +147,31 @@
   }
 }
 
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes softPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
 .glow-pulse {
   animation: glowPulse 6s ease-in-out infinite;
+}
+
+.soft-pulse {
+  animation: softPulse 2.2s ease-in-out infinite;
 }
 
 .fade-in {
