@@ -47,10 +47,11 @@ public class OpportunityController {
             @RequestParam(required = false) String employmentType,
             @RequestParam(required = false) String workArrangement,
             @RequestParam(required = false) String experienceLevel,
+            @RequestParam(required = false) String order,
             Pageable pageable) {
         return ApiResponse.of(PageResponse.from(opportunityService.search(
                 category, region, q, verifiedOnly, deadlineWithinDays, organisationId, employmentType, workArrangement,
-                experienceLevel, pageable)));
+                experienceLevel, order, pageable)));
     }
 
     @GetMapping("/{slug}")
@@ -126,6 +127,43 @@ public class OpportunityController {
     public ApiResponse<OpportunityDetailResponse> reject(
             @PathVariable UUID id, @RequestBody(required = false) ModerationActionRequest request) {
         return ApiResponse.of(opportunityService.reject(id, request, currentUser()));
+    }
+
+    @PatchMapping("/{id}/close")
+    @PreAuthorize("hasAuthority('OPPORTUNITY_MODERATE')")
+    public ApiResponse<OpportunityDetailResponse> close(@PathVariable UUID id) {
+        return ApiResponse.of(opportunityService.close(id, currentUser()));
+    }
+
+    @GetMapping("/manage/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<OpportunityDetailResponse> getForManage(@PathVariable UUID id) {
+        return ApiResponse.of(opportunityService.getForManage(id, currentUser()));
+    }
+
+    @PatchMapping("/manage/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<OpportunityDetailResponse> update(
+            @PathVariable UUID id, @RequestBody zm.eoz.platform.opportunity.dto.OpportunityUpdateRequest request) {
+        return ApiResponse.of(opportunityService.update(id, request, currentUser()));
+    }
+
+    @PatchMapping("/mine/{id}/close")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<OpportunityDetailResponse> closeMine(@PathVariable UUID id) {
+        return ApiResponse.of(opportunityService.closeOwn(id, currentUser()));
+    }
+
+    @PatchMapping("/{id}/reopen")
+    @PreAuthorize("hasAuthority('OPPORTUNITY_MODERATE')")
+    public ApiResponse<OpportunityDetailResponse> reopen(@PathVariable UUID id) {
+        return ApiResponse.of(opportunityService.reopen(id, currentUser()));
+    }
+
+    @PatchMapping("/{id}/archive")
+    @PreAuthorize("hasAuthority('OPPORTUNITY_MODERATE')")
+    public ApiResponse<OpportunityDetailResponse> archive(@PathVariable UUID id) {
+        return ApiResponse.of(opportunityService.archive(id, currentUser()));
     }
 
     private User currentUser() {

@@ -1,4 +1,4 @@
 -------------------------------------------------------------------------------
 Test set: zm.eoz.platform.candidate.CandidateProfileTest
 -------------------------------------------------------------------------------
-Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.449 s -- in zm.eoz.platform.candidate.CandidateProfileTest
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 0.454 s -- in zm.eoz.platform.candidate.CandidateProfileTest

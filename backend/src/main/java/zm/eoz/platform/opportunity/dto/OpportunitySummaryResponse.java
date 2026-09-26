@@ -25,7 +25,8 @@ public record OpportunitySummaryResponse(
         java.math.BigDecimal salaryMax,
         String currency,
         Instant deadline,
-        Instant publishedAt) {
+        Instant publishedAt,
+        long viewsCount) {
 
     public static OpportunitySummaryResponse from(Opportunity o) {
         return new OpportunitySummaryResponse(
@@ -49,6 +50,7 @@ public record OpportunitySummaryResponse(
                 o.getSalaryMax(),
                 o.getCurrency(),
                 o.getDeadline(),
-                o.getPublishedAt());
+                o.getPublishedAt(),
+                o.getViewsCount());
     }
 }

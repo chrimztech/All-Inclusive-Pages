@@ -33,6 +33,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
@@ -60,10 +61,27 @@ public class OrganisationController {
         this.fileStorageService = fileStorageService;
     }
 
+    /**
+     * Public directory. {@code order=top} ranks organisations by live listings (top recruiters) and is the
+     * default; {@code newest} and {@code name} are also accepted. {@code q} matches name, sector or location.
+     */
     @GetMapping
-    public ApiResponse<PageResponse<OrganisationResponse>> list(Pageable pageable) {
+    public ApiResponse<PageResponse<OrganisationResponse>> list(
+            @RequestParam(defaultValue = "top") String order,
+            @RequestParam(defaultValue = "false") boolean verifiedOnly,
+            @RequestParam(required = false) String q,
+            Pageable pageable) {
+        String normalizedOrder = order.toLowerCase(java.util.Locale.ROOT);
+        if (!List.of("top", "newest", "name").contains(normalizedOrder)) {
+            throw new zm.eoz.platform.common.exception.BadRequestException(
+                    "Unknown order: " + order + ". Use top, newest or name.");
+        }
+        String pattern = q == null || q.isBlank()
+                ? "%"
+                : "%" + q.trim().toLowerCase(java.util.Locale.ROOT).replace("%", "\\%").replace("_", "\\_") + "%";
+        Pageable unsorted = org.springframework.data.domain.PageRequest.of(pageable.getPageNumber(), pageable.getPageSize());
         return ApiResponse.of(PageResponse.from(organisationRepository
-                .findAll(pageable)
+                .directory(normalizedOrder, verifiedOnly, pattern, unsorted)
                 .map(org -> OrganisationResponse.from(
                         org, opportunityRepository.countByOrganisationIdAndStatus(org.getId(), OpportunityStatus.PUBLISHED)))));
     }

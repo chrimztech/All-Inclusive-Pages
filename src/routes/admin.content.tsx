@@ -17,6 +17,7 @@ type ContentItem = {
   opportunityId: string | null;
   status: string;
   versionHash: string;
+  scheduledAt: string | null;
   variants: ContentVariant[];
 };
 type OpportunityOption = { id: string; reference: string; title: string };
@@ -47,6 +48,9 @@ function Content() {
   const [opportunityId, setOpportunityId] = useState("");
   const [opportunityLabel, setOpportunityLabel] = useState("");
   const [opportunitySearch, setOpportunitySearch] = useState("");
+  const [submitAfterSave, setSubmitAfterSave] = useState(false);
+  const [schedulingId, setSchedulingId] = useState<string | null>(null);
+  const [scheduledAt, setScheduledAt] = useState("");
 
   const opportunityOptionsQuery = useQuery({
     queryKey: ["admin", "content-opportunity-options", opportunitySearch],
@@ -61,20 +65,26 @@ function Content() {
   }
 
   const create = useMutation({
-    mutationFn: () =>
-      api.post("/admin/content", {
-        title,
+    mutationFn: async () => {
+      const created = await api.post<{ id: string }>("/admin/content", {
+        title: title.trim(),
         series,
-        body,
+        body: body.trim(),
         opportunityId: opportunityId.trim() || undefined,
-      }),
+      });
+      if (submitAfterSave) {
+        await api.post(`/admin/content/${created.id}/submit`);
+      }
+      return created;
+    },
     onSuccess: () => {
       setTitle("");
       setBody("");
       setOpportunityId("");
       setOpportunityLabel("");
       invalidate();
-      toast("Content item created.");
+      toast(submitAfterSave ? "Content created and submitted for review." : "Content item created.");
+      setSubmitAfterSave(false);
     },
     onError: (error) => toast(errorMessage(error, "Could not create content item."), "error"),
   });
@@ -102,6 +112,25 @@ function Content() {
       toast("Content published.");
     },
     onError: (error) => toast(errorMessage(error, "Could not publish content."), "error"),
+  });
+  const schedule = useMutation({
+    mutationFn: ({ id, scheduledAt }: { id: string; scheduledAt: string }) =>
+      api.post(`/admin/content/${id}/schedule`, { scheduledAt: new Date(scheduledAt).toISOString() }),
+    onSuccess: () => {
+      invalidate();
+      setSchedulingId(null);
+      setScheduledAt("");
+      toast("Content scheduled.");
+    },
+    onError: (error) => toast(errorMessage(error, "Could not schedule content."), "error"),
+  });
+  const remove = useMutation({
+    mutationFn: (id: string) => api.del(`/admin/content/${id}`),
+    onSuccess: () => {
+      invalidate();
+      toast("Content item deleted.");
+    },
+    onError: (error) => toast(errorMessage(error, "Could not delete content."), "error"),
   });
   const generate = useMutation({
     mutationFn: ({ id, channel }: { id: string; channel: string }) =>
@@ -154,10 +183,15 @@ function Content() {
                   <option value="EVENING_DEVOTION">Evening devotion</option>
                 </select>
               </label>
-              <label>
-                <span className="label-mono">Body</span>
-                <textarea required rows={4} value={body} onChange={(e) => setBody(e.target.value)} className={inputCls} />
-              </label>
+              <div>
+                <label>
+                  <span className="label-mono">Body</span>
+                  <textarea required rows={6} value={body} onChange={(e) => setBody(e.target.value)} className={inputCls} />
+                </label>
+                <span className="mt-1 block text-right text-[11px] text-muted">
+                  {body.trim().length} characters · {body.trim() ? body.trim().split(/\s+/).length : 0} words
+                </span>
+              </div>
               <label className="relative">
                 <span className="label-mono">Linked opportunity (optional, enables variant generation)</span>
                 {opportunityId ? (
@@ -210,6 +244,10 @@ function Content() {
                   </>
                 )}
               </label>
+              <label className="flex items-center gap-2 text-xs text-muted">
+                <input type="checkbox" checked={submitAfterSave} onChange={(e) => setSubmitAfterSave(e.target.checked)} />
+                Submit for review straight after saving
+              </label>
               <button
                 disabled={create.isPending}
                 className="accent-gradient w-fit rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
@@ -243,9 +281,30 @@ function Content() {
                       Submit
                     </button>
                   ) : null}
+                  {item.status !== "PUBLISHED" ? (
+                    <button
+                      onClick={() => {
+                        if (window.confirm(`Delete "${item.title}"? This cannot be undone.`)) remove.mutate(item.id);
+                      }}
+                      className="rounded-md px-3 py-1 text-xs text-rose ring-1 ring-rose/30"
+                    >
+                      Delete
+                    </button>
+                  ) : null}
                   {item.status === "PENDING_REVIEW" ? (
                     <button onClick={() => approve.mutate(item.id)} className="rounded-md px-3 py-1 text-xs text-emerald ring-1 ring-emerald/30">
                       Approve
+                    </button>
+                  ) : null}
+                  {item.status === "APPROVED" ? (
+                    <button
+                      onClick={() => {
+                        setSchedulingId(schedulingId === item.id ? null : item.id);
+                        setScheduledAt("");
+                      }}
+                      className="rounded-md px-3 py-1 text-xs text-accent-soft ring-1 ring-line hover:text-fg"
+                    >
+                      Schedule
                     </button>
                   ) : null}
                   {(item.status === "APPROVED" || item.status === "SCHEDULED") ? (
@@ -255,6 +314,34 @@ function Content() {
                   ) : null}
                 </div>
               </div>
+              {item.status === "SCHEDULED" && item.scheduledAt ? (
+                <p className="mt-2 text-xs text-muted">Scheduled for {new Date(item.scheduledAt).toLocaleString()}</p>
+              ) : null}
+              {schedulingId === item.id ? (
+                <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">
+                  <input
+                    type="datetime-local"
+                    value={scheduledAt}
+                    onChange={(e) => setScheduledAt(e.target.value)}
+                    className="rounded-md bg-surface-2 px-3 py-1.5 text-xs outline-none ring-1 ring-line"
+                  />
+                  <button
+                    type="button"
+                    disabled={schedule.isPending || !scheduledAt}
+                    onClick={() => schedule.mutate({ id: item.id, scheduledAt })}
+                    className="accent-gradient rounded-md px-3 py-1.5 text-xs font-medium text-ink disabled:opacity-60"
+                  >
+                    {schedule.isPending ? "Scheduling…" : "Confirm"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSchedulingId(null)}
+                    className="rounded-md px-3 py-1.5 text-xs text-muted ring-1 ring-line hover:text-fg"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ) : null}
               {item.opportunityId ? (
                 <div className="mt-3 flex flex-wrap gap-2 border-t border-line pt-3">
                   {["WHATSAPP", "FACEBOOK", "LINKEDIN", "TIKTOK"].map((channel) => (

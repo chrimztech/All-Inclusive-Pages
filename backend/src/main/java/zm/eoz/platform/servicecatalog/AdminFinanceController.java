@@ -64,6 +64,11 @@ public class AdminFinanceController {
         return ApiResponse.of(serviceCatalogService.listInvoiceItems(id));
     }
 
+    @PostMapping("/invoices/{id}/cancel")
+    public ApiResponse<InvoiceResponse> cancel(@PathVariable UUID id) {
+        return ApiResponse.of(serviceCatalogService.cancelInvoice(id, currentUser()));
+    }
+
     @PostMapping("/invoices/{id}/refund")
     public ApiResponse<InvoiceResponse> refund(@PathVariable UUID id, @Valid @RequestBody RefundRequest request) {
         return ApiResponse.of(serviceCatalogService.refund(id, request, currentUser()));

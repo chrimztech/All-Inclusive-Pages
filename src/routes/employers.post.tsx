@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { Globe, Mail, MapPin, UserCheck } from "lucide-react";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { DashNav, EMPLOYER_NAV } from "@/components/eoz/DashNav";
 import { ORG, REGIONS } from "@/lib/eoz-data";
@@ -39,11 +40,32 @@ export const Route = createFileRoute("/employers/post")({
 const inputCls =
   "mt-1 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/40";
 
+/** Many organisations have no careers portal, so the portal is one option among equals, not the default. */
 const APPLICATION_MODES = [
-  { value: "EXTERNAL_URL", label: "Employer application URL" },
-  { value: "EMPLOYER_EMAIL", label: "Employer email address" },
-  { value: "PHYSICAL_ADDRESS", label: "Physical / postal submission" },
-  { value: "EOZ_HOSTED", label: "Apply through EOZ (candidates apply here, with their CV)" },
+  {
+    value: "EMPLOYER_EMAIL",
+    label: "By email",
+    hint: "Candidates send applications to your email address.",
+    icon: Mail,
+  },
+  {
+    value: "EOZ_HOSTED",
+    label: "Apply on EOZ",
+    hint: "No portal needed — candidates apply here with their CV and you screen them in Applicants.",
+    icon: UserCheck,
+  },
+  {
+    value: "PHYSICAL_ADDRESS",
+    label: "In person or by post",
+    hint: "Candidates deliver applications to an office or postal address.",
+    icon: MapPin,
+  },
+  {
+    value: "EXTERNAL_URL",
+    label: "Online portal or website",
+    hint: "Only if you already have a careers page or application form online.",
+    icon: Globe,
+  },
 ] as const;
 
 type ApplicationMode = (typeof APPLICATION_MODES)[number]["value"];
@@ -60,7 +82,7 @@ function PostOpportunity() {
   const [region, setRegion] = useState(REGIONS[0] ?? "");
   const [organisationName, setOrganisationName] = useState("");
   const [deadline, setDeadline] = useState("");
-  const [applicationMode, setApplicationMode] = useState<ApplicationMode>("EXTERNAL_URL");
+  const [applicationMode, setApplicationMode] = useState<ApplicationMode>("EMPLOYER_EMAIL");
   const [routeValue, setRouteValue] = useState("");
   const [source, setSource] = useState("");
   const [description, setDescription] = useState("");
@@ -94,7 +116,7 @@ function PostOpportunity() {
         applicationUrl: applicationMode === "EXTERNAL_URL" ? routeValue : undefined,
         applicationEmail: applicationMode === "EMPLOYER_EMAIL" ? routeValue : undefined,
         applicationAddress: applicationMode === "PHYSICAL_ADDRESS" ? routeValue : undefined,
-        source,
+        source: source.trim() || undefined,
         salaryVisible: Boolean(salaryMin || salaryMax),
       }),
     onSuccess: () => {
@@ -104,10 +126,10 @@ function PostOpportunity() {
 
   const routeFieldLabel =
     applicationMode === "EXTERNAL_URL"
-      ? "Careers portal / application URL"
+      ? "Careers page or application form link"
       : applicationMode === "EMPLOYER_EMAIL"
-        ? "Employer email address"
-        : "Physical submission address";
+        ? "Email address for applications"
+        : "Where applications are delivered";
 
   if (submitMutation.isSuccess) {
     return (
@@ -200,47 +222,92 @@ function PostOpportunity() {
                   className={inputCls}
                 />
               </label>
-              <label>
-                <span className="label-mono">Application route type</span>
-                <select
-                  value={applicationMode}
-                  onChange={(e) => setApplicationMode(e.target.value as ApplicationMode)}
-                  className={inputCls}
-                >
-                  {APPLICATION_MODES.map((m) => (
-                    <option key={m.value} value={m.value}>
-                      {m.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <fieldset className="sm:col-span-2">
+                <legend className="label-mono">How should candidates apply?</legend>
+                <p className="mt-1 text-xs text-muted">
+                  No online application portal? That's fine — choose email, in person, or Apply on
+                  EOZ.
+                </p>
+                <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                  {APPLICATION_MODES.map((m) => {
+                    const selected = applicationMode === m.value;
+                    return (
+                      <label
+                        key={m.value}
+                        className={`flex cursor-pointer gap-3 rounded-xl p-3 ring-1 transition-all ${
+                          selected
+                            ? "bg-accent/10 ring-accent/50"
+                            : "bg-white/[0.02] ring-line hover:bg-white/[0.05]"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="applicationMode"
+                          value={m.value}
+                          checked={selected}
+                          onChange={() => {
+                            setApplicationMode(m.value);
+                            setRouteValue("");
+                          }}
+                          className="peer sr-only"
+                        />
+                        <span
+                          className={`flex size-9 shrink-0 items-center justify-center rounded-lg ring-1 peer-focus-visible:ring-2 peer-focus-visible:ring-accent-soft ${
+                            selected
+                              ? "bg-accent/20 text-accent-soft ring-accent/40"
+                              : "bg-white/5 text-muted ring-line"
+                          }`}
+                        >
+                          <m.icon aria-hidden="true" className="size-4" />
+                        </span>
+                        <span>
+                          <span className="block text-sm font-medium">{m.label}</span>
+                          <span className="mt-0.5 block text-xs leading-5 text-muted">
+                            {m.hint}
+                          </span>
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </fieldset>
               {applicationMode === "EOZ_HOSTED" ? (
-                <p className="text-sm text-muted">
+                <p className="text-sm text-muted sm:col-span-2">
                   No external link needed — candidates apply directly on EOZ, with their profile CV
                   attached, and you'll see and screen every applicant from your Applicants page.
                 </p>
               ) : (
-                <label>
-                  <span className="label-mono">{routeFieldLabel} (required)</span>
+                <label className="sm:col-span-2">
+                  <span className="label-mono">{routeFieldLabel}</span>
                   <input
                     required
+                    type={
+                      applicationMode === "EMPLOYER_EMAIL"
+                        ? "email"
+                        : applicationMode === "EXTERNAL_URL"
+                          ? "url"
+                          : "text"
+                    }
                     value={routeValue}
                     onChange={(e) => setRouteValue(e.target.value)}
                     className={inputCls}
                     placeholder={
-                      applicationMode === "EMPLOYER_EMAIL" ? "careers@employer.zm" : "https://"
+                      applicationMode === "EMPLOYER_EMAIL"
+                        ? "careers@employer.zm"
+                        : applicationMode === "EXTERNAL_URL"
+                          ? "https://"
+                          : "Plot 12, Cairo Road, Lusaka"
                     }
                   />
                 </label>
               )}
               <label className="sm:col-span-2">
-                <span className="label-mono">Source link for verification</span>
+                <span className="label-mono">Where else is this advertised? (optional)</span>
                 <input
-                  required
                   value={source}
                   onChange={(e) => setSource(e.target.value)}
                   className={inputCls}
-                  placeholder="https://"
+                  placeholder="Newspaper, noticeboard, Facebook post or web link — helps us verify faster"
                 />
               </label>
               <label className="sm:col-span-2">
@@ -361,7 +428,7 @@ function PostOpportunity() {
             <div className="label-mono mb-2">Review checklist</div>
             <ul className="space-y-2 text-sm text-muted">
               <li>— Organisation must be registered and reachable.</li>
-              <li>— Source link must show the same role and deadline.</li>
+              <li>— Any public advert we can check should show the same role and deadline.</li>
               <li>— Application method must belong to the employer.</li>
               <li>— No application fees may be charged to candidates.</li>
             </ul>

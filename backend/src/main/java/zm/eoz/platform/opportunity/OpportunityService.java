@@ -7,7 +7,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,7 +66,9 @@ public class OpportunityService {
             String employmentType,
             String workArrangement,
             String experienceLevel,
+            String order,
             Pageable pageable) {
+        Pageable ordered = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), publicOrder(order, pageable.getSort()));
         String normalizedCategory = (categoryCode == null || categoryCode.isBlank() || categoryCode.equalsIgnoreCase("All"))
                 ? null
                 : categoryCode.toUpperCase(Locale.ROOT);
@@ -86,7 +90,8 @@ public class OpportunityService {
                 String likeTerm = "%" + normalizedQuery + "%";
                 predicates.add(cb.or(
                         cb.like(cb.lower(root.get("title")), likeTerm),
-                        cb.like(cb.lower(root.get("organisationName")), likeTerm)));
+                        cb.like(cb.lower(root.get("organisationName")), likeTerm),
+                        cb.like(cb.lower(root.get("reference")), likeTerm)));
             }
             if (Boolean.TRUE.equals(verifiedOnly)) {
                 predicates.add(cb.isTrue(root.get("verified")));
@@ -110,7 +115,24 @@ public class OpportunityService {
             return cb.and(predicates.toArray(new jakarta.persistence.criteria.Predicate[0]));
         };
 
-        return opportunityRepository.findAll(spec, pageable).map(OpportunitySummaryResponse::from);
+        return opportunityRepository.findAll(spec, ordered).map(OpportunitySummaryResponse::from);
+    }
+
+    /**
+     * Public board ordering: {@code newest} (default), {@code top} (most viewed) or {@code closing} (nearest
+     * deadline first). An explicit {@code sort=} on the request is honoured when no named order is given.
+     */
+    static Sort publicOrder(String order, Sort requested) {
+        Sort newest = Sort.by(Sort.Order.desc("publishedAt").nullsLast(), Sort.Order.desc("createdAt"));
+        if (order == null || order.isBlank()) {
+            return requested.isSorted() ? requested : newest;
+        }
+        return switch (order.toLowerCase(Locale.ROOT)) {
+            case "newest" -> newest;
+            case "top" -> Sort.by(Sort.Order.desc("viewsCount")).and(newest);
+            case "closing" -> Sort.by(Sort.Order.asc("deadline").nullsLast()).and(newest);
+            default -> throw new BadRequestException("Unknown order: " + order + ". Use newest, top or closing.");
+        };
     }
 
     @Transactional
@@ -134,7 +156,7 @@ public class OpportunityService {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Unknown application mode: " + request.applicationMode());
         }
-        validateApplicationRoute(mode, request);
+        validateApplicationRoute(mode, request.applicationUrl(), request.applicationEmail(), request.applicationAddress());
 
         Opportunity opportunity = new Opportunity();
         opportunity.setReference(referenceNumberService.next("EOZ-OPP"));
@@ -357,6 +379,176 @@ public class OpportunityService {
         return OpportunityDetailResponse.from(opportunity);
     }
 
+    @Transactional
+    public OpportunityDetailResponse close(java.util.UUID id, User actor) {
+        Opportunity opportunity =
+                opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
+        if (opportunity.getStatus() != OpportunityStatus.PUBLISHED) {
+            throw new BadRequestException("Opportunity is " + opportunity.getStatus() + ", expected PUBLISHED to close.");
+        }
+        opportunity.setStatus(OpportunityStatus.CLOSED);
+        auditService.record(
+                actor, "CLOSED", "Opportunity", opportunity.getReference(), "Closed \"" + opportunity.getTitle() + "\"");
+        notifyCreator(opportunity, "OPPORTUNITY_CLOSED", "Your listing was closed",
+                "\"" + opportunity.getTitle() + "\" (" + opportunity.getReference() + ") has been closed and removed from the public board.");
+        return OpportunityDetailResponse.from(opportunity);
+    }
+
+    private boolean canManage(Opportunity opportunity, User actor) {
+        boolean staff = actor.getRoles().stream()
+                .flatMap(r -> r.getPermissions().stream())
+                .anyMatch(p -> "OPPORTUNITY_MODERATE".equals(p.getCode()));
+        if (staff) {
+            return true;
+        }
+        return opportunity.getOrganisation() != null
+                ? organisationMemberRepository
+                        .findById_OrganisationIdAndId_UserId(opportunity.getOrganisation().getId(), actor.getId())
+                        .isPresent()
+                : opportunity.getCreatedBy() != null && opportunity.getCreatedBy().getId().equals(actor.getId());
+    }
+
+    private boolean isStaff(User actor) {
+        return actor.getRoles().stream()
+                .flatMap(r -> r.getPermissions().stream())
+                .anyMatch(p -> "OPPORTUNITY_MODERATE".equals(p.getCode()));
+    }
+
+    @Transactional(readOnly = true)
+    public OpportunityDetailResponse getForManage(java.util.UUID id, User actor) {
+        Opportunity opportunity =
+                opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
+        if (!canManage(opportunity, actor)) {
+            throw new zm.eoz.platform.common.exception.ForbiddenException("You do not have access to this listing.");
+        }
+        return OpportunityDetailResponse.from(opportunity);
+    }
+
+    /**
+     * Edits a listing. Staff edits keep the current status. When the owner edits a listing it goes back into the
+     * review queue, so changes (including after "request changes") are always re-checked before going live.
+     */
+    @Transactional
+    public OpportunityDetailResponse update(
+            java.util.UUID id, zm.eoz.platform.opportunity.dto.OpportunityUpdateRequest request, User actor) {
+        Opportunity opportunity =
+                opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
+        if (!canManage(opportunity, actor)) {
+            throw new zm.eoz.platform.common.exception.ForbiddenException("You do not have access to this listing.");
+        }
+        OpportunityStatus current = opportunity.getStatus();
+        if (current == OpportunityStatus.CLOSED || current == OpportunityStatus.EXPIRED || current == OpportunityStatus.ARCHIVED) {
+            throw new BadRequestException("A " + current + " listing cannot be edited. Reopen it first.");
+        }
+        if (request.title() != null) {
+            if (request.title().isBlank()) {
+                throw new BadRequestException("Title cannot be blank.");
+            }
+            opportunity.setTitle(request.title().trim());
+        }
+        if (request.categoryCode() != null && !request.categoryCode().isBlank()) {
+            opportunity.setCategory(categoryRepository
+                    .findByCodeIgnoreCase(request.categoryCode())
+                    .orElseThrow(() -> new BadRequestException("Unknown category: " + request.categoryCode())));
+        }
+        if (request.description() != null) opportunity.setDescription(request.description());
+        if (request.responsibilities() != null) opportunity.setResponsibilities(request.responsibilities());
+        if (request.requirements() != null) opportunity.setRequirements(request.requirements());
+        if (request.benefits() != null) opportunity.setBenefits(request.benefits());
+        if (request.location() != null) opportunity.setLocation(request.location());
+        if (request.region() != null) opportunity.setRegion(request.region());
+        if (request.workMode() != null) opportunity.setWorkMode(request.workMode());
+        if (request.deadline() != null) opportunity.setDeadline(request.deadline());
+        if (request.applicationUrl() != null) opportunity.setApplicationUrl(request.applicationUrl());
+        if (request.applicationEmail() != null) opportunity.setApplicationEmail(request.applicationEmail());
+        if (request.applicationAddress() != null) opportunity.setApplicationAddress(request.applicationAddress());
+        if (request.source() != null) opportunity.setSource(request.source());
+        if (request.applicationMode() != null && !request.applicationMode().isBlank()) {
+            opportunity.setApplicationMode(parseEnum(ApplicationMode.class, request.applicationMode(), "applicationMode"));
+        }
+        validateApplicationRoute(
+                opportunity.getApplicationMode(),
+                opportunity.getApplicationUrl(),
+                opportunity.getApplicationEmail(),
+                opportunity.getApplicationAddress());
+
+        boolean resubmitted = false;
+        if (!isStaff(actor) && current != OpportunityStatus.PENDING_REVIEW) {
+            opportunity.setStatus(OpportunityStatus.PENDING_REVIEW);
+            opportunity.setScheduledAt(null);
+            resubmitted = true;
+        }
+        auditService.record(
+                actor,
+                resubmitted ? "EDITED_AND_RESUBMITTED" : "EDITED",
+                "Opportunity",
+                opportunity.getReference(),
+                "Edited \"" + opportunity.getTitle() + "\"" + (resubmitted ? " and sent back for review" : ""));
+        return OpportunityDetailResponse.from(opportunity);
+    }
+
+    /** Lets the listing's own organisation members (or its creator when unlinked) close a live listing or withdraw an unpublished one. */
+    @Transactional
+    public OpportunityDetailResponse closeOwn(java.util.UUID id, User actor) {
+        Opportunity opportunity =
+                opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
+        boolean owner = opportunity.getOrganisation() != null
+                ? organisationMemberRepository
+                        .findById_OrganisationIdAndId_UserId(opportunity.getOrganisation().getId(), actor.getId())
+                        .isPresent()
+                : opportunity.getCreatedBy() != null && opportunity.getCreatedBy().getId().equals(actor.getId());
+        if (!owner) {
+            throw new zm.eoz.platform.common.exception.ForbiddenException("You do not have access to this listing.");
+        }
+        OpportunityStatus target;
+        switch (opportunity.getStatus()) {
+            case PUBLISHED -> target = OpportunityStatus.CLOSED;
+            case DRAFT, PENDING_REVIEW, APPROVED, SCHEDULED -> target = OpportunityStatus.ARCHIVED;
+            default -> throw new BadRequestException("A " + opportunity.getStatus() + " listing cannot be closed.");
+        }
+        opportunity.setStatus(target);
+        auditService.record(
+                actor,
+                target == OpportunityStatus.CLOSED ? "CLOSED_BY_OWNER" : "WITHDRAWN_BY_OWNER",
+                "Opportunity",
+                opportunity.getReference(),
+                (target == OpportunityStatus.CLOSED ? "Closed" : "Withdrew") + " \"" + opportunity.getTitle() + "\"");
+        return OpportunityDetailResponse.from(opportunity);
+    }
+
+    /** Puts a closed or archived listing back into the draft-to-review flow so it can be corrected and re-approved. */
+    @Transactional
+    public OpportunityDetailResponse reopen(java.util.UUID id, User actor) {
+        Opportunity opportunity =
+                opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
+        if (opportunity.getStatus() != OpportunityStatus.CLOSED
+                && opportunity.getStatus() != OpportunityStatus.ARCHIVED
+                && opportunity.getStatus() != OpportunityStatus.EXPIRED) {
+            throw new BadRequestException("Opportunity is " + opportunity.getStatus() + ", only closed, archived or expired listings can be reopened.");
+        }
+        opportunity.setStatus(OpportunityStatus.PENDING_REVIEW);
+        auditService.record(
+                actor, "REOPENED", "Opportunity", opportunity.getReference(), "Reopened \"" + opportunity.getTitle() + "\" for review");
+        notifyCreator(opportunity, "OPPORTUNITY_REOPENED", "Your listing was reopened",
+                "\"" + opportunity.getTitle() + "\" (" + opportunity.getReference() + ") was reopened and is back in the review queue.");
+        return OpportunityDetailResponse.from(opportunity);
+    }
+
+    @Transactional
+    public OpportunityDetailResponse archive(java.util.UUID id, User actor) {
+        Opportunity opportunity =
+                opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
+        if (opportunity.getStatus() == OpportunityStatus.ARCHIVED) {
+            throw new BadRequestException("Opportunity is already archived.");
+        }
+        opportunity.setStatus(OpportunityStatus.ARCHIVED);
+        auditService.record(
+                actor, "ARCHIVED", "Opportunity", opportunity.getReference(), "Archived \"" + opportunity.getTitle() + "\"");
+        notifyCreator(opportunity, "OPPORTUNITY_ARCHIVED", "Your listing was archived",
+                "\"" + opportunity.getTitle() + "\" (" + opportunity.getReference() + ") has been archived by staff and removed from the public board.");
+        return OpportunityDetailResponse.from(opportunity);
+    }
+
     private void notifyCreator(Opportunity opportunity, String type, String title, String body) {
         if (opportunity.getCreatedBy() != null) {
             notificationService.notify(opportunity.getCreatedBy(), type, title, body);
@@ -383,22 +575,22 @@ public class OpportunityService {
      * Enforces the platform's non-negotiable brand rule: a third-party opportunity's application
      * route must be the employer's own channel, never EOZ's contact details.
      */
-    private void validateApplicationRoute(ApplicationMode mode, OpportunityCreateRequest request) {
+    private void validateApplicationRoute(ApplicationMode mode, String url, String email, String address) {
         switch (mode) {
             case EXTERNAL_URL -> {
-                if (request.applicationUrl() == null || request.applicationUrl().isBlank()) {
-                    throw new BadRequestException("applicationUrl is required for EXTERNAL_URL opportunities.");
+                if (url == null || url.isBlank()) {
+                    throw new BadRequestException("Add the application link, or choose another way for candidates to apply.");
                 }
             }
             case EMPLOYER_EMAIL -> {
-                if (request.applicationEmail() == null || request.applicationEmail().isBlank()) {
-                    throw new BadRequestException("applicationEmail is required for EMPLOYER_EMAIL opportunities.");
+                if (email == null || email.isBlank()) {
+                    throw new BadRequestException("Add the email address applications go to, or choose another way for candidates to apply.");
                 }
             }
             case PHYSICAL_ADDRESS -> {
-                if (request.applicationAddress() == null || request.applicationAddress().isBlank()) {
+                if (address == null || address.isBlank()) {
                     throw new BadRequestException(
-                            "applicationAddress is required for PHYSICAL_ADDRESS opportunities.");
+                            "Add the address applications are delivered to, or choose another way for candidates to apply.");
                 }
             }
             default -> {

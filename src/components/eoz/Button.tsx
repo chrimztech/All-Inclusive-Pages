@@ -5,7 +5,7 @@ type Variant = "primary" | "secondary" | "danger" | "ghost";
 type Size = "sm" | "md";
 
 const VARIANT_CLASSES: Record<Variant, string> = {
-  primary: "accent-gradient text-ink hover:brightness-105",
+  primary: "btn-primary",
   secondary: "text-muted ring-1 ring-line hover:text-fg hover:bg-surface-2",
   danger: "text-rose ring-1 ring-rose/30 hover:bg-rose/10",
   ghost: "text-accent-soft hover:text-fg",
@@ -24,7 +24,16 @@ type ButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { variant = "primary", size = "md", loading = false, loadingText, disabled, className = "", children, ...rest },
+  {
+    variant = "primary",
+    size = "md",
+    loading = false,
+    loadingText,
+    disabled,
+    className = "",
+    children,
+    ...rest
+  },
   ref,
 ) {
   return (

@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
+import { Download } from "lucide-react";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
-import { api, isUnauthenticated } from "@/lib/api-client";
+import { API_BASE_URL, api, isUnauthenticated } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/reports")({
   head: () => ({
@@ -68,6 +69,15 @@ function Reports() {
         eyebrow="( 06.4 ) — Reports"
         title="What the platform actually distributed."
         lead="Reporting covers listings published, categories represented and how quickly submissions were reviewed."
+        aside={
+          <a
+            href={`${API_BASE_URL}/admin/reports/overview.csv`}
+            className="press accent-gradient inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm text-ink"
+          >
+            <Download aria-hidden="true" className="size-4" />
+            Export CSV
+          </a>
+        }
       />
       <DashNav items={ADMIN_NAV} />
 

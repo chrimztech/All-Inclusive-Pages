@@ -43,11 +43,15 @@ public class ContentService {
     private final OpportunityRepository opportunityRepository;
     private final AuditService auditService;
 
+    private final zm.eoz.platform.backup.DeletionLedger deletionLedger;
+
     public ContentService(
             ContentItemRepository itemRepository,
             ContentVariantRepository variantRepository,
             OpportunityRepository opportunityRepository,
-            AuditService auditService) {
+            AuditService auditService,
+            zm.eoz.platform.backup.DeletionLedger deletionLedger) {
+        this.deletionLedger = deletionLedger;
         this.itemRepository = itemRepository;
         this.variantRepository = variantRepository;
         this.opportunityRepository = opportunityRepository;
@@ -217,6 +221,18 @@ public class ContentService {
                 .map(ContentVariantResponse::from)
                 .toList();
         return ContentItemResponse.from(item, variants);
+    }
+
+    @Transactional
+    public void delete(UUID id, User actor) {
+        ContentItem item = requireItem(id);
+        if (item.getStatus() == ContentItem.Status.PUBLISHED) {
+            throw new BadRequestException("Published content cannot be deleted.");
+        }
+        variantRepository.deleteAll(variantRepository.findByContentItemIdOrderByChannel(id));
+        itemRepository.delete(item);
+        deletionLedger.record("ContentItem", id, item.getTitle(), actor);
+        auditService.record(actor, "CONTENT_DELETED", "ContentItem", id.toString(), "Deleted \"" + item.getTitle() + "\"");
     }
 
     private ContentItem requireItem(UUID id) {

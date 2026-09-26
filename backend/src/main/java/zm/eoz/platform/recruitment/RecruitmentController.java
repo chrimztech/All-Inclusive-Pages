@@ -68,6 +68,12 @@ public class RecruitmentController {
         return ApiResponse.of(recruitmentService.getProject(id));
     }
 
+    @org.springframework.web.bind.annotation.PatchMapping("/projects/{id}/status")
+    public ApiResponse<RecruitmentProjectResponse> changeProjectStatus(
+            @PathVariable UUID id, @Valid @RequestBody zm.eoz.platform.recruitment.dto.ProjectStatusChangeRequest request) {
+        return ApiResponse.of(recruitmentService.changeProjectStatus(id, request.status(), currentUser()));
+    }
+
     @GetMapping("/projects/{id}/candidates")
     public ApiResponse<List<PipelineCandidateResponse>> listCandidates(@PathVariable UUID id) {
         return ApiResponse.of(recruitmentService.listCandidates(id));

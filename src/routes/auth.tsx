@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { ShieldCheck, Sparkles, Users } from "lucide-react";
 import { SiteShell, Panel } from "@/components/eoz/SiteShell";
+import { PasswordInput } from "@/components/eoz/PasswordInput";
 import { ORG } from "@/lib/eoz-data";
 import { api, ApiError, type ApiUser } from "@/lib/api-client";
 import { landingRouteFor } from "@/lib/use-current-user";
@@ -414,10 +415,9 @@ function Auth() {
             <div className="grid gap-4 border-t border-line pt-4 sm:grid-cols-2">
               <label>
                 <span className="label-mono">Password</span>
-                <input
+                <PasswordInput
                   required
                   minLength={8}
-                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className={inputCls}
@@ -437,10 +437,9 @@ function Auth() {
               {isSignup ? (
                 <label>
                   <span className="label-mono">Confirm password</span>
-                  <input
+                  <PasswordInput
                     required
                     minLength={8}
-                    type="password"
                     value={confirmPassword}
                     onChange={(e) => {
                       setConfirmPassword(e.target.value);

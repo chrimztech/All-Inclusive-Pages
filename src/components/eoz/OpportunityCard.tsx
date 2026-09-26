@@ -1,7 +1,9 @@
 import { Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Bookmark, BookmarkCheck } from "lucide-react";
+import { ArrowRight, Bookmark, BookmarkCheck, MapPin } from "lucide-react";
 import { Chip } from "./SiteShell";
+import { Monogram } from "./Monogram";
+import { trackSpotlight } from "./Motion";
 import {
   api,
   ApiError,
@@ -37,56 +39,74 @@ export function OpportunityCard({
 
   return (
     <div
-      className={`hover-lift glass group relative overflow-hidden rounded-xl p-5 ring-1 ring-line transition-colors fade-in hover:ring-accent/40 ${countdown.expired ? "opacity-60" : ""}`}
+      onMouseMove={trackSpotlight}
+      className={`hover-lift glass spotlight ring-gradient group relative rounded-2xl p-5 ring-1 ring-line transition-colors fade-in sm:p-6 ${countdown.expired ? "opacity-60" : ""}`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      <div className="pointer-events-none absolute inset-x-0 top-0 h-px scale-x-0 accent-gradient transition-transform duration-500 group-hover:scale-x-100" />
       {isCandidate ? <SaveToggle opportunityId={item.id} /> : null}
       <Link
         to="/opportunities/$opportunityId"
         params={{ opportunityId: item.slug }}
-        className="block"
+        className="relative z-[1] flex gap-4"
       >
-        <div className="flex flex-wrap items-start justify-between gap-3 pr-8">
-          <div className="min-w-0 flex-1">
-            <div className="mb-2 flex flex-wrap items-center gap-2">
-              <Chip>{item.categoryName.replace(/s$/, "")}</Chip>
-              {item.verified ? (
-                <Chip tone="emerald">Verified</Chip>
-              ) : (
-                <Chip tone="rose">Unverified</Chip>
-              )}
-              <span className={countdownTone(countdown) === "rose" && !countdown.expired ? "soft-pulse" : ""}>
-                <Chip tone={countdownTone(countdown)}>{formatCountdown(countdown)}</Chip>
-              </span>
-              {item.employmentType ? (
-                <Chip tone="muted">{EMPLOYMENT_TYPE_LABELS[item.employmentType]}</Chip>
-              ) : null}
-              {item.workArrangement ? (
-                <Chip tone="muted">{WORK_ARRANGEMENT_LABELS[item.workArrangement]}</Chip>
-              ) : null}
+        <Monogram name={item.organisationName} className="hidden size-12 text-base sm:flex" />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-start justify-between gap-3 pr-8">
+            <div className="min-w-0 flex-1">
+              <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
+                <Chip>{item.categoryName.replace(/s$/, "")}</Chip>
+                {item.verified ? (
+                  <Chip tone="emerald">Verified</Chip>
+                ) : (
+                  <Chip tone="rose">Unverified</Chip>
+                )}
+                <span
+                  className={
+                    countdownTone(countdown) === "rose" && !countdown.expired ? "soft-pulse" : ""
+                  }
+                >
+                  <Chip tone={countdownTone(countdown)}>{formatCountdown(countdown)}</Chip>
+                </span>
+                {item.employmentType ? (
+                  <Chip tone="muted">{EMPLOYMENT_TYPE_LABELS[item.employmentType]}</Chip>
+                ) : null}
+                {item.workArrangement ? (
+                  <Chip tone="muted">{WORK_ARRANGEMENT_LABELS[item.workArrangement]}</Chip>
+                ) : null}
+              </div>
+              <h3 className="font-display text-xl leading-snug tracking-tight transition-colors duration-300 group-hover:text-accent-soft sm:text-[1.35rem]">
+                {item.title}
+              </h3>
+              <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted">
+                <span className="text-fg/85">{item.organisationName}</span>
+                {item.region ? (
+                  <span className="inline-flex items-center gap-1">
+                    <MapPin aria-hidden="true" className="size-3.5" />
+                    {item.region}
+                  </span>
+                ) : null}
+                {item.workMode ? <span>{item.workMode}</span> : null}
+              </div>
             </div>
-            <h3 className="font-display text-xl tracking-tight transition-colors group-hover:text-accent-soft">
-              {item.title}
-            </h3>
-            <div className="mt-1 text-sm text-muted">
-              {item.organisationName}
-              {item.region ? ` · ${item.region}` : ""}
-              {item.workMode ? ` · ${item.workMode}` : ""}
-            </div>
+            {item.opportunityValue ? (
+              <div className="text-right">
+                <div className="font-display text-lg">{item.opportunityValue}</div>
+                <div className="label-mono">{item.opportunityValueUnit}</div>
+              </div>
+            ) : null}
           </div>
-          <div className="text-right">
-            <div className="font-display text-lg">{item.opportunityValue}</div>
-            <div className="label-mono">{item.opportunityValueUnit}</div>
+          <div className="mt-4 flex items-center justify-between border-t border-line pt-3.5 text-xs">
+            <span className="font-mono text-[11px] text-muted">
+              REF <span className="text-fg/80">{item.reference}</span>
+            </span>
+            <span className="inline-flex items-center gap-1 font-medium text-accent-soft">
+              View details
+              <ArrowRight
+                aria-hidden="true"
+                className="size-3.5 transition-transform duration-300 group-hover:translate-x-1"
+              />
+            </span>
           </div>
-        </div>
-        <div className="mt-4 flex items-center justify-between text-xs">
-          <span className="text-muted">
-            Reference: <span className="text-fg">{item.reference}</span>
-          </span>
-          <span className="text-accent-soft transition-transform group-hover:translate-x-0.5">
-            View details →
-          </span>
         </div>
       </Link>
     </div>
@@ -95,7 +115,7 @@ export function OpportunityCard({
 
 export function SaveToggle({
   opportunityId,
-  className = "absolute right-4 top-4 z-10",
+  className = "absolute right-4 top-4 z-10 sm:right-5 sm:top-5",
 }: {
   opportunityId: string;
   className?: string;

@@ -18,7 +18,13 @@ public class ContactMessageService {
     private final ContactMessageRepository contactMessageRepository;
     private final AuditService auditService;
 
-    public ContactMessageService(ContactMessageRepository contactMessageRepository, AuditService auditService) {
+    private final zm.eoz.platform.backup.DeletionLedger deletionLedger;
+
+    public ContactMessageService(
+            ContactMessageRepository contactMessageRepository,
+            AuditService auditService,
+            zm.eoz.platform.backup.DeletionLedger deletionLedger) {
+        this.deletionLedger = deletionLedger;
         this.contactMessageRepository = contactMessageRepository;
         this.auditService = auditService;
     }
@@ -55,6 +61,16 @@ public class ContactMessageService {
         entity.setResolvedAt(java.time.Instant.now());
         auditService.record(actor, "CONTACT_MESSAGE_RESOLVED", "ContactMessage", id.toString(), "Marked resolved");
         return ContactMessageResponse.from(entity);
+    }
+
+    @Transactional
+    public void delete(UUID id, User actor) {
+        ContactMessage entity = contactMessageRepository
+                .findById(id)
+                .orElseThrow(() -> new NotFoundException("Contact message not found: " + id));
+        contactMessageRepository.delete(entity);
+        deletionLedger.record("ContactMessage", id, "Message from " + entity.getName() + " <" + entity.getEmail() + ">", actor);
+        auditService.record(actor, "CONTACT_MESSAGE_DELETED", "ContactMessage", id.toString(), "Deleted message from " + entity.getEmail());
     }
 
     private ContactMessage.Status parseStatus(String status) {

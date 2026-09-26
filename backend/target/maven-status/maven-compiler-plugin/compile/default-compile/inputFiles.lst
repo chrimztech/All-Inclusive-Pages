@@ -1,3 +1,5 @@
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\admin\AdminHardDeleteController.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\admin\HardDeleteService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\admin\SystemHealthController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\application\ApplicationController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\application\ApplicationService.java
@@ -19,11 +21,16 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\dto\LoginReque
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\dto\NotificationPreferencesRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\dto\RegisterRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\dto\ResetPasswordRequest.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\dto\UpdateProfileRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\dto\UserResponse.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\dto\VerifyEmailRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\AdminBackupController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\BackupService.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\DeletionLedger.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\dto\BackupResponse.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\dto\RestoreFlagResponse.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\dto\RestoreResponse.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\RestoreFlagService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\SystemBackup.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\SystemBackupRepository.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\candidate\AlertSubscription.java
@@ -80,6 +87,9 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\EozBackendApplicati
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\AdminRoleController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\AdminUserController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\AdminUserService.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\dto\AdminCreateUserRequest.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\dto\AdminResetPasswordRequest.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\dto\AdminUpdateUserRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\dto\PermissionResponse.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\dto\RoleAssignmentRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\dto\RoleWithPermissionsResponse.java
@@ -93,6 +103,7 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\RefreshTok
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\Role.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\RoleAdminService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\RoleRepository.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\TemporaryPassword.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\User.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\UserRepository.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\UserStatus.java
@@ -107,8 +118,11 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\Notifi
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\NotificationRepository.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\NotificationService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\SmsSender.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\AdminCategoryController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\ApplicationMode.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\CategoryController.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\dto\AdminCategoryResponse.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\dto\CategoryRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\dto\CategoryResponse.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\dto\EmployerAnalyticsSummary.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\dto\EmployerOpportunityStats.java
@@ -122,6 +136,7 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\dto\Opp
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\dto\OpportunityModerationSummary.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\dto\OpportunityScheduleRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\dto\OpportunitySummaryResponse.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\dto\OpportunityUpdateRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\EmploymentType.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\ExperienceLevel.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\FraudReport.java
@@ -173,6 +188,7 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\recruitment\dto\Not
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\recruitment\dto\NoteResponse.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\recruitment\dto\PipelineCandidateRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\recruitment\dto\PipelineCandidateResponse.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\recruitment\dto\ProjectStatusChangeRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\recruitment\dto\RecruitmentProjectRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\recruitment\dto\RecruitmentProjectResponse.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\recruitment\dto\ScreeningQuestionRequest.java
@@ -218,6 +234,8 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\servicecatalog\dto\
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\servicecatalog\dto\ServiceOrderMessageRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\servicecatalog\dto\ServiceOrderMessageResponse.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\servicecatalog\dto\ServiceOrderResponse.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\servicecatalog\dto\ServicePackageAdminResponse.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\servicecatalog\dto\ServicePackageRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\servicecatalog\dto\ServicePackageResponse.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\servicecatalog\dto\StaffOptionResponse.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\servicecatalog\dto\StatusChangeRequest.java

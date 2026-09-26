@@ -1,6 +1,11 @@
 package zm.eoz.platform.reporting;
 
+import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -54,6 +59,44 @@ public class AdminReportsController {
                 invoiceRepository.countByStatus(InvoiceStatus.UNPAID),
                 invoiceRepository.countByStatus(InvoiceStatus.PAID),
                 fraudReportRepository.countByStatus(FraudReport.Status.OPEN)));
+    }
+
+    @GetMapping(value = "/overview.csv", produces = "text/csv")
+    @Transactional(readOnly = true)
+    public ResponseEntity<byte[]> overviewCsv() {
+        ReportOverviewResponse r = overview().data();
+        StringBuilder csv = new StringBuilder();
+        csv.append("Metric,Value\n");
+        csv.append("Published opportunities,").append(r.publishedOpportunities()).append('\n');
+        csv.append("Pending review,").append(r.pendingReview()).append('\n');
+        csv.append("Archived or rejected,").append(r.archivedOrRejected()).append('\n');
+        csv.append("Unpaid invoices,").append(r.unpaidInvoices()).append('\n');
+        csv.append("Paid invoices,").append(r.paidInvoices()).append('\n');
+        csv.append("Unresolved fraud reports,").append(r.unresolvedFraudReports()).append('\n');
+        csv.append('\n').append("Category,Count\n");
+        r.categoryMix().forEach(nc -> csv.append(csvField(nc.name())).append(',').append(nc.count()).append('\n'));
+        csv.append('\n').append("Region,Count\n");
+        r.regionMix().forEach(nc -> csv.append(csvField(nc.name())).append(',').append(nc.count()).append('\n'));
+        csv.append('\n').append("Application status,Count\n");
+        r.applicationsByStatus().forEach(nc -> csv.append(csvField(nc.name())).append(',').append(nc.count()).append('\n'));
+        csv.append('\n').append("Service order status,Count\n");
+        r.serviceOrdersByStatus().forEach(nc -> csv.append(csvField(nc.name())).append(',').append(nc.count()).append('\n'));
+
+        String fileName = "eoz-report-" + DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(java.time.LocalDateTime.now()) + ".csv";
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .body(csv.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private String csvField(String value) {
+        if (value == null) {
+            return "";
+        }
+        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
+            return "\"" + value.replace("\"", "\"\"") + "\"";
+        }
+        return value;
     }
 
     private List<NameCount> toNameCounts(List<Object[]> rows) {

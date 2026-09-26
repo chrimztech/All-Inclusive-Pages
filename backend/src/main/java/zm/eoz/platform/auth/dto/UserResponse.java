@@ -11,4 +11,5 @@ public record UserResponse(
         boolean emailVerified,
         List<String> roles,
         boolean opportunityAlertsEnabled,
-        boolean serviceCommsEnabled) {}
+        boolean serviceCommsEnabled,
+        boolean mustChangePassword) {}

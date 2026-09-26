@@ -33,15 +33,20 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         extractCookie(request, CookieUtil.ACCESS_COOKIE)
                 .flatMap(jwtService::parse)
-                .ifPresent(claims -> authenticate(claims));
+                .ifPresent(claims -> authenticate(claims, request.getRequestURI()));
 
         chain.doFilter(request, response);
     }
 
-    private void authenticate(Claims claims) {
+    private void authenticate(Claims claims, String path) {
         UUID userId = UUID.fromString(claims.getSubject());
         Optional<User> user = userRepository.findById(userId);
         if (user.isEmpty() || user.get().getStatus() != zm.eoz.platform.identity.UserStatus.ACTIVE) {
+            return;
+        }
+        // A user still on their one-time password may only use the auth endpoints (to change it or sign out);
+        // everywhere else they are treated as anonymous until the password has been replaced.
+        if (user.get().isMustChangePassword() && !path.startsWith("/api/v1/auth/")) {
             return;
         }
         UserPrincipal principal = new UserPrincipal(user.get());

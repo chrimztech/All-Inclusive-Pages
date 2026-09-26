@@ -7,6 +7,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 import zm.eoz.platform.common.ApiResponse;
 import zm.eoz.platform.common.exception.ForbiddenException;
@@ -24,11 +27,21 @@ public class NotificationController {
         this.notificationRepository = notificationRepository;
     }
 
+    /** Newest first. {@code limit} caps the result, e.g. for the header bell's dropdown. */
     @GetMapping("/mine")
-    public ApiResponse<List<NotificationResponse>> mine() {
-        return ApiResponse.of(notificationRepository.findByUserIdOrderByCreatedAtDesc(currentUserId()).stream()
-                .map(NotificationResponse::from)
-                .toList());
+    public ApiResponse<List<NotificationResponse>> mine(@RequestParam(required = false) Integer limit) {
+        List<Notification> notifications = limit != null && limit > 0
+                ? notificationRepository
+                        .findByUserIdOrderByCreatedAtDesc(currentUserId(), PageRequest.of(0, Math.min(limit, 100)))
+                        .getContent()
+                : notificationRepository.findByUserIdOrderByCreatedAtDesc(currentUserId());
+        return ApiResponse.of(notifications.stream().map(NotificationResponse::from).toList());
+    }
+
+    @PostMapping("/mine/read-all")
+    @Transactional
+    public ApiResponse<Integer> markAllRead() {
+        return ApiResponse.of(notificationRepository.markAllRead(currentUserId()));
     }
 
     @GetMapping("/mine/unread-count")

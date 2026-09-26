@@ -55,6 +55,9 @@ public class User {
     @Column(name = "phone_verified", nullable = false)
     private boolean phoneVerified = false;
 
+    @Column(name = "must_change_password", nullable = false)
+    private boolean mustChangePassword = false;
+
     @Column(name = "opportunity_alerts_enabled", nullable = false)
     private boolean opportunityAlertsEnabled = true;
 

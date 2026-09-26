@@ -13,6 +13,16 @@ public interface CandidateApplicationRepository extends JpaRepository<CandidateA
 
     long countBySubmittedAtAfter(java.time.Instant since);
 
+    @org.springframework.data.jpa.repository.Query("SELECT a FROM CandidateApplication a WHERE lower(a.opportunity.title) LIKE lower(concat('%', :q, '%')) OR lower(a.candidate.fullName) LIKE lower(concat('%', :q, '%')) OR lower(a.candidate.email) LIKE lower(concat('%', :q, '%')) ORDER BY a.submittedAt DESC")
+    org.springframework.data.domain.Page<CandidateApplication> search(
+            @org.springframework.data.repository.query.Param("q") String q, org.springframework.data.domain.Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("SELECT a FROM CandidateApplication a WHERE a.status = :status AND (lower(a.opportunity.title) LIKE lower(concat('%', :q, '%')) OR lower(a.candidate.fullName) LIKE lower(concat('%', :q, '%')) OR lower(a.candidate.email) LIKE lower(concat('%', :q, '%'))) ORDER BY a.submittedAt DESC")
+    org.springframework.data.domain.Page<CandidateApplication> searchByStatus(
+            @org.springframework.data.repository.query.Param("status") ApplicationStatus status,
+            @org.springframework.data.repository.query.Param("q") String q,
+            org.springframework.data.domain.Pageable pageable);
+
     @org.springframework.data.jpa.repository.Query("SELECT a.status, COUNT(a) FROM CandidateApplication a GROUP BY a.status")
     List<Object[]> statusMixRaw();
 }

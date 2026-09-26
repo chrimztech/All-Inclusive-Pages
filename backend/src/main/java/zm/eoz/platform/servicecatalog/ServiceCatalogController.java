@@ -87,6 +87,33 @@ public class ServiceCatalogController {
         return ApiResponse.of(PageResponse.from(serviceCatalogService.listAll(pageable)));
     }
 
+    @GetMapping("/api/v1/admin/services/packages")
+    @PreAuthorize("hasAuthority('SERVICE_VIEW')")
+    public ApiResponse<List<zm.eoz.platform.servicecatalog.dto.ServicePackageAdminResponse>> listAllPackages() {
+        return ApiResponse.of(serviceCatalogService.listAllPackages());
+    }
+
+    @PostMapping("/api/v1/admin/services/packages")
+    @PreAuthorize("hasAuthority('SERVICE_MANAGE')")
+    public ApiResponse<zm.eoz.platform.servicecatalog.dto.ServicePackageAdminResponse> createPackage(
+            @Valid @RequestBody zm.eoz.platform.servicecatalog.dto.ServicePackageRequest request) {
+        return ApiResponse.of(serviceCatalogService.createPackage(request, currentUser()));
+    }
+
+    @org.springframework.web.bind.annotation.PatchMapping("/api/v1/admin/services/packages/{id}")
+    @PreAuthorize("hasAuthority('SERVICE_MANAGE')")
+    public ApiResponse<zm.eoz.platform.servicecatalog.dto.ServicePackageAdminResponse> updatePackage(
+            @PathVariable UUID id, @Valid @RequestBody zm.eoz.platform.servicecatalog.dto.ServicePackageRequest request) {
+        return ApiResponse.of(serviceCatalogService.updatePackage(id, request, currentUser()));
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/api/v1/admin/services/packages/{id}")
+    @PreAuthorize("hasAuthority('SERVICE_MANAGE')")
+    public org.springframework.http.ResponseEntity<Void> removePackage(@PathVariable UUID id) {
+        serviceCatalogService.deactivatePackage(id, currentUser());
+        return org.springframework.http.ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/api/v1/admin/services/orders/{id}/quote")
     @PreAuthorize("hasAuthority('SERVICE_MANAGE')")
     public ApiResponse<QuoteResponse> issueQuote(

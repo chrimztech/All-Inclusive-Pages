@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation } from "@tanstack/react-query";
 import { useState } from "react";
 import { SiteShell, Panel } from "@/components/eoz/SiteShell";
+import { PasswordInput } from "@/components/eoz/PasswordInput";
 import { api, ApiError } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
 
@@ -65,10 +66,9 @@ function ResetPassword() {
               </label>
               <label>
                 <span className="label-mono">New password</span>
-                <input
+                <PasswordInput
                   required
                   minLength={8}
-                  type="password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   className={inputCls}
@@ -76,10 +76,9 @@ function ResetPassword() {
               </label>
               <label>
                 <span className="label-mono">Confirm new password</span>
-                <input
+                <PasswordInput
                   required
                   minLength={8}
-                  type="password"
                   value={confirmPassword}
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);

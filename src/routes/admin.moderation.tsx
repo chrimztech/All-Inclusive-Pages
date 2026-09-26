@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
@@ -86,15 +87,29 @@ function Moderation() {
     onError: (error) => toast(errorMessage(error, "Could not publish listing."), "error"),
   });
   const requestChanges = useMutation({
-    mutationFn: (id: string) => api.patch(`/opportunities/${id}/request-changes`, { reason: "Changes requested by reviewer" }),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      api.patch(`/opportunities/${id}/request-changes`, { reason }),
     onSuccess: () => {
       invalidate();
       toast("Changes requested.");
     },
     onError: (error) => toast(errorMessage(error, "Could not request changes."), "error"),
   });
+  const [schedulingId, setSchedulingId] = useState<string | null>(null);
+  const [scheduleAt, setScheduleAt] = useState("");
+  const scheduleListing = useMutation({
+    mutationFn: ({ id, at }: { id: string; at: string }) =>
+      api.patch(`/opportunities/${id}/schedule`, { scheduledAt: new Date(at).toISOString() }),
+    onSuccess: () => {
+      invalidate();
+      setSchedulingId(null);
+      setScheduleAt("");
+      toast("Listing scheduled.");
+    },
+    onError: (error) => toast(errorMessage(error, "Could not schedule listing."), "error"),
+  });
   const reject = useMutation({
-    mutationFn: (id: string) => api.patch(`/opportunities/${id}/reject`, { reason: "Rejected by reviewer" }),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) => api.patch(`/opportunities/${id}/reject`, { reason }),
     onSuccess: () => {
       invalidate();
       toast("Listing rejected.");
@@ -103,7 +118,7 @@ function Moderation() {
   });
 
   const busy =
-    approve.isPending || publish.isPending || requestChanges.isPending || reject.isPending;
+    approve.isPending || publish.isPending || requestChanges.isPending || reject.isPending || scheduleListing.isPending;
   const items = queueQuery.data?.items ?? [];
 
   const fraudReportsQuery = useQuery({
@@ -181,29 +196,65 @@ function Moderation() {
                     </button>
                     <button
                       disabled={busy}
-                      onClick={() => requestChanges.mutate(m.id)}
+                      onClick={() => {
+                        const reason = window.prompt("What needs to change? The employer will see this.");
+                        if (reason && reason.trim()) requestChanges.mutate({ id: m.id, reason: reason.trim() });
+                      }}
                       className="rounded-md px-3 py-1.5 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
                     >
                       Request changes
                     </button>
                     <button
                       disabled={busy}
-                      onClick={() => reject.mutate(m.id)}
+                      onClick={() => {
+                        const reason = window.prompt("Why is this listing being rejected? The employer will see this.");
+                        if (reason && reason.trim()) reject.mutate({ id: m.id, reason: reason.trim() });
+                      }}
                       className="rounded-md px-3 py-1.5 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
                     >
                       Reject
                     </button>
                   </>
                 ) : (
-                  <button
-                    disabled={busy}
-                    onClick={() => publish.mutate(m.id)}
-                    className="accent-gradient rounded-md px-3 py-1.5 text-xs font-medium text-ink disabled:opacity-60"
-                  >
-                    Publish
-                  </button>
+                  <>
+                    <button
+                      disabled={busy}
+                      onClick={() => publish.mutate(m.id)}
+                      className="accent-gradient rounded-md px-3 py-1.5 text-xs font-medium text-ink disabled:opacity-60"
+                    >
+                      Publish
+                    </button>
+                    <button
+                      disabled={busy}
+                      onClick={() => {
+                        setSchedulingId(schedulingId === m.id ? null : m.id);
+                        setScheduleAt("");
+                      }}
+                      className="rounded-md px-3 py-1.5 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
+                    >
+                      Schedule
+                    </button>
+                  </>
                 )}
               </div>
+              {schedulingId === m.id ? (
+                <div className="mt-3 flex basis-full flex-wrap items-center gap-2 border-t border-line pt-3">
+                  <input
+                    type="datetime-local"
+                    value={scheduleAt}
+                    onChange={(e) => setScheduleAt(e.target.value)}
+                    className="rounded-md bg-surface-2 px-3 py-1.5 text-xs outline-none ring-1 ring-line"
+                  />
+                  <button
+                    type="button"
+                    disabled={busy || !scheduleAt}
+                    onClick={() => scheduleListing.mutate({ id: m.id, at: scheduleAt })}
+                    className="accent-gradient rounded-md px-3 py-1.5 text-xs font-medium text-ink disabled:opacity-60"
+                  >
+                    Confirm schedule
+                  </button>
+                </div>
+              ) : null}
             </div>
           </Panel>
         ))}

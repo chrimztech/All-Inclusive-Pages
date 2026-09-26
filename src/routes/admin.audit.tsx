@@ -2,7 +2,8 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
-import { api, isUnauthenticated, type PageResponse } from "@/lib/api-client";
+import { Download } from "lucide-react";
+import { API_BASE_URL, api, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/audit")({
   head: () => ({
@@ -46,6 +47,15 @@ function Audit() {
         eyebrow="( 06.5 ) — Audit"
         title="Append-only, by design."
         lead="Audit entries cannot be edited or deleted. Auditors have read access without any moderation rights."
+        aside={
+          <a
+            href={`${API_BASE_URL}/admin/audit/export.csv`}
+            className="press accent-gradient inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm text-ink"
+          >
+            <Download aria-hidden="true" className="size-4" />
+            Export CSV
+          </a>
+        }
       />
       <DashNav items={ADMIN_NAV} />
 

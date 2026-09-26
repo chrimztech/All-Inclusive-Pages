@@ -46,6 +46,16 @@ function Recruitment() {
     onError: (error) => toast(error instanceof ApiError ? error.message : "Could not create the project.", "error"),
   });
 
+  const changeStatus = useMutation({
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      api.patch(`/recruitment/projects/${id}/status`, { status }),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "recruitment-projects"] });
+      toast(variables.status === "CLOSED" ? "Project closed." : "Project reopened.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update project status.", "error"),
+  });
+
   return (
     <SiteShell>
       <PageIntro
@@ -127,6 +137,7 @@ function Recruitment() {
                 <th className="pb-3">Title</th>
                 <th className="pb-3">Organisation</th>
                 <th className="pb-3">Status</th>
+                <th className="pb-3">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -146,11 +157,23 @@ function Recruitment() {
                   <td className="py-4">
                     <Chip tone={p.status === "OPEN" ? "emerald" : p.status === "CLOSED" ? "muted" : "amber"}>{p.status}</Chip>
                   </td>
+                  <td className="py-4">
+                    <button
+                      type="button"
+                      disabled={changeStatus.isPending}
+                      onClick={() =>
+                        changeStatus.mutate({ id: p.id, status: p.status === "CLOSED" ? "OPEN" : "CLOSED" })
+                      }
+                      className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
+                    >
+                      {p.status === "CLOSED" ? "Reopen" : "Close"}
+                    </button>
+                  </td>
                 </tr>
               ))}
               {!projectsQuery.isLoading && projects.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="py-8 text-center text-sm text-muted">
+                  <td colSpan={5} className="py-8 text-center text-sm text-muted">
                     No recruitment projects yet.
                   </td>
                 </tr>

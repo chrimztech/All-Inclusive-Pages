@@ -64,6 +64,21 @@ public class ApplicationController {
         return ApiResponse.of(applicationService.updateStatus(id, request.status(), currentUser()));
     }
 
+    @GetMapping("/api/v1/admin/applications")
+    @PreAuthorize("hasAuthority('APPLICATION_MANAGE')")
+    public ApiResponse<zm.eoz.platform.common.PageResponse<ApplicationResponse>> adminList(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String status,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String q,
+            org.springframework.data.domain.Pageable pageable) {
+        return ApiResponse.of(zm.eoz.platform.common.PageResponse.from(applicationService.searchAll(status, q, pageable)));
+    }
+
+    @PostMapping("/api/v1/candidate/applications/{id}/withdraw")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<ApplicationResponse> withdraw(@PathVariable UUID id) {
+        return ApiResponse.of(applicationService.withdraw(id, currentUser()));
+    }
+
     public record StatusUpdateRequest(@jakarta.validation.constraints.NotBlank String status) {}
 
     /** CV download, scoped to the applying candidate, the receiving organisation's members, or staff. */

@@ -8,12 +8,14 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import zm.eoz.platform.common.ApiResponse;
 import zm.eoz.platform.common.PageResponse;
+import zm.eoz.platform.identity.dto.AdminCreateUserRequest;
 import zm.eoz.platform.identity.dto.RoleAssignmentRequest;
 import zm.eoz.platform.identity.dto.StatusChangeRequest;
 import zm.eoz.platform.identity.dto.UserAdminResponse;
@@ -37,9 +39,27 @@ public class AdminUserController {
         return ApiResponse.of(PageResponse.from(adminUserService.list(q, pageable)));
     }
 
+    @PostMapping
+    public ApiResponse<UserAdminResponse> create(@Valid @RequestBody AdminCreateUserRequest request) {
+        return ApiResponse.of(adminUserService.createUser(request, currentUser()));
+    }
+
     @PatchMapping("/{id}/status")
     public ApiResponse<UserAdminResponse> changeStatus(@PathVariable UUID id, @Valid @RequestBody StatusChangeRequest request) {
         return ApiResponse.of(adminUserService.changeStatus(id, request.status(), currentUser()));
+    }
+
+    @PatchMapping("/{id}")
+    public ApiResponse<UserAdminResponse> update(
+            @PathVariable UUID id, @Valid @RequestBody zm.eoz.platform.identity.dto.AdminUpdateUserRequest request) {
+        return ApiResponse.of(adminUserService.updateDetails(id, request.fullName(), request.phone(), currentUser()));
+    }
+
+    @PostMapping("/{id}/reset-password")
+    public ApiResponse<java.util.Map<String, String>> resetPassword(
+            @PathVariable UUID id, @Valid @RequestBody zm.eoz.platform.identity.dto.AdminResetPasswordRequest request) {
+        String password = adminUserService.resetPassword(id, request.newPassword(), currentUser());
+        return ApiResponse.of(java.util.Map.of("temporaryPassword", password));
     }
 
     @PatchMapping("/{id}/roles")

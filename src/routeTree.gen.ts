@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SplatRouteImport } from './routes/$'
 import { Route as AboutRouteImport } from './routes/about'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as CandidatesRouteImport } from './routes/candidates'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -20,6 +21,7 @@ import { Route as CookieNoticeRouteImport } from './routes/cookie-notice'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
+import { Route as NotificationsRouteImport } from './routes/notifications'
 import { Route as PartnersRouteImport } from './routes/partners'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ReportRouteImport } from './routes/report'
@@ -29,10 +31,13 @@ import { Route as TermsRouteImport } from './routes/terms'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
+import { Route as AdminApplicationsRouteImport } from './routes/admin.applications'
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
+import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
 import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
 import { Route as AdminHealthRouteImport } from './routes/admin.health'
+import { Route as AdminInboxRouteImport } from './routes/admin.inbox'
 import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminOpportunitiesRouteImport } from './routes/admin.opportunities'
@@ -89,6 +94,11 @@ const AboutRoute = AboutRouteImport.update({
   path: '/about',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
@@ -127,6 +137,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
 const HowItWorksRoute = HowItWorksRouteImport.update({
   id: '/how-it-works',
   path: '/how-it-works',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const NotificationsRoute = NotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PartnersRoute = PartnersRouteImport.update({
@@ -174,9 +189,19 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   path: '/admin/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminApplicationsRoute = AdminApplicationsRouteImport.update({
+  id: '/admin/applications',
+  path: '/admin/applications',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminAuditRoute = AdminAuditRouteImport.update({
   id: '/admin/audit',
   path: '/admin/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/admin/categories',
+  path: '/admin/categories',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminContentRoute = AdminContentRouteImport.update({
@@ -192,6 +217,11 @@ const AdminFinanceRoute = AdminFinanceRouteImport.update({
 const AdminHealthRoute = AdminHealthRouteImport.update({
   id: '/admin/health',
   path: '/admin/health',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminInboxRoute = AdminInboxRouteImport.update({
+  id: '/admin/inbox',
+  path: '/admin/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminModerationRoute = AdminModerationRouteImport.update({
@@ -403,6 +433,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/account': typeof AccountRoute
   '/auth': typeof AuthRoute
   '/candidates': typeof CandidatesRoute
   '/contact': typeof ContactRoute
@@ -411,6 +442,7 @@ export interface FileRoutesByFullPath {
   '/faq': typeof FaqRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/notifications': typeof NotificationsRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
@@ -419,10 +451,13 @@ export interface FileRoutesByFullPath {
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/admin/applications': typeof AdminApplicationsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/health': typeof AdminHealthRoute
+  '/admin/inbox': typeof AdminInboxRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/opportunities': typeof AdminOpportunitiesRoute
@@ -469,6 +504,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/account': typeof AccountRoute
   '/auth': typeof AuthRoute
   '/candidates': typeof CandidatesRoute
   '/contact': typeof ContactRoute
@@ -477,6 +513,7 @@ export interface FileRoutesByTo {
   '/faq': typeof FaqRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/notifications': typeof NotificationsRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
@@ -485,10 +522,13 @@ export interface FileRoutesByTo {
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/admin/applications': typeof AdminApplicationsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/health': typeof AdminHealthRoute
+  '/admin/inbox': typeof AdminInboxRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/opportunities': typeof AdminOpportunitiesRoute
@@ -536,6 +576,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/$': typeof SplatRoute
   '/about': typeof AboutRoute
+  '/account': typeof AccountRoute
   '/auth': typeof AuthRoute
   '/candidates': typeof CandidatesRoute
   '/contact': typeof ContactRoute
@@ -544,6 +585,7 @@ export interface FileRoutesById {
   '/faq': typeof FaqRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
+  '/notifications': typeof NotificationsRoute
   '/partners': typeof PartnersRoute
   '/privacy': typeof PrivacyRoute
   '/report': typeof ReportRoute
@@ -552,10 +594,13 @@ export interface FileRoutesById {
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/admin/applications': typeof AdminApplicationsRoute
   '/admin/audit': typeof AdminAuditRoute
+  '/admin/categories': typeof AdminCategoriesRoute
   '/admin/content': typeof AdminContentRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/health': typeof AdminHealthRoute
+  '/admin/inbox': typeof AdminInboxRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/opportunities': typeof AdminOpportunitiesRoute
@@ -604,6 +649,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
+    | '/account'
     | '/auth'
     | '/candidates'
     | '/contact'
@@ -612,6 +658,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/forgot-password'
     | '/how-it-works'
+    | '/notifications'
     | '/partners'
     | '/privacy'
     | '/report'
@@ -620,10 +667,13 @@ export interface FileRouteTypes {
     | '/terms'
     | '/verification'
     | '/verify-email'
+    | '/admin/applications'
     | '/admin/audit'
+    | '/admin/categories'
     | '/admin/content'
     | '/admin/finance'
     | '/admin/health'
+    | '/admin/inbox'
     | '/admin/moderation'
     | '/admin/notifications'
     | '/admin/opportunities'
@@ -670,6 +720,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
+    | '/account'
     | '/auth'
     | '/candidates'
     | '/contact'
@@ -678,6 +729,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/forgot-password'
     | '/how-it-works'
+    | '/notifications'
     | '/partners'
     | '/privacy'
     | '/report'
@@ -686,10 +738,13 @@ export interface FileRouteTypes {
     | '/terms'
     | '/verification'
     | '/verify-email'
+    | '/admin/applications'
     | '/admin/audit'
+    | '/admin/categories'
     | '/admin/content'
     | '/admin/finance'
     | '/admin/health'
+    | '/admin/inbox'
     | '/admin/moderation'
     | '/admin/notifications'
     | '/admin/opportunities'
@@ -736,6 +791,7 @@ export interface FileRouteTypes {
     | '/'
     | '/$'
     | '/about'
+    | '/account'
     | '/auth'
     | '/candidates'
     | '/contact'
@@ -744,6 +800,7 @@ export interface FileRouteTypes {
     | '/faq'
     | '/forgot-password'
     | '/how-it-works'
+    | '/notifications'
     | '/partners'
     | '/privacy'
     | '/report'
@@ -752,10 +809,13 @@ export interface FileRouteTypes {
     | '/terms'
     | '/verification'
     | '/verify-email'
+    | '/admin/applications'
     | '/admin/audit'
+    | '/admin/categories'
     | '/admin/content'
     | '/admin/finance'
     | '/admin/health'
+    | '/admin/inbox'
     | '/admin/moderation'
     | '/admin/notifications'
     | '/admin/opportunities'
@@ -803,6 +863,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   SplatRoute: typeof SplatRoute
   AboutRoute: typeof AboutRoute
+  AccountRoute: typeof AccountRoute
   AuthRoute: typeof AuthRoute
   CandidatesRoute: typeof CandidatesRoute
   ContactRoute: typeof ContactRoute
@@ -811,6 +872,7 @@ export interface RootRouteChildren {
   FaqRoute: typeof FaqRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   HowItWorksRoute: typeof HowItWorksRoute
+  NotificationsRoute: typeof NotificationsRoute
   PartnersRoute: typeof PartnersRoute
   PrivacyRoute: typeof PrivacyRoute
   ReportRoute: typeof ReportRoute
@@ -819,10 +881,13 @@ export interface RootRouteChildren {
   TermsRoute: typeof TermsRoute
   VerificationRoute: typeof VerificationRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
+  AdminApplicationsRoute: typeof AdminApplicationsRoute
   AdminAuditRoute: typeof AdminAuditRoute
+  AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminContentRoute: typeof AdminContentRoute
   AdminFinanceRoute: typeof AdminFinanceRoute
   AdminHealthRoute: typeof AdminHealthRoute
+  AdminInboxRoute: typeof AdminInboxRoute
   AdminModerationRoute: typeof AdminModerationRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminOpportunitiesRoute: typeof AdminOpportunitiesRoute
@@ -889,6 +954,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AboutRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/auth': {
       id: '/auth'
       path: '/auth'
@@ -943,6 +1015,13 @@ declare module '@tanstack/react-router' {
       path: '/how-it-works'
       fullPath: '/how-it-works'
       preLoaderRoute: typeof HowItWorksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/notifications': {
+      id: '/notifications'
+      path: '/notifications'
+      fullPath: '/notifications'
+      preLoaderRoute: typeof NotificationsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/partners': {
@@ -1008,11 +1087,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/applications': {
+      id: '/admin/applications'
+      path: '/admin/applications'
+      fullPath: '/admin/applications'
+      preLoaderRoute: typeof AdminApplicationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/audit': {
       id: '/admin/audit'
       path: '/admin/audit'
       fullPath: '/admin/audit'
       preLoaderRoute: typeof AdminAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/categories': {
+      id: '/admin/categories'
+      path: '/admin/categories'
+      fullPath: '/admin/categories'
+      preLoaderRoute: typeof AdminCategoriesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/content': {
@@ -1034,6 +1127,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/health'
       fullPath: '/admin/health'
       preLoaderRoute: typeof AdminHealthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/inbox': {
+      id: '/admin/inbox'
+      path: '/admin/inbox'
+      fullPath: '/admin/inbox'
+      preLoaderRoute: typeof AdminInboxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/moderation': {
@@ -1323,6 +1423,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   SplatRoute: SplatRoute,
   AboutRoute: AboutRoute,
+  AccountRoute: AccountRoute,
   AuthRoute: AuthRoute,
   CandidatesRoute: CandidatesRoute,
   ContactRoute: ContactRoute,
@@ -1331,6 +1432,7 @@ const rootRouteChildren: RootRouteChildren = {
   FaqRoute: FaqRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   HowItWorksRoute: HowItWorksRoute,
+  NotificationsRoute: NotificationsRoute,
   PartnersRoute: PartnersRoute,
   PrivacyRoute: PrivacyRoute,
   ReportRoute: ReportRoute,
@@ -1339,10 +1441,13 @@ const rootRouteChildren: RootRouteChildren = {
   TermsRoute: TermsRoute,
   VerificationRoute: VerificationRoute,
   VerifyEmailRoute: VerifyEmailRoute,
+  AdminApplicationsRoute: AdminApplicationsRoute,
   AdminAuditRoute: AdminAuditRoute,
+  AdminCategoriesRoute: AdminCategoriesRoute,
   AdminContentRoute: AdminContentRoute,
   AdminFinanceRoute: AdminFinanceRoute,
   AdminHealthRoute: AdminHealthRoute,
+  AdminInboxRoute: AdminInboxRoute,
   AdminModerationRoute: AdminModerationRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminOpportunitiesRoute: AdminOpportunitiesRoute,

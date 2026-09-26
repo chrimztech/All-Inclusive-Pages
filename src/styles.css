@@ -3,18 +3,17 @@
 @import "tw-animate-css";
 
 @theme {
-  --color-ink: #0e2a1a;
-  --color-surface: #0a2113;
-  --color-surface-2: #17402a;
-  --color-line: rgba(255, 255, 255, 0.1);
-  --color-fg: #eaf3e9;
-  --color-muted: #8ba18f;
+  --color-ink: #071a10;
+  --color-surface: #0a2215;
+  --color-surface-2: #123421;
+  --color-line: rgba(255, 255, 255, 0.09);
+  --color-fg: #eef6ee;
+  --color-muted: #93a897;
   --color-accent: #24b45c;
   --color-accent-soft: #7ce3a4;
   --color-amber: #ffd60a;
   --color-rose: #fb7185;
   --color-emerald: #6ee7b7;
-
 
   --color-background: var(--color-ink);
   --color-foreground: var(--color-fg);
@@ -40,7 +39,27 @@
     background-color: var(--color-ink);
     color: var(--color-fg);
     font-family: var(--font-sans);
+    font-feature-settings: "cv11", "ss01", "ss03";
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  html {
+    scrollbar-color: rgba(124, 227, 164, 0.25) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgba(124, 227, 164, 0.18);
+    border: 3px solid transparent;
+    border-radius: 999px;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(124, 227, 164, 0.35);
   }
 
   ::selection {
@@ -55,13 +74,176 @@
 }
 
 @utility glass {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
   backdrop-filter: blur(12px);
+  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.05);
 }
 
 @utility glass-strong {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
-  backdrop-filter: blur(16px);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025));
+  backdrop-filter: blur(18px) saturate(140%);
+  box-shadow:
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.07),
+    0 24px 60px -30px rgba(0, 0, 0, 0.6);
+}
+
+/* Gold-to-green text for the one or two words in a headline that carry the brand. */
+@utility text-gradient {
+  background: linear-gradient(100deg, #ffe066 0%, #ffd60a 22%, #7ce3a4 62%, #24b45c 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  /* Room for italic overhang, which background-clip would otherwise cut off. */
+  padding-right: 0.12em;
+  margin-right: -0.04em;
+}
+
+/* Faint grid that fades toward the edges; sits behind hero sections. */
+@utility bg-grid {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, #000 30%, transparent 75%);
+}
+
+/* Primary call to action: brand gradient, soft glow, sheen sweep on hover. */
+@utility btn-primary {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  overflow: hidden;
+  border-radius: 0.625rem;
+  background: linear-gradient(135deg, #ffd60a, #24b45c 65%);
+  color: var(--color-ink);
+  font-weight: 600;
+  box-shadow:
+    0 0 0 1px rgba(124, 227, 164, 0.25),
+    0 10px 30px -10px rgba(36, 180, 92, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition:
+    transform 200ms var(--ease-eoz),
+    box-shadow 300ms var(--ease-eoz),
+    filter 200ms;
+}
+.btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    110deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.45) 50%,
+    transparent 70%
+  );
+  transform: translateX(-120%);
+  transition: transform 700ms var(--ease-eoz);
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.04);
+  box-shadow:
+    0 0 0 1px rgba(124, 227, 164, 0.35),
+    0 16px 40px -12px rgba(36, 180, 92, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+.btn-primary:hover::after {
+  transform: translateX(120%);
+}
+.btn-primary:active {
+  transform: scale(0.98);
+}
+
+@utility btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  border-radius: 0.625rem;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--color-fg);
+  box-shadow:
+    0 0 0 1px var(--color-line),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    background-color 200ms,
+    box-shadow 200ms,
+    transform 200ms var(--ease-eoz);
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 0 0 1px rgba(124, 227, 164, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+.btn-secondary:active {
+  transform: scale(0.98);
+}
+
+/* Gradient hairline border that lights up on hover. Needs rounded corners on the element. */
+@utility ring-gradient {
+  position: relative;
+}
+.ring-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  padding: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 214, 10, 0.55),
+    rgba(36, 180, 92, 0.15) 40%,
+    rgba(124, 227, 164, 0.45)
+  );
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 400ms var(--ease-eoz);
+  pointer-events: none;
+}
+.ring-gradient:hover::before,
+.ring-gradient.is-lit::before {
+  opacity: 1;
+}
+
+/* Pointer-following spotlight; --mx/--my are set by useSpotlight. */
+@utility spotlight {
+  position: relative;
+}
+.spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    420px circle at var(--mx, 50%) var(--my, 50%),
+    rgba(124, 227, 164, 0.09),
+    transparent 45%
+  );
+  opacity: 0;
+  transition: opacity 400ms;
+  pointer-events: none;
+}
+.spotlight:hover::after {
+  opacity: 1;
+}
+
+@utility marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 45s linear infinite;
+}
+.marquee-mask {
+  mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+}
+.marquee-mask:hover .marquee {
+  animation-play-state: paused;
 }
 
 @utility accent-gradient {
@@ -106,7 +288,9 @@
 
 /* A soft ring-glow accent used to draw the eye to primary CTAs. */
 @utility glow-ring {
-  box-shadow: 0 0 0 1px rgba(124, 227, 164, 0.25), 0 8px 28px -10px rgba(36, 180, 92, 0.45);
+  box-shadow:
+    0 0 0 1px rgba(124, 227, 164, 0.25),
+    0 8px 28px -10px rgba(36, 180, 92, 0.45);
 }
 
 @utility eyebrow {
@@ -147,6 +331,30 @@
   }
 }
 
+@keyframes marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pingSoft {
+  75%,
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+
 @keyframes shimmer {
   0% {
     transform: translateX(-100%);
@@ -176,4 +384,63 @@
 
 .fade-in {
   animation: fadeUp 600ms var(--ease-eoz) both;
+}
+
+.float {
+  animation: float 7s ease-in-out infinite;
+}
+
+.live-dot {
+  position: relative;
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #7ce3a4;
+}
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: inherit;
+  animation: pingSoft 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Scroll reveal. Hidden only when scripting is on, so content never vanishes without JS. */
+@media (scripting: enabled) {
+  .reveal {
+    opacity: 0;
+    transform: translateY(18px);
+    transition:
+      opacity 800ms var(--ease-eoz),
+      transform 800ms var(--ease-eoz);
+  }
+  .reveal.is-visible {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Film grain that keeps the large ambient gradients from banding. */
+.grain {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.5'/%3E%3C/svg%3E");
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }

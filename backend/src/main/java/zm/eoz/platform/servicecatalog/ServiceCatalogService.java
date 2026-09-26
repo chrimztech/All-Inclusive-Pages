@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import zm.eoz.platform.audit.AuditService;
 import zm.eoz.platform.common.ReferenceNumberService;
 import zm.eoz.platform.common.exception.BadRequestException;
+import zm.eoz.platform.common.exception.ConflictException;
 import zm.eoz.platform.common.exception.ForbiddenException;
 import zm.eoz.platform.common.exception.NotFoundException;
 import zm.eoz.platform.identity.User;
@@ -92,6 +93,65 @@ public class ServiceCatalogService {
         return ServicePackageResponse.from(packageRepository
                 .findBySlugAndActiveTrue(slug)
                 .orElseThrow(() -> new NotFoundException("Service not found: " + slug)));
+    }
+
+    @Transactional(readOnly = true)
+    public List<zm.eoz.platform.servicecatalog.dto.ServicePackageAdminResponse> listAllPackages() {
+        return packageRepository.findAll().stream()
+                .map(zm.eoz.platform.servicecatalog.dto.ServicePackageAdminResponse::from)
+                .toList();
+    }
+
+    @Transactional
+    public zm.eoz.platform.servicecatalog.dto.ServicePackageAdminResponse createPackage(
+            zm.eoz.platform.servicecatalog.dto.ServicePackageRequest request, User actor) {
+        if (packageRepository.findBySlugAndActiveTrue(request.slug()).isPresent()) {
+            throw new ConflictException("A service with slug \"" + request.slug() + "\" already exists.");
+        }
+        ServicePackage pkg = new ServicePackage();
+        applyPackageFields(pkg, request);
+        pkg = packageRepository.save(pkg);
+        auditService.record(actor, "SERVICE_PACKAGE_CREATED", "ServicePackage", pkg.getSlug(), "Created \"" + pkg.getName() + "\"");
+        return zm.eoz.platform.servicecatalog.dto.ServicePackageAdminResponse.from(pkg);
+    }
+
+    @Transactional
+    public zm.eoz.platform.servicecatalog.dto.ServicePackageAdminResponse updatePackage(
+            UUID id, zm.eoz.platform.servicecatalog.dto.ServicePackageRequest request, User actor) {
+        ServicePackage pkg = requirePackage(id);
+        applyPackageFields(pkg, request);
+        pkg.setUpdatedAt(Instant.now());
+        packageRepository.save(pkg);
+        auditService.record(actor, "SERVICE_PACKAGE_UPDATED", "ServicePackage", pkg.getSlug(), "Updated \"" + pkg.getName() + "\"");
+        return zm.eoz.platform.servicecatalog.dto.ServicePackageAdminResponse.from(pkg);
+    }
+
+    @Transactional
+    public void deactivatePackage(UUID id, User actor) {
+        ServicePackage pkg = requirePackage(id);
+        pkg.setActive(false);
+        pkg.setUpdatedAt(Instant.now());
+        packageRepository.save(pkg);
+        auditService.record(actor, "SERVICE_PACKAGE_REMOVED", "ServicePackage", pkg.getSlug(), "Removed \"" + pkg.getName() + "\" from the catalogue");
+    }
+
+    private void applyPackageFields(ServicePackage pkg, zm.eoz.platform.servicecatalog.dto.ServicePackageRequest request) {
+        pkg.setSlug(request.slug());
+        pkg.setName(request.name());
+        pkg.setDescription(request.description());
+        pkg.setPrice(request.price());
+        if (request.currency() != null && !request.currency().isBlank()) {
+            pkg.setCurrency(request.currency());
+        }
+        pkg.setTurnaround(request.turnaround());
+        pkg.setIncludes(request.includes() == null ? null : String.join("; ", request.includes()));
+        if (request.active() != null) {
+            pkg.setActive(request.active());
+        }
+    }
+
+    private ServicePackage requirePackage(UUID id) {
+        return packageRepository.findById(id).orElseThrow(() -> new NotFoundException("Service package not found: " + id));
     }
 
     @Transactional
@@ -400,6 +460,22 @@ public class ServiceCatalogService {
      * reason (enforced at the DTO level) — every financial adjustment must be explainable and
      * traceable per the platform's auditability rule.
      */
+    @Transactional
+    public InvoiceResponse cancelInvoice(UUID invoiceId, User actor) {
+        Invoice invoice = requireInvoice(invoiceId);
+        if (invoice.getStatus() != InvoiceStatus.UNPAID) {
+            throw new BadRequestException("Only an unpaid invoice can be cancelled; use a refund for paid invoices.");
+        }
+        invoice.setStatus(InvoiceStatus.CANCELLED);
+        auditService.record(actor, "INVOICE_CANCELLED", "Invoice", invoice.getReference(), "Cancelled unpaid invoice");
+        notificationService.notify(
+                invoice.getOrder().getCustomer(),
+                "INVOICE_CANCELLED",
+                "An invoice was cancelled",
+                "Invoice " + invoice.getReference() + " has been cancelled. You do not need to pay it.");
+        return InvoiceResponse.from(invoice);
+    }
+
     @Transactional
     public InvoiceResponse refund(UUID invoiceId, RefundRequest request, User actor) {
         Invoice invoice = requireInvoice(invoiceId);

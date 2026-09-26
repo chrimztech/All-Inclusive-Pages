@@ -125,7 +125,20 @@ export const CATEGORIES = [
 
 export type Category = (typeof CATEGORIES)[number];
 
-export const REGIONS = ["Lusaka", "Copperbelt", "Central", "Southern", "National"];
+/** Zambia's ten provinces (Lusaka first as the most common posting location), plus "National" for countrywide listings. */
+export const REGIONS = [
+  "Lusaka",
+  "Central",
+  "Copperbelt",
+  "Eastern",
+  "Luapula",
+  "Muchinga",
+  "Northern",
+  "North-Western",
+  "Southern",
+  "Western",
+  "National",
+];
 
 export type Opportunity = {
   id: string;

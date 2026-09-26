@@ -12,26 +12,38 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ToastProvider } from "../lib/toast";
+import { Ambience } from "../components/eoz/SiteShell";
+
+function StatusScreen({ children }: { children: ReactNode }) {
+  return (
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-ink px-5 text-fg">
+      <Ambience />
+      <div aria-hidden="true" className="bg-grid pointer-events-none absolute inset-0" />
+      <div className="fade-in relative max-w-lg text-center">{children}</div>
+    </div>
+  );
+}
 
 function NotFoundComponent() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-7xl font-bold text-foreground">404</h1>
-        <h2 className="mt-4 text-xl font-semibold text-foreground">Page not found</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          The page you're looking for doesn't exist or has been moved.
-        </p>
-        <div className="mt-6">
-          <Link
-            to="/"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Go home
-          </Link>
-        </div>
+    <StatusScreen>
+      <div className="text-gradient font-display text-[9rem] leading-none font-light tracking-tighter sm:text-[12rem]">
+        404
       </div>
-    </div>
+      <h1 className="mt-2 font-display text-3xl tracking-tight">This page has moved on.</h1>
+      <p className="mx-auto mt-3 max-w-[40ch] text-muted">
+        The link may be out of date, or the listing may have closed. Fresh opportunities are waiting
+        on the board.
+      </p>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <Link to="/opportunities" className="btn-primary px-5 py-3 text-sm">
+          Browse opportunities
+        </Link>
+        <Link to="/" className="btn-secondary px-5 py-3 text-sm">
+          Go home
+        </Link>
+      </div>
+    </StatusScreen>
   );
 }
 
@@ -43,33 +55,30 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   }, [error]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <div className="max-w-md text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          This page didn't load
-        </h1>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Something went wrong on our end. You can try refreshing or head back home.
-        </p>
-        <div className="mt-6 flex flex-wrap justify-center gap-2">
-          <button
-            onClick={() => {
-              router.invalidate();
-              reset();
-            }}
-            className="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
-          >
-            Try again
-          </button>
-          <a
-            href="/"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-accent"
-          >
-            Go home
-          </a>
-        </div>
+    <StatusScreen>
+      <div className="mx-auto flex size-14 items-center justify-center rounded-2xl bg-rose/10 font-display text-2xl text-rose ring-1 ring-rose/30">
+        !
       </div>
-    </div>
+      <h1 className="mt-6 font-display text-3xl tracking-tight">This page didn't load</h1>
+      <p className="mx-auto mt-3 max-w-[40ch] text-muted">
+        Something went wrong on our end. You can try again, or head back home.
+      </p>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <button
+          type="button"
+          onClick={() => {
+            router.invalidate();
+            reset();
+          }}
+          className="btn-primary px-5 py-3 text-sm"
+        >
+          Try again
+        </button>
+        <a href="/" className="btn-secondary px-5 py-3 text-sm">
+          Go home
+        </a>
+      </div>
+    </StatusScreen>
   );
 }
 
@@ -78,6 +87,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "theme-color", content: "#071a10" },
       { title: "Echo Opportunities Zambia — Verified Opportunities" },
       {
         name: "description",

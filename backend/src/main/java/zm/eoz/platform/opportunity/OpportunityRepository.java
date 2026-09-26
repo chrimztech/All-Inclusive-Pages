@@ -31,6 +31,8 @@ public interface OpportunityRepository
 
     long countByStatus(OpportunityStatus status);
 
+    long countByCategoryId(UUID categoryId);
+
     long countByOrganisationIdAndStatus(UUID organisationId, OpportunityStatus status);
 
     Page<Opportunity> findByCreatedByIdOrderByCreatedAtDesc(UUID createdById, Pageable pageable);

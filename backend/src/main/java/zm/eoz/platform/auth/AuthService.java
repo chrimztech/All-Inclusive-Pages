@@ -171,6 +171,7 @@ public class AuthService {
         vt.setUsedAt(Instant.now());
         User user = vt.getUser();
         user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setMustChangePassword(false);
         // Revoke all existing sessions so a compromised account can't stay logged in after reset.
         refreshTokenRepository.findByUser_IdAndRevokedFalse(user.getId()).forEach(rt -> rt.setRevoked(true));
     }
@@ -269,7 +270,8 @@ public class AuthService {
                 user.isEmailVerified(),
                 user.getRoles().stream().map(Role::getName).toList(),
                 user.isOpportunityAlertsEnabled(),
-                user.isServiceCommsEnabled());
+                user.isServiceCommsEnabled(),
+                user.isMustChangePassword());
     }
 
     @Transactional
@@ -278,9 +280,22 @@ public class AuthService {
         if (!passwordEncoder.matches(currentPassword, managed.getPasswordHash())) {
             throw new BadRequestException("Current password is incorrect.");
         }
+        if (passwordEncoder.matches(newPassword, managed.getPasswordHash())) {
+            throw new BadRequestException("Choose a new password that is different from your current one.");
+        }
         managed.setPasswordHash(passwordEncoder.encode(newPassword));
+        managed.setMustChangePassword(false);
         userRepository.save(managed);
         refreshTokenRepository.findByUser_IdAndRevokedFalse(managed.getId()).forEach(rt -> rt.setRevoked(true));
+    }
+
+    @Transactional
+    public UserResponse updateProfile(User user, String fullName, String phone) {
+        User managed = userRepository.findById(user.getId()).orElseThrow();
+        managed.setFullName(fullName.trim());
+        managed.setPhone(phone == null || phone.isBlank() ? null : phone.trim());
+        userRepository.save(managed);
+        return toResponse(managed);
     }
 
     @Transactional

@@ -22,20 +22,23 @@ import zm.eoz.platform.organisation.OrganisationMemberRepository;
 @Service
 public class ApplicationService {
 
-    private static final Set<String> STAFF_ROLES = Set.of("MANAGER", "ADMIN");
+    private static final Set<String> STAFF_ROLES = Set.of("MANAGER", "ADMIN", "RECRUITMENT_OFFICER");
 
     private final CandidateApplicationRepository applicationRepository;
     private final OpportunityRepository opportunityRepository;
     private final CandidateProfileRepository candidateProfileRepository;
     private final OrganisationMemberRepository organisationMemberRepository;
     private final ReferenceNumberService referenceNumberService;
+    private final zm.eoz.platform.notification.NotificationService notificationService;
 
     public ApplicationService(
             CandidateApplicationRepository applicationRepository,
             OpportunityRepository opportunityRepository,
             CandidateProfileRepository candidateProfileRepository,
             OrganisationMemberRepository organisationMemberRepository,
-            ReferenceNumberService referenceNumberService) {
+            ReferenceNumberService referenceNumberService,
+            zm.eoz.platform.notification.NotificationService notificationService) {
+        this.notificationService = notificationService;
         this.applicationRepository = applicationRepository;
         this.opportunityRepository = opportunityRepository;
         this.candidateProfileRepository = candidateProfileRepository;
@@ -92,6 +95,22 @@ public class ApplicationService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<ApplicationResponse> searchAll(
+            String status, String query, org.springframework.data.domain.Pageable pageable) {
+        String q = query == null ? "" : query.trim();
+        if (status == null || status.isBlank()) {
+            return applicationRepository.search(q, pageable).map(ApplicationResponse::from);
+        }
+        ApplicationStatus parsed;
+        try {
+            parsed = ApplicationStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Unknown status: " + status);
+        }
+        return applicationRepository.searchByStatus(parsed, q, pageable).map(ApplicationResponse::from);
+    }
+
     @Transactional
     public ApplicationResponse updateStatus(java.util.UUID applicationId, String statusValue, User actor) {
         CandidateApplication application = applicationRepository
@@ -105,7 +124,32 @@ public class ApplicationService {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Unknown status: " + statusValue);
         }
+        ApplicationStatus previous = application.getStatus();
         application.setStatus(status);
+        if (previous != status) {
+            notificationService.notify(
+                    application.getCandidate(),
+                    "APPLICATION_STATUS",
+                    "Your application was updated",
+                    "Your application for \"" + application.getOpportunity().getTitle() + "\" ("
+                            + application.getReference() + ") is now " + status.name().replace('_', ' ') + ".");
+        }
+        return ApplicationResponse.from(applicationRepository.save(application));
+    }
+
+    @Transactional
+    public ApplicationResponse withdraw(java.util.UUID applicationId, User actor) {
+        CandidateApplication application = applicationRepository
+                .findById(applicationId)
+                .orElseThrow(() -> new NotFoundException("Application not found: " + applicationId));
+        if (!application.getCandidate().getId().equals(actor.getId())) {
+            throw new ForbiddenException("You can only withdraw your own applications.");
+        }
+        ApplicationStatus current = application.getStatus();
+        if (current == ApplicationStatus.HIRED || current == ApplicationStatus.REJECTED || current == ApplicationStatus.WITHDRAWN) {
+            throw new BadRequestException("An application that is " + current + " cannot be withdrawn.");
+        }
+        application.setStatus(ApplicationStatus.WITHDRAWN);
         return ApplicationResponse.from(applicationRepository.save(application));
     }
 

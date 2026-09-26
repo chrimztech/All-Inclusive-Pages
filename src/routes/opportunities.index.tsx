@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { Award, Eye, X } from "lucide-react";
 import { SiteShell, Panel, PageIntro } from "@/components/eoz/SiteShell";
 import { OpportunityCard } from "@/components/eoz/OpportunityCard";
 import { REGIONS } from "@/lib/eoz-data";
@@ -9,6 +10,7 @@ import {
   EMPLOYMENT_TYPE_LABELS,
   WORK_ARRANGEMENT_LABELS,
   type ApiCategory,
+  type ApiOrganisation,
   type ApiOpportunitySummary,
   type EmploymentType,
   type PageResponse,
@@ -42,6 +44,14 @@ function Board() {
   const [query, setQuery] = useState("");
   const [employmentType, setEmploymentType] = useState("");
   const [workArrangement, setWorkArrangement] = useState("");
+  const [recruiter, setRecruiter] = useState<ApiOrganisation | null>(null);
+
+  const recruitersQuery = useQuery({
+    queryKey: ["organisations", "top-recruiters"],
+    queryFn: () =>
+      api.get<PageResponse<ApiOrganisation>>("/organisations", { order: "top", size: 8 }),
+  });
+  const topRecruiters = (recruitersQuery.data?.items ?? []).filter((o) => o.listingsCount > 0);
 
   const categoriesQuery = useQuery({
     queryKey: ["categories"],
@@ -49,7 +59,16 @@ function Board() {
   });
 
   const opportunitiesQuery = useQuery({
-    queryKey: ["opportunities", category, region, query, employmentType, workArrangement],
+    queryKey: [
+      "opportunities",
+      category,
+      region,
+      query,
+      employmentType,
+      workArrangement,
+      sort,
+      recruiter?.id,
+    ],
     queryFn: () =>
       api.get<PageResponse<ApiOpportunitySummary>>("/opportunities", {
         category,
@@ -57,20 +76,13 @@ function Board() {
         q: query || undefined,
         employmentType: employmentType || undefined,
         workArrangement: workArrangement || undefined,
+        organisationId: recruiter?.id,
+        order: sort,
         size: 50,
       }),
   });
 
-  const results = useMemo(() => {
-    const list = opportunitiesQuery.data?.items ?? [];
-    return sort === "deadline"
-      ? [...list].sort((a, b) => {
-          if (!a.deadline) return 1;
-          if (!b.deadline) return -1;
-          return new Date(a.deadline).getTime() - new Date(b.deadline).getTime();
-        })
-      : list;
-  }, [opportunitiesQuery.data, sort]);
+  const results = opportunitiesQuery.data?.items ?? [];
 
   return (
     <SiteShell>
@@ -87,7 +99,7 @@ function Board() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search"
+              placeholder="Title, organisation or reference"
               aria-label="Search the board"
               className="mb-4 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line"
             />
@@ -151,19 +163,81 @@ function Board() {
         </aside>
 
         <div className="space-y-3 lg:col-span-9">
-          <div className="flex items-center justify-between text-sm">
-            <div className="label-mono">
-              {opportunitiesQuery.isLoading ? "Loading…" : `${results.length} results`}
+          {topRecruiters.length ? (
+            <div className="glass rounded-2xl p-4 ring-1 ring-line">
+              <div className="mb-3 flex items-center gap-2 text-xs font-medium">
+                <Award aria-hidden="true" className="size-4 text-amber" />
+                Top recruiters
+                <span className="font-normal text-muted">— most live listings</span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {topRecruiters.map((org, i) => {
+                  const active = recruiter?.id === org.id;
+                  return (
+                    <button
+                      key={org.id}
+                      type="button"
+                      aria-pressed={active}
+                      onClick={() => setRecruiter(active ? null : org)}
+                      className={`press inline-flex items-center gap-2 rounded-full py-1.5 pr-3 pl-1.5 text-xs transition-all ${
+                        active
+                          ? "accent-gradient font-semibold text-ink"
+                          : "bg-white/[0.03] text-muted ring-1 ring-line hover:bg-white/[0.07] hover:text-fg"
+                      }`}
+                    >
+                      <span
+                        className={`flex size-5 items-center justify-center rounded-full font-mono text-[10px] ${active ? "bg-ink/15" : "bg-white/[0.06]"}`}
+                      >
+                        {i + 1}
+                      </span>
+                      {org.tradingName ?? org.legalName}
+                      <span className={active ? "text-ink/70" : "text-muted"}>
+                        {org.listingsCount}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-            <select
-              value={sort}
-              onChange={(e) => setSort(e.target.value)}
-              aria-label="Sort"
-              className="rounded-md bg-surface-2 px-3 py-1.5 text-xs outline-none ring-1 ring-line"
+          ) : null}
+          <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="label-mono">
+                {opportunitiesQuery.isLoading ? "Loading…" : `${results.length} results`}
+              </span>
+              {recruiter ? (
+                <button
+                  type="button"
+                  onClick={() => setRecruiter(null)}
+                  className="inline-flex items-center gap-1 rounded-full bg-accent/10 px-2.5 py-1 text-xs text-accent-soft ring-1 ring-accent/25 hover:text-fg"
+                >
+                  {recruiter.tradingName ?? recruiter.legalName}
+                  <X aria-hidden="true" className="size-3" />
+                  <span className="sr-only">Clear recruiter filter</span>
+                </button>
+              ) : null}
+            </div>
+            <div
+              role="group"
+              aria-label="Sort listings"
+              className="inline-flex rounded-xl bg-white/[0.03] p-1 text-xs ring-1 ring-line"
             >
-              <option value="newest">Newest</option>
-              <option value="deadline">Closing soonest</option>
-            </select>
+              {[
+                { v: "newest", l: "Newest" },
+                { v: "top", l: "Top listings" },
+                { v: "closing", l: "Closing soon" },
+              ].map((o) => (
+                <button
+                  key={o.v}
+                  type="button"
+                  aria-pressed={sort === o.v}
+                  onClick={() => setSort(o.v)}
+                  className={`rounded-lg px-3 py-1.5 transition-colors ${sort === o.v ? "bg-white/[0.09] text-fg" : "text-muted hover:text-fg"}`}
+                >
+                  {o.l}
+                </button>
+              ))}
+            </div>
           </div>
           {opportunitiesQuery.isError ? (
             <Panel>
@@ -178,7 +252,15 @@ function Board() {
             </Panel>
           ) : null}
           {results.map((item, i) => (
-            <OpportunityCard key={item.id} item={item} delay={i * 60} />
+            <div key={item.id} className="relative">
+              {sort === "top" && item.viewsCount > 0 ? (
+                <span className="pointer-events-none absolute -top-2 left-5 z-10 inline-flex items-center gap-1 rounded-full bg-amber px-2 py-0.5 font-mono text-[10px] font-semibold text-ink shadow">
+                  <Eye aria-hidden="true" className="size-3" />
+                  {item.viewsCount.toLocaleString()} views
+                </span>
+              ) : null}
+              <OpportunityCard item={item} delay={Math.min(i, 8) * 60} />
+            </div>
           ))}
         </div>
       </section>

@@ -6,4 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface SystemBackupRepository extends JpaRepository<SystemBackup, UUID> {
     List<SystemBackup> findAllByOrderByStartedAtDesc();
+
+    boolean existsByFileName(String fileName);
 }

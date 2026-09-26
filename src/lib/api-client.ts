@@ -17,7 +17,34 @@ type RequestOptions = {
   params?: Record<string, string | number | undefined> | undefined;
 };
 
-async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
+/**
+ * Access tokens are short-lived (15 minutes). When a request is refused, quietly ask the server for a new one using the
+ * long-lived refresh cookie and retry once, so people are not signed out mid-session. Concurrent requests share one
+ * refresh call, and a refresh that just succeeded is not repeated for genuine "not allowed" answers.
+ */
+let refreshInFlight: Promise<boolean> | null = null;
+let lastRefreshAt = 0;
+
+async function refreshSession(): Promise<boolean> {
+  if (Date.now() - lastRefreshAt < 10_000) return false;
+  if (!refreshInFlight) {
+    refreshInFlight = fetch(`${API_BASE_URL}/auth/refresh`, { method: "POST", credentials: "include" })
+      .then(async (r) => {
+        await r.arrayBuffer().catch(() => undefined);
+        if (r.ok) lastRefreshAt = Date.now();
+        return r.ok;
+      })
+      .catch(() => false)
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
+}
+
+const NO_REFRESH_PATHS = ["/auth/login", "/auth/register", "/auth/refresh", "/auth/logout", "/auth/forgot-password", "/auth/reset-password", "/auth/verify-email"];
+
+async function request<T>(path: string, options: RequestOptions = {}, retried = false): Promise<T> {
   const url = new URL(`${API_BASE_URL}${path}`);
   if (options.params) {
     for (const [key, value] of Object.entries(options.params)) {
@@ -37,6 +64,15 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   }
 
   const response = await fetch(url.toString(), init);
+
+  if (
+    (response.status === 401 || response.status === 403) &&
+    !retried &&
+    !NO_REFRESH_PATHS.some((p) => path.startsWith(p)) &&
+    (await refreshSession())
+  ) {
+    return request<T>(path, options, true);
+  }
 
   if (response.status === 204) {
     return undefined as T;
@@ -156,6 +192,7 @@ export type ApiOpportunitySummary = {
   currency: string | null;
   deadline: string | null;
   publishedAt: string | null;
+  viewsCount: number;
 };
 
 export type ApiOpportunityDetail = ApiOpportunitySummary & {
@@ -182,6 +219,7 @@ export type ApiUser = {
   roles: string[];
   opportunityAlertsEnabled: boolean;
   serviceCommsEnabled: boolean;
+  mustChangePassword: boolean;
 };
 
 export type ApiApplication = {
@@ -263,3 +301,12 @@ export function daysUntil(deadline: string | null): number | null {
   const diffMs = new Date(deadline).getTime() - Date.now();
   return Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
 }
+
+export type ApiNotification = {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  read: boolean;
+  createdAt: string;
+};

@@ -93,6 +93,13 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @org.springframework.web.bind.annotation.PatchMapping("/profile")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public ApiResponse<UserResponse> updateProfile(
+            @Valid @RequestBody zm.eoz.platform.auth.dto.UpdateProfileRequest request) {
+        return ApiResponse.of(authService.updateProfile(currentUser(), request.fullName(), request.phone()));
+    }
+
     @org.springframework.web.bind.annotation.PatchMapping("/notification-preferences")
     @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
     public ApiResponse<UserResponse> updateNotificationPreferences(
@@ -118,7 +125,8 @@ public class AuthController {
                 user.isEmailVerified(),
                 user.getRoles().stream().map(zm.eoz.platform.identity.Role::getName).toList(),
                 user.isOpportunityAlertsEnabled(),
-                user.isServiceCommsEnabled());
+                user.isServiceCommsEnabled(),
+                user.isMustChangePassword());
     }
 
     private java.util.Optional<String> readCookie(HttpServletRequest request, String name) {

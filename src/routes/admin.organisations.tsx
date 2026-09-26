@@ -57,9 +57,25 @@ function Organisations() {
       api.patch(`/organisations/${id}/verification`, { decision }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "organisations"] });
-      toast(variables.decision === "VERIFIED" ? "Organisation verified." : "Organisation rejected.");
+      toast(
+        variables.decision === "VERIFIED"
+          ? "Organisation verified."
+          : variables.decision === "SUSPENDED"
+            ? "Organisation suspended."
+            : "Organisation rejected.",
+      );
     },
     onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update verification status.", "error"),
+  });
+
+  const permanentDelete = useMutation({
+    mutationFn: ({ id, confirm }: { id: string; confirm: string }) =>
+      api.del(`/admin/permanent-delete/organisations/${id}?confirm=${encodeURIComponent(confirm)}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "organisations"] });
+      toast("Organisation permanently deleted.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not delete the organisation.", "error"),
   });
 
   const rows = orgsQuery.data?.items ?? [];
@@ -120,6 +136,33 @@ function Organisations() {
                       className="rounded-md px-3 py-1 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
                     >
                       Reject
+                    </button>
+                    {o.verificationStatus !== "SUSPENDED" ? (
+                      <button
+                        disabled={decide.isPending}
+                        onClick={() => {
+                          if (window.confirm(`Suspend ${o.tradingName ?? o.legalName}? Its listings will no longer be publicly visible.`)) {
+                            decide.mutate({ id: o.id, decision: "SUSPENDED" });
+                          }
+                        }}
+                        className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
+                      >
+                        Suspend
+                      </button>
+                    ) : null}
+                    <button
+                      disabled={permanentDelete.isPending}
+                      onClick={() => {
+                        const typed = window.prompt(
+                          `PERMANENT DELETE. This erases ${o.legalName}, all of its listings and their applications. It cannot be undone.
+
+Type the legal name (${o.legalName}) to confirm:`,
+                        );
+                        if (typed) permanentDelete.mutate({ id: o.id, confirm: typed });
+                      }}
+                      className="rounded-md px-3 py-1 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
+                    >
+                      Delete
                     </button>
                   </div>
                 </td>

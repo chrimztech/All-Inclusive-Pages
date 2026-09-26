@@ -114,6 +114,15 @@ public class FileStorageService {
         fileAssetRepository.delete(asset);
     }
 
+    /** Removes the physical file only; callers are responsible for deleting the matching database row. */
+    public void deleteStoredFile(String storageKey) {
+        try {
+            Files.deleteIfExists(rootDir.resolve(storageKey));
+        } catch (IOException e) {
+            // A leftover orphan file is preferable to failing a delete that already committed.
+        }
+    }
+
     public Resource load(FileAsset asset) {
         Path path = rootDir.resolve(asset.getStorageKey());
         if (!Files.exists(path)) {

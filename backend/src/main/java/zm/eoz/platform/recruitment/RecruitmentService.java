@@ -112,6 +112,24 @@ public class RecruitmentService {
                 projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Project not found: " + id)));
     }
 
+    @Transactional
+    public RecruitmentProjectResponse changeProjectStatus(UUID id, String status, User actor) {
+        RecruitmentProject project =
+                projectRepository.findById(id).orElseThrow(() -> new NotFoundException("Project not found: " + id));
+        RecruitmentProjectStatus target;
+        try {
+            target = RecruitmentProjectStatus.valueOf(status);
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Unknown status: " + status);
+        }
+        project.setStatus(target);
+        project.setUpdatedAt(java.time.Instant.now());
+        projectRepository.save(project);
+        auditService.record(
+                actor, "PROJECT_STATUS_CHANGED", "RecruitmentProject", project.getReference(), "Set status to " + target);
+        return RecruitmentProjectResponse.from(project);
+    }
+
     @Transactional(readOnly = true)
     public List<PipelineCandidateResponse> listCandidates(UUID projectId) {
         return candidateRepository.findByProjectIdOrderByAddedAtAsc(projectId).stream()

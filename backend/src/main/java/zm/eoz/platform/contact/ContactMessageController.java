@@ -44,6 +44,15 @@ public class ContactMessageController {
         return ApiResponse.of(PageResponse.from(contactMessageService.list(status, pageable)));
     }
 
+    @org.springframework.web.bind.annotation.DeleteMapping("/api/v1/admin/contact-messages/{id}")
+    @PreAuthorize("hasAuthority('STAFF_INBOX_MANAGE')")
+    public org.springframework.http.ResponseEntity<Void> delete(@PathVariable UUID id) {
+        var principal = (UserPrincipal) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        User actor = userRepository.findById(principal.getId()).orElseThrow();
+        contactMessageService.delete(id, actor);
+        return org.springframework.http.ResponseEntity.noContent().build();
+    }
+
     @PatchMapping("/api/v1/admin/contact-messages/{id}/resolve")
     @PreAuthorize("hasAuthority('STAFF_INBOX_MANAGE')")
     public ApiResponse<ContactMessageResponse> resolve(@PathVariable UUID id) {

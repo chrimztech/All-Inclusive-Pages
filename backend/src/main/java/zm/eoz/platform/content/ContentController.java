@@ -51,6 +51,12 @@ public class ContentController {
         return ApiResponse.of(contentService.get(id));
     }
 
+    @org.springframework.web.bind.annotation.DeleteMapping("/{id}")
+    public org.springframework.http.ResponseEntity<Void> delete(@PathVariable UUID id) {
+        contentService.delete(id, currentUser());
+        return org.springframework.http.ResponseEntity.noContent().build();
+    }
+
     @PostMapping("/{id}/submit")
     public ApiResponse<ContentItemResponse> submit(@PathVariable UUID id) {
         return ApiResponse.of(contentService.transition(id, ContentItem.Status.PENDING_REVIEW, currentUser()));

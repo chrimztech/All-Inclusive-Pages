@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { ListingEditor } from "@/components/eoz/ListingEditor";
 import { ADMIN_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
 import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
@@ -49,6 +50,7 @@ function OpportunityWorkspace() {
   const { toast } = useToast();
   const [status, setStatus] = useState("");
   const [query, setQuery] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const listQuery = useQuery({
     queryKey: ["admin", "opportunities", status],
@@ -64,6 +66,39 @@ function OpportunityWorkspace() {
       toast("Listing published.");
     },
     onError: (error) => toast(error instanceof ApiError ? error.message : "Could not publish listing.", "error"),
+  });
+  const close = useMutation({
+    mutationFn: (id: string) => api.patch(`/opportunities/${id}/close`),
+    onSuccess: () => {
+      invalidate();
+      toast("Listing closed.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not close listing.", "error"),
+  });
+  const reopen = useMutation({
+    mutationFn: (id: string) => api.patch(`/opportunities/${id}/reopen`),
+    onSuccess: () => {
+      invalidate();
+      toast("Listing reopened and sent back to review.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not reopen listing.", "error"),
+  });
+  const permanentDelete = useMutation({
+    mutationFn: ({ id, confirm }: { id: string; confirm: string }) =>
+      api.del(`/admin/permanent-delete/opportunities/${id}?confirm=${encodeURIComponent(confirm)}`),
+    onSuccess: () => {
+      invalidate();
+      toast("Listing permanently deleted.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not delete the listing.", "error"),
+  });
+  const archive = useMutation({
+    mutationFn: (id: string) => api.patch(`/opportunities/${id}/archive`),
+    onSuccess: () => {
+      invalidate();
+      toast("Listing archived.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not archive listing.", "error"),
   });
 
   const rows = (listQuery.data?.items ?? []).filter((r) =>
@@ -175,8 +210,69 @@ function OpportunityWorkspace() {
                     Publish now
                   </button>
                 ) : null}
+                {r.status === "PUBLISHED" ? (
+                  <button
+                    onClick={() => close.mutate(r.id)}
+                    disabled={close.isPending}
+                    className="rounded-md px-3 py-2 text-xs text-fg ring-1 ring-line transition-colors hover:bg-surface-2 hover:text-accent-soft disabled:opacity-60"
+                  >
+                    Close listing
+                  </button>
+                ) : null}
+                {r.status !== "CLOSED" && r.status !== "ARCHIVED" && r.status !== "EXPIRED" ? (
+                  <button
+                    onClick={() => setEditingId(editingId === r.id ? null : r.id)}
+                    className="rounded-md px-3 py-2 text-xs text-fg ring-1 ring-line transition-colors hover:bg-surface-2 hover:text-accent-soft"
+                  >
+                    {editingId === r.id ? "Close editor" : "Edit"}
+                  </button>
+                ) : null}
+                {r.status === "CLOSED" || r.status === "ARCHIVED" || r.status === "EXPIRED" ? (
+                  <button
+                    onClick={() => reopen.mutate(r.id)}
+                    disabled={reopen.isPending}
+                    className="rounded-md px-3 py-2 text-xs text-emerald ring-1 ring-emerald/30 disabled:opacity-60"
+                  >
+                    Reopen
+                  </button>
+                ) : null}
+                {r.status !== "ARCHIVED" ? (
+                  <button
+                    onClick={() => {
+                      if (window.confirm(`Archive "${r.title}"? It will be pulled down from the public board.`)) {
+                        archive.mutate(r.id);
+                      }
+                    }}
+                    disabled={archive.isPending}
+                    className="rounded-md px-3 py-2 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
+                  >
+                    Archive
+                  </button>
+                ) : null}
+                <button
+                  onClick={() => {
+                    const typed = window.prompt(
+                      `PERMANENT DELETE. This erases "${r.title}" and every application to it. It cannot be undone.
+
+Type the reference (${r.reference}) to confirm:`,
+                    );
+                    if (typed) permanentDelete.mutate({ id: r.id, confirm: typed });
+                  }}
+                  disabled={permanentDelete.isPending}
+                  className="rounded-md px-3 py-2 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
+                >
+                  Delete
+                </button>
               </div>
             </div>
+            {editingId === r.id ? (
+              <ListingEditor
+                opportunityId={r.id}
+                isStaff
+                invalidateKeys={[["admin", "opportunities"], ["admin", "moderation-queue"]]}
+                onClose={() => setEditingId(null)}
+              />
+            ) : null}
           </Panel>
         ))}
       </div>

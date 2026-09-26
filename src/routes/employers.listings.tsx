@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { DashNav, EMPLOYER_NAV, StatTile } from "@/components/eoz/DashNav";
 import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
 import { DeadlineChip } from "@/components/eoz/OpportunityCard";
-import { api, isUnauthenticated, type PageResponse } from "@/lib/api-client";
+import { ListingEditor } from "@/components/eoz/ListingEditor";
+import { useState } from "react";
+import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
+import { useToast } from "@/lib/toast";
 
 export const Route = createFileRoute("/employers/listings")({
   head: () => ({
@@ -50,6 +53,17 @@ const STATUS_TONE: Record<string, "emerald" | "amber" | "muted" | "rose"> = {
 };
 
 function EmployerListings() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const closeListing = useMutation({
+    mutationFn: (id: string) => api.patch(`/opportunities/mine/${id}/close`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["employer", "opportunities"] });
+      toast("Listing updated.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update the listing.", "error"),
+  });
   const listingsQuery = useQuery({
     queryKey: ["employer", "opportunities", "mine"],
     queryFn: () => api.get<PageResponse<EmployerOpportunity>>("/opportunities/mine", { size: 50 }),
@@ -130,16 +144,50 @@ function EmployerListings() {
                       <span>{o.savesCount} saves</span>
                     </div>
                   </div>
-                  {o.status === "PUBLISHED" ? (
-                    <Link
-                      to="/opportunities/$opportunityId"
-                      params={{ opportunityId: o.slug }}
-                      className="rounded-md px-3 py-2 text-xs text-fg ring-1 ring-line transition-colors hover:bg-surface-2 hover:text-accent-soft"
-                    >
-                      View listing
-                    </Link>
-                  ) : null}
+                  <div className="flex flex-wrap gap-2">
+                    {o.status === "PUBLISHED" ? (
+                      <Link
+                        to="/opportunities/$opportunityId"
+                        params={{ opportunityId: o.slug }}
+                        className="rounded-md px-3 py-2 text-xs text-fg ring-1 ring-line transition-colors hover:bg-surface-2 hover:text-accent-soft"
+                      >
+                        View listing
+                      </Link>
+                    ) : null}
+                    {["PUBLISHED", "DRAFT", "PENDING_REVIEW", "APPROVED", "SCHEDULED"].includes(o.status) ? (
+                      <button
+                        type="button"
+                        onClick={() => setEditingId(editingId === o.id ? null : o.id)}
+                        className="rounded-md px-3 py-2 text-xs text-fg ring-1 ring-line transition-colors hover:bg-surface-2 hover:text-accent-soft"
+                      >
+                        {editingId === o.id ? "Close editor" : o.status === "DRAFT" ? "Edit & resubmit" : "Edit"}
+                      </button>
+                    ) : null}
+                    {["PUBLISHED", "DRAFT", "PENDING_REVIEW", "APPROVED", "SCHEDULED"].includes(o.status) ? (
+                      <button
+                        type="button"
+                        disabled={closeListing.isPending}
+                        onClick={() => {
+                          const live = o.status === "PUBLISHED";
+                          if (window.confirm(live ? `Close "${o.title}"? It will leave the public board.` : `Withdraw "${o.title}"?`)) {
+                            closeListing.mutate(o.id);
+                          }
+                        }}
+                        className="rounded-md px-3 py-2 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
+                      >
+                        {o.status === "PUBLISHED" ? "Close listing" : "Withdraw"}
+                      </button>
+                    ) : null}
+                  </div>
                 </div>
+                {editingId === o.id ? (
+                  <ListingEditor
+                    opportunityId={o.id}
+                    isStaff={false}
+                    invalidateKeys={[["employer", "opportunities"]]}
+                    onClose={() => setEditingId(null)}
+                  />
+                ) : null}
               </Panel>
             );
           })

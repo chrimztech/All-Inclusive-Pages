@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SiteShell, Panel, PageIntro, Chip } from "@/components/eoz/SiteShell";
 import { CANDIDATE_NAV, DashNav } from "@/components/eoz/DashNav";
 import { ORG } from "@/lib/eoz-data";
-import { api, isUnauthenticated, type ApiApplication } from "@/lib/api-client";
+import { api, ApiError, isUnauthenticated, type ApiApplication } from "@/lib/api-client";
+import { useToast } from "@/lib/toast";
 
 export const Route = createFileRoute("/candidate/applications")({
   head: () => ({
@@ -33,6 +34,16 @@ const STATUS_TONE: Record<string, "emerald" | "amber" | "rose" | "accent" | "mut
 };
 
 function Applications() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const withdraw = useMutation({
+    mutationFn: (id: string) => api.post(`/candidate/applications/${id}/withdraw`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidate", "applications"] });
+      toast("Application withdrawn.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not withdraw the application.", "error"),
+  });
   const applicationsQuery = useQuery({
     queryKey: ["candidate", "applications"],
     queryFn: () => api.get<ApiApplication[]>("/candidate/applications"),
@@ -65,6 +76,7 @@ function Applications() {
         {applications.map((a) => {
           const stageIndex = Math.max(0, STATUS_ORDER.indexOf(a.status));
           const terminal = a.status === "REJECTED" || a.status === "WITHDRAWN";
+          const canWithdraw = !terminal && a.status !== "HIRED";
           return (
             <Panel key={a.id}>
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -90,6 +102,20 @@ function Applications() {
                     </li>
                   ))}
                 </ol>
+              ) : null}
+              {canWithdraw ? (
+                <div className="mt-4 border-t border-line pt-3">
+                  <button
+                    type="button"
+                    disabled={withdraw.isPending}
+                    onClick={() => {
+                      if (window.confirm(`Withdraw your application for "${a.opportunityTitle}"?`)) withdraw.mutate(a.id);
+                    }}
+                    className="rounded-md px-3 py-1.5 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
+                  >
+                    Withdraw application
+                  </button>
+                </div>
               ) : null}
             </Panel>
           );

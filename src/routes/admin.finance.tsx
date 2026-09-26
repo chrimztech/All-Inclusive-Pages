@@ -107,6 +107,14 @@ function Finance() {
     onError: (error) => toast(errorMessage(error, "Could not record payment."), "error"),
   });
 
+  const cancelInvoice = useMutation({
+    mutationFn: (invoiceId: string) => api.post(`/admin/finance/invoices/${invoiceId}/cancel`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "finance"] });
+      toast("Invoice cancelled.");
+    },
+    onError: (error) => toast(errorMessage(error, "Could not cancel invoice."), "error"),
+  });
   const refund = useMutation({
     mutationFn: (invoiceId: string) =>
       api.post(`/admin/finance/invoices/${invoiceId}/refund`, {
@@ -222,6 +230,23 @@ function Finance() {
                         </button>
                       </form>
                     </div>
+
+                    {inv.status === "UNPAID" ? (
+                      <div>
+                        <button
+                          type="button"
+                          disabled={cancelInvoice.isPending}
+                          onClick={() => {
+                            if (window.confirm(`Cancel invoice ${inv.reference}? The customer will be notified.`)) {
+                              cancelInvoice.mutate(inv.id);
+                            }
+                          }}
+                          className="rounded-md px-3 py-1.5 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
+                        >
+                          Cancel invoice
+                        </button>
+                      </div>
+                    ) : null}
 
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>

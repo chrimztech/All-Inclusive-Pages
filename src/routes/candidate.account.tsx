@@ -3,6 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { CANDIDATE_NAV, DashNav } from "@/components/eoz/DashNav";
+import { PasswordInput } from "@/components/eoz/PasswordInput";
 import { api, ApiError } from "@/lib/api-client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useToast } from "@/lib/toast";
@@ -161,9 +162,8 @@ function Account() {
           >
             <label className="text-sm">
               <span className="label-mono">Current password</span>
-              <input
+              <PasswordInput
                 required
-                type="password"
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)}
                 className="mt-1 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/40"
@@ -171,10 +171,9 @@ function Account() {
             </label>
             <label className="text-sm">
               <span className="label-mono">New password</span>
-              <input
+              <PasswordInput
                 required
                 minLength={8}
-                type="password"
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.target.value)}
                 className="mt-1 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/40"
@@ -182,10 +181,9 @@ function Account() {
             </label>
             <label className="text-sm">
               <span className="label-mono">Confirm new password</span>
-              <input
+              <PasswordInput
                 required
                 minLength={8}
-                type="password"
                 value={confirmPassword}
                 onChange={(e) => {
                   setConfirmPassword(e.target.value);
