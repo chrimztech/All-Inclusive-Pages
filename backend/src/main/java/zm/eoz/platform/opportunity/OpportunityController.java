@@ -48,10 +48,13 @@ public class OpportunityController {
             @RequestParam(required = false) String workArrangement,
             @RequestParam(required = false) String experienceLevel,
             @RequestParam(required = false) String order,
+            @RequestParam(required = false) Boolean featured,
+            @RequestParam(required = false) Integer postedWithinDays,
+            @RequestParam(required = false) java.math.BigDecimal minSalary,
             Pageable pageable) {
         return ApiResponse.of(PageResponse.from(opportunityService.search(
                 category, region, q, verifiedOnly, deadlineWithinDays, organisationId, employmentType, workArrangement,
-                experienceLevel, order, pageable)));
+                experienceLevel, order, featured, postedWithinDays, minSalary, pageable)));
     }
 
     @GetMapping("/{slug}")
@@ -135,6 +138,13 @@ public class OpportunityController {
         return ApiResponse.of(opportunityService.close(id, currentUser()));
     }
 
+    /** Every saved version of a listing, newest first, for its owner or staff. */
+    @GetMapping("/manage/{id}/versions")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<java.util.List<OpportunityVersionRecorder.Version>> versions(@PathVariable UUID id) {
+        return ApiResponse.of(opportunityService.versions(id, currentUser()));
+    }
+
     @GetMapping("/manage/{id}")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<OpportunityDetailResponse> getForManage(@PathVariable UUID id) {
@@ -158,6 +168,44 @@ public class OpportunityController {
     @PreAuthorize("hasAuthority('OPPORTUNITY_MODERATE')")
     public ApiResponse<OpportunityDetailResponse> reopen(@PathVariable UUID id) {
         return ApiResponse.of(opportunityService.reopen(id, currentUser()));
+    }
+
+    /** Public: a visitor followed the official application route. */
+    @PostMapping("/{id}/apply-click")
+    public org.springframework.http.ResponseEntity<Void> applyClick(@PathVariable UUID id) {
+        opportunityService.recordApplyClick(id);
+        return org.springframework.http.ResponseEntity.noContent().build();
+    }
+
+    /** Public: a visitor shared the listing. */
+    @PostMapping("/{id}/share")
+    public org.springframework.http.ResponseEntity<Void> share(@PathVariable UUID id) {
+        opportunityService.recordShare(id);
+        return org.springframework.http.ResponseEntity.noContent().build();
+    }
+
+    public record FeatureRequest(boolean featured) {}
+
+    @PatchMapping("/{id}/feature")
+    @PreAuthorize("hasAuthority('OPPORTUNITY_PUBLISH')")
+    public ApiResponse<OpportunityDetailResponse> feature(@PathVariable UUID id, @RequestBody FeatureRequest request) {
+        return ApiResponse.of(opportunityService.setFeatured(id, request.featured(), currentUser()));
+    }
+
+    public record ExtendDeadlineRequest(java.time.Instant deadline, String reason) {}
+
+    @PatchMapping("/{id}/extend")
+    @PreAuthorize("hasAuthority('OPPORTUNITY_MODERATE')")
+    public ApiResponse<OpportunityDetailResponse> extend(
+            @PathVariable UUID id, @RequestBody ExtendDeadlineRequest request) {
+        return ApiResponse.of(opportunityService.extendDeadline(id, request.deadline(), request.reason(), currentUser()));
+    }
+
+    /** Owner or staff: copy a listing into a new submission, e.g. to re-run a vacancy that closed. */
+    @PostMapping("/manage/{id}/renew")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<OpportunityDetailResponse> renew(@PathVariable UUID id) {
+        return ApiResponse.of(opportunityService.renew(id, currentUser()));
     }
 
     @PatchMapping("/{id}/archive")

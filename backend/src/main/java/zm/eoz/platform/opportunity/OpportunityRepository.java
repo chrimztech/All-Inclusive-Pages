@@ -35,6 +35,18 @@ public interface OpportunityRepository
 
     long countByOrganisationIdAndStatus(UUID organisationId, OpportunityStatus status);
 
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(
+            "update Opportunity o set o.applyClicks = o.applyClicks + 1"
+                    + " where o.id = :id and o.status = zm.eoz.platform.opportunity.OpportunityStatus.PUBLISHED")
+    int incrementApplyClicks(@org.springframework.data.repository.query.Param("id") UUID id);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query(
+            "update Opportunity o set o.shareCount = o.shareCount + 1"
+                    + " where o.id = :id and o.status = zm.eoz.platform.opportunity.OpportunityStatus.PUBLISHED")
+    int incrementShares(@org.springframework.data.repository.query.Param("id") UUID id);
+
     Page<Opportunity> findByCreatedByIdOrderByCreatedAtDesc(UUID createdById, Pageable pageable);
 
     List<Opportunity> findByCreatedById(UUID createdById);

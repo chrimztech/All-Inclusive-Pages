@@ -19,6 +19,8 @@ public record ServiceOrderResponse(
         BigDecimal latestQuoteAmount,
         String latestQuoteCurrency,
         boolean latestQuoteAccepted,
+        Integer rating,
+        String feedback,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -36,6 +38,8 @@ public record ServiceOrderResponse(
                 latestQuote != null ? latestQuote.getAmount() : null,
                 latestQuote != null ? latestQuote.getCurrency() : null,
                 latestQuote != null && latestQuote.getAcceptedAt() != null,
+                o.getRating() != null ? o.getRating().intValue() : null,
+                o.getFeedback(),
                 o.getCreatedAt(),
                 o.getUpdatedAt());
     }

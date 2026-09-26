@@ -24,6 +24,10 @@ export function notificationLink(type: string, roles: string[]): string {
   if (type === "EMAIL_VERIFICATION") return "/verify-email";
   if (type === "PASSWORD_RESET") return "/account";
   if (type === "RESTORE_FLAGGED") return "/admin/health";
+  if (type === "JOB_ALERT") return "/opportunities";
+  if (type === "SECURITY_ALERT") return "/admin/audit";
+  if (type === "ACCOUNT_LOCKED" || type === "SECURITY_NOTICE") return "/account";
+  if (type === "DEADLINE_REMINDER") return "/candidate/saved";
   if (type.startsWith("OPPORTUNITY_")) return "/employers/listings";
   if (type === "SERVICE_ORDER_MESSAGE" || type === "SERVICE_QUOTE_ISSUED") {
     return isCandidate ? "/candidate/orders" : "/employers/services";

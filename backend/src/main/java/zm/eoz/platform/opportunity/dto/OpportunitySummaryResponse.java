@@ -26,7 +26,8 @@ public record OpportunitySummaryResponse(
         String currency,
         Instant deadline,
         Instant publishedAt,
-        long viewsCount) {
+        long viewsCount,
+        boolean featured) {
 
     public static OpportunitySummaryResponse from(Opportunity o) {
         return new OpportunitySummaryResponse(
@@ -51,6 +52,7 @@ public record OpportunitySummaryResponse(
                 o.getCurrency(),
                 o.getDeadline(),
                 o.getPublishedAt(),
-                o.getViewsCount());
+                o.getViewsCount(),
+                o.isFeatured());
     }
 }

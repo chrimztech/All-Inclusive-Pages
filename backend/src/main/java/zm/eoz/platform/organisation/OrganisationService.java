@@ -31,13 +31,20 @@ public class OrganisationService {
     private final AuditService auditService;
     private final OpportunityRepository opportunityRepository;
 
+    /** file_assets owner type for verification evidence (registration certificates, TPIN letters, ...). */
+    public static final String EVIDENCE_OWNER_TYPE = "ORGANISATION_VERIFICATION";
+
+    private final zm.eoz.platform.storage.FileStorageService fileStorageService;
+
     public OrganisationService(
             OrganisationRepository organisationRepository,
             OrganisationVerificationReviewRepository reviewRepository,
             OrganisationMemberRepository memberRepository,
             UserRepository userRepository,
             AuditService auditService,
-            OpportunityRepository opportunityRepository) {
+            OpportunityRepository opportunityRepository,
+            zm.eoz.platform.storage.FileStorageService fileStorageService) {
+        this.fileStorageService = fileStorageService;
         this.organisationRepository = organisationRepository;
         this.reviewRepository = reviewRepository;
         this.memberRepository = memberRepository;
@@ -195,6 +202,63 @@ public class OrganisationService {
         }
         memberRepository.delete(member);
         auditService.record(actor, "MEMBER_REMOVED", "Organisation", organisationId.toString(), "Removed member " + userId);
+    }
+
+    public record ReviewView(String decision, String notes, String reviewerName, java.time.Instant reviewedAt) {}
+
+    /** Verification decisions with reviewer notes, newest first — visible to members and reviewers. */
+    @Transactional(readOnly = true)
+    public List<ReviewView> reviews(UUID organisationId, User actor) {
+        requireOrganisation(organisationId);
+        boolean reviewer = hasPermission(actor, "ORGANISATION_VERIFY");
+        boolean member = memberRepository.findById_OrganisationIdAndId_UserId(organisationId, actor.getId()).isPresent();
+        if (!reviewer && !member) {
+            throw new ForbiddenException("You are not a member of this organisation.");
+        }
+        return reviewRepository.findByOrganisationIdOrderByReviewedAtDesc(organisationId).stream()
+                .map(r -> new ReviewView(
+                        r.getDecision().name(),
+                        r.getNotes(),
+                        r.getReviewer() != null ? r.getReviewer().getFullName() : null,
+                        r.getReviewedAt()))
+                .toList();
+    }
+
+    /** Evidence is visible to the organisation's own members and to verification reviewers. */
+    @Transactional(readOnly = true)
+    public List<zm.eoz.platform.storage.FileAsset> listEvidence(UUID organisationId, User actor) {
+        requireOrganisation(organisationId);
+        boolean reviewer = hasPermission(actor, "ORGANISATION_VERIFY");
+        boolean member = memberRepository.findById_OrganisationIdAndId_UserId(organisationId, actor.getId()).isPresent();
+        if (!reviewer && !member) {
+            throw new ForbiddenException("You are not a member of this organisation.");
+        }
+        return fileStorageService.listForOwner(EVIDENCE_OWNER_TYPE, organisationId.toString());
+    }
+
+    /**
+     * Adds a verification document. Submitting evidence moves a pending or rejected organisation to UNDER_REVIEW so
+     * it shows up for reviewers; verified and suspended organisations keep their status.
+     */
+    @Transactional
+    public zm.eoz.platform.storage.FileAsset addEvidence(
+            UUID organisationId, org.springframework.web.multipart.MultipartFile file, User actor) {
+        Organisation org = requireOrganisation(organisationId);
+        if (memberRepository.findById_OrganisationIdAndId_UserId(organisationId, actor.getId()).isEmpty()) {
+            throw new ForbiddenException("Only members of this organisation can submit its verification documents.");
+        }
+        var asset = fileStorageService.store(file, EVIDENCE_OWNER_TYPE, organisationId.toString(), actor);
+        VerificationStatus status = org.getVerificationStatus();
+        if (status == VerificationStatus.PENDING || status == VerificationStatus.REJECTED) {
+            org.setVerificationStatus(VerificationStatus.UNDER_REVIEW);
+        }
+        auditService.record(actor, "VERIFICATION_EVIDENCE_ADDED", "Organisation", organisationId.toString(),
+                "Uploaded " + asset.getFileName() + (status != org.getVerificationStatus() ? " (now under review)" : ""));
+        return asset;
+    }
+
+    private static boolean hasPermission(User actor, String code) {
+        return actor.getRoles().stream().flatMap(r -> r.getPermissions().stream()).anyMatch(p -> code.equals(p.getCode()));
     }
 
     private void requireMemberAccess(UUID organisationId, User actor) {

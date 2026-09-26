@@ -38,7 +38,13 @@ public class CandidateController {
     private final CandidateService candidateService;
     private final UserRepository userRepository;
 
-    public CandidateController(CandidateService candidateService, UserRepository userRepository) {
+    private final zm.eoz.platform.privacy.PrivacyService privacyService;
+
+    public CandidateController(
+            CandidateService candidateService,
+            UserRepository userRepository,
+            zm.eoz.platform.privacy.PrivacyService privacyService) {
+        this.privacyService = privacyService;
         this.candidateService = candidateService;
         this.userRepository = userRepository;
     }
@@ -149,7 +155,7 @@ public class CandidateController {
 
     @PostMapping("/privacy/delete-request")
     public ResponseEntity<Void> requestDeletion() {
-        candidateService.requestAccountDeletion(currentUser());
+        privacyService.requestDeletion(currentUser());
         return ResponseEntity.noContent().build();
     }
 

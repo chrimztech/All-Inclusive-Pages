@@ -1,5 +1,9 @@
+F:\All-Inclusive Pages\backend\src\test\java\zm\eoz\platform\AccountSecurityAndHistoryTest.java
 F:\All-Inclusive Pages\backend\src\test\java\zm\eoz\platform\auth\AuthFlowTest.java
 F:\All-Inclusive Pages\backend\src\test\java\zm\eoz\platform\candidate\CandidateProfileTest.java
+F:\All-Inclusive Pages\backend\src\test\java\zm\eoz\platform\FeatureGapsTest.java
 F:\All-Inclusive Pages\backend\src\test\java\zm\eoz\platform\opportunity\OpportunityModerationTest.java
 F:\All-Inclusive Pages\backend\src\test\java\zm\eoz\platform\payments\PaymentWebhookTest.java
 F:\All-Inclusive Pages\backend\src\test\java\zm\eoz\platform\PlatformFeaturesTest.java
+F:\All-Inclusive Pages\backend\src\test\java\zm\eoz\platform\security\TotpAndRateLimitTest.java
+F:\All-Inclusive Pages\backend\src\test\java\zm\eoz\platform\SecurityOperationsTest.java

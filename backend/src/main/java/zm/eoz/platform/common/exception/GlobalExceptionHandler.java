@@ -42,6 +42,11 @@ public class GlobalExceptionHandler {
         return problem(HttpStatus.BAD_REQUEST, "bad-request", ex.getMessage());
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ProblemDetail handleTooMany(TooManyRequestsException ex) {
+        return problem(HttpStatus.TOO_MANY_REQUESTS, "too-many-requests", ex.getMessage());
+    }
+
     @ExceptionHandler(BadCredentialsException.class)
     public ProblemDetail handleBadCredentials(BadCredentialsException ex) {
         return problem(HttpStatus.UNAUTHORIZED, "invalid-credentials", "Invalid email or password.");

@@ -49,6 +49,11 @@ public class SystemHealthController {
                 new ScheduledJobInfo("Close expired opportunities", "Every 5 minutes"),
                 new ScheduledJobInfo("Publish scheduled opportunities", "Every 1 minute"),
                 new ScheduledJobInfo("Publish scheduled content", "Every 1 minute"),
+                new ScheduledJobInfo("Instant opportunity alerts", "Every 5 minutes"),
+                new ScheduledJobInfo("Alert digests & deadline reminders", "Every hour"),
+                new ScheduledJobInfo("Send queued emails (with retries)", "Every 30 seconds"),
+                new ScheduledJobInfo("Generate CSV exports", "Every 20 seconds"),
+                new ScheduledJobInfo("Retention clean-up & account erasure", "Every 24 hours"),
                 new ScheduledJobInfo("Database backup (pg_dump)", "Every 24 hours"));
 
         long uptimeSeconds = ManagementFactory.getRuntimeMXBean().getUptime() / 1000;

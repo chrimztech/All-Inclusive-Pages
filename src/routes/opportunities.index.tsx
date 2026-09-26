@@ -45,6 +45,8 @@ function Board() {
   const [employmentType, setEmploymentType] = useState("");
   const [workArrangement, setWorkArrangement] = useState("");
   const [recruiter, setRecruiter] = useState<ApiOrganisation | null>(null);
+  const [postedWithin, setPostedWithin] = useState("");
+  const [minSalary, setMinSalary] = useState("");
 
   const recruitersQuery = useQuery({
     queryKey: ["organisations", "top-recruiters"],
@@ -68,6 +70,8 @@ function Board() {
       workArrangement,
       sort,
       recruiter?.id,
+      postedWithin,
+      minSalary,
     ],
     queryFn: () =>
       api.get<PageResponse<ApiOpportunitySummary>>("/opportunities", {
@@ -77,6 +81,8 @@ function Board() {
         employmentType: employmentType || undefined,
         workArrangement: workArrangement || undefined,
         organisationId: recruiter?.id,
+        postedWithinDays: postedWithin ? Number(postedWithin) : undefined,
+        minSalary: minSalary && Number(minSalary) > 0 ? Number(minSalary) : undefined,
         order: sort,
         size: 50,
       }),
@@ -146,6 +152,32 @@ function Board() {
                 </option>
               ))}
             </select>
+            <div className="label-mono mb-2">Date posted</div>
+            <select
+              value={postedWithin}
+              onChange={(e) => setPostedWithin(e.target.value)}
+              aria-label="Date posted"
+              className="mb-5 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line"
+            >
+              <option value="">Any time</option>
+              <option value="1">Last 24 hours</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+            </select>
+            <label className="mb-5 block">
+              <span className="label-mono mb-2 block">Minimum salary (ZMW / month)</span>
+              <input
+                type="number"
+                min={0}
+                step={500}
+                inputMode="numeric"
+                value={minSalary}
+                onChange={(e) => setMinSalary(e.target.value)}
+                placeholder="e.g. 8000"
+                className="w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line"
+              />
+              <span className="mt-1 block text-[11px] text-muted">Only listings that publish their pay.</span>
+            </label>
             <div className="label-mono mb-2">Work arrangement</div>
             <select
               value={workArrangement}

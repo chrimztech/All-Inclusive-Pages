@@ -1,10 +1,22 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
+import {
+  Building2,
+  Check,
+  Copy,
+  ExternalLink,
+  Link2,
+  Mail,
+  MapPin,
+  Share2,
+} from "lucide-react";
+import { FacebookIcon, LinkedInIcon, WhatsAppIcon } from "@/components/eoz/SocialIcons";
 import { SiteShell, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ORG } from "@/lib/eoz-data";
 import { DeadlineChip, SaveToggle } from "@/components/eoz/OpportunityCard";
 import { useCurrentUser } from "@/lib/use-current-user";
+import { safeHttpUrl } from "@/lib/safe-url";
 import {
   api,
   ApiError,
@@ -76,6 +88,17 @@ function OpportunityNotFound() {
   );
 }
 
+function trackApplyClick(id: string) {
+  api.post(`/opportunities/${id}/apply-click`).catch(() => undefined);
+}
+
+function isEozHiring(item: ApiOpportunityDetail) {
+  return (
+    item.applicationMode === "EOZ_INTERNAL_HIRING" ||
+    /^echo opportunities zambia$/i.test(item.organisationName.trim())
+  );
+}
+
 function applyMethodLabel(item: ApiOpportunityDetail) {
   switch (item.applicationMode) {
     case "EXTERNAL_URL":
@@ -144,6 +167,26 @@ function Detail() {
             {item.region ? ` · ${item.region}` : ""}
             {item.workMode ? ` · ${item.workMode}` : ""}
           </p>
+          <p className="mt-2 inline-flex flex-wrap items-center gap-x-2 gap-y-1 rounded-lg bg-white/[0.03] px-3 py-1.5 text-xs text-muted ring-1 ring-line">
+            <Building2 aria-hidden="true" className="size-3.5 text-accent-soft" />
+            {isEozHiring(item) ? (
+              <span>Hiring organisation: Echo Opportunities Zambia</span>
+            ) : (
+              <span>
+                Published by EOZ on behalf of{" "}
+                <span className="font-medium text-fg">{item.organisationName}</span>
+              </span>
+            )}
+            {item.organisationId ? (
+              <Link
+                to="/organisations/$organisationId"
+                params={{ organisationId: item.organisationId }}
+                className="text-accent-soft hover:text-fg"
+              >
+                View profile →
+              </Link>
+            ) : null}
+          </p>
 
           <p className="mt-8 max-w-[62ch] text-pretty text-lg text-muted">{item.description}</p>
 
@@ -164,7 +207,7 @@ function Detail() {
           <h2 className="mt-10 font-display text-2xl tracking-tight">How to apply</h2>
           <Panel className="mt-4">
             <div className="label-mono mb-2">Official application route</div>
-            <p className="text-sm">{applyMethodLabel(item)}</p>
+            <ApplyRoute item={item} />
             <p className="mt-4 text-xs text-muted">{ORG.disclaimer}</p>
             {item.applicationMode === "EOZ_HOSTED" ? (
               <EozHostedApplyForm opportunityId={item.id} />
@@ -174,9 +217,15 @@ function Detail() {
 
         <aside className="space-y-4 lg:col-span-4">
           <Panel>
-            <div className="label-mono">Value</div>
-            <div className="font-display text-3xl">{item.opportunityValue}</div>
-            <div className="text-xs text-muted">{item.opportunityValueUnit}</div>
+            {item.opportunityValue ? (
+              <>
+                <div className="label-mono">Value</div>
+                <div className="font-display text-3xl">{item.opportunityValue}</div>
+                <div className="text-xs text-muted">{item.opportunityValueUnit}</div>
+              </>
+            ) : (
+              <div className="label-mono">At a glance</div>
+            )}
             {salaryRangeLabel(item) ? (
               <div className="mt-1 text-xs text-accent-soft">{salaryRangeLabel(item)}</div>
             ) : null}
@@ -196,10 +245,15 @@ function Detail() {
               <Row label="Reference" value={item.reference} />
             </div>
           </Panel>
+          <ShareBar item={item} />
           <Panel>
-            <div className="label-mono mb-2">Need help applying?</div>
+            <div className="label-mono mb-2">EOZ support &amp; services</div>
             <p className="text-sm text-muted">
               CV writing, cover letters and interview coaching from the EOZ services desk.
+            </p>
+            <p className="mt-2 text-xs text-muted">
+              The services desk is not the application channel for this opportunity — apply only
+              through the official route above.
             </p>
             <Link to="/services" className="mt-3 inline-block text-sm text-accent-soft">
               View services →
@@ -219,6 +273,157 @@ function Detail() {
         </section>
       ) : null}
     </SiteShell>
+  );
+}
+
+/** The employer's own application route, rendered as the right kind of action. */
+function ApplyRoute({ item }: { item: ApiOpportunityDetail }) {
+  const [copied, setCopied] = useState(false);
+  const closed = item.deadline != null && new Date(item.deadline).getTime() < Date.now();
+
+  if (closed) {
+    return (
+      <p className="text-sm text-muted">
+        This opportunity closed on {new Date(item.deadline!).toLocaleString("en-ZM", { timeZone: "Africa/Lusaka" })}{" "}
+        (Lusaka time). New applications are no longer accepted.
+      </p>
+    );
+  }
+
+  if (item.applicationMode === "EXTERNAL_URL") {
+    const url = safeHttpUrl(item.applicationUrl);
+    if (!url) {
+      return <p className="text-sm text-rose">The application link for this listing is invalid. Please report it.</p>;
+    }
+    return (
+      <div>
+        <a
+          href={url.toString()}
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+          onClick={() => trackApplyClick(item.id)}
+          className="btn-primary px-5 py-3 text-sm"
+        >
+          Apply on the employer's site
+          <ExternalLink aria-hidden="true" className="size-4" />
+        </a>
+        <p className="mt-2 text-xs text-muted">
+          External link — opens <span className="font-mono text-fg/80">{url.hostname}</span> in a new tab.
+        </p>
+      </div>
+    );
+  }
+
+  if (item.applicationMode === "EMPLOYER_EMAIL" && item.applicationEmail) {
+    const subject = encodeURIComponent(`Application: ${item.title} (${item.reference})`);
+    return (
+      <div className="flex flex-wrap items-center gap-3">
+        <a
+          href={`mailto:${item.applicationEmail}?subject=${subject}`}
+          onClick={() => trackApplyClick(item.id)}
+          className="btn-primary px-5 py-3 text-sm"
+        >
+          <Mail aria-hidden="true" className="size-4" />
+          Email your application
+        </a>
+        <span className="font-mono text-sm text-fg/80">{item.applicationEmail}</span>
+      </div>
+    );
+  }
+
+  if (item.applicationMode === "PHYSICAL_ADDRESS" && item.applicationAddress) {
+    return (
+      <div className="flex flex-wrap items-start gap-3">
+        <p className="flex items-start gap-2 text-sm">
+          <MapPin aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent-soft" />
+          {item.applicationAddress}
+        </p>
+        <button
+          type="button"
+          onClick={() => {
+            navigator.clipboard?.writeText(item.applicationAddress ?? "").then(() => {
+              setCopied(true);
+              trackApplyClick(item.id);
+              setTimeout(() => setCopied(false), 2000);
+            });
+          }}
+          className="btn-secondary px-3 py-1.5 text-xs"
+        >
+          {copied ? <Check aria-hidden="true" className="size-3.5" /> : <Copy aria-hidden="true" className="size-3.5" />}
+          {copied ? "Copied" : "Copy address"}
+        </button>
+      </div>
+    );
+  }
+
+  return <p className="text-sm">{applyMethodLabel(item)}</p>;
+}
+
+function ShareBar({ item }: { item: ApiOpportunityDetail }) {
+  const [copied, setCopied] = useState(false);
+  const pageUrl = typeof window !== "undefined" ? window.location.href : "";
+  const text = `${item.title} — ${item.organisationName}`;
+  const record = () => api.post(`/opportunities/${item.id}/share`).catch(() => undefined);
+  const targets = [
+    {
+      label: "WhatsApp",
+      Icon: WhatsAppIcon,
+      href: `https://wa.me/?text=${encodeURIComponent(`${text}\n${pageUrl}`)}`,
+    },
+    {
+      label: "Facebook",
+      Icon: FacebookIcon,
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(pageUrl)}`,
+    },
+    {
+      label: "LinkedIn",
+      Icon: LinkedInIcon,
+      href: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(pageUrl)}`,
+    },
+  ];
+
+  return (
+    <Panel>
+      <div className="mb-3 flex items-center gap-2 text-sm font-medium">
+        <Share2 aria-hidden="true" className="size-4 text-accent-soft" />
+        Share this opportunity
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {targets.map((t) => (
+          <a
+            key={t.label}
+            href={t.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={record}
+            aria-label={`Share on ${t.label}`}
+            title={`Share on ${t.label}`}
+            className="flex size-10 items-center justify-center rounded-xl bg-white/[0.04] text-accent-soft ring-1 ring-line transition-all hover:-translate-y-0.5 hover:text-fg hover:ring-accent/40"
+          >
+            <t.Icon className="size-4" />
+          </a>
+        ))}
+        <button
+          type="button"
+          onClick={() => {
+            const nav = typeof navigator !== "undefined" ? navigator : undefined;
+            if (nav?.share) {
+              nav.share({ title: text, url: pageUrl }).then(record, () => undefined);
+              return;
+            }
+            nav?.clipboard?.writeText(pageUrl).then(() => {
+              record();
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            });
+          }}
+          className="btn-secondary h-10 px-3 text-xs"
+        >
+          {copied ? <Check aria-hidden="true" className="size-3.5" /> : <Link2 aria-hidden="true" className="size-3.5" />}
+          {copied ? "Link copied" : "Copy link"}
+        </button>
+      </div>
+    </Panel>
   );
 }
 

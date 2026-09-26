@@ -288,6 +288,30 @@ public class ServiceCatalogService {
         return QuoteResponse.from(quote);
     }
 
+    /** The customer's rating of a completed order. Given once; the officer and managers see it. */
+    @Transactional
+    public ServiceOrderResponse submitFeedback(UUID orderId, int rating, String comment, User actor) {
+        ServiceOrder order = requireOrder(orderId);
+        if (!order.getCustomer().getId().equals(actor.getId())) {
+            throw new ForbiddenException("Only the customer can rate this order.");
+        }
+        if (order.getStatus() != ServiceOrderStatus.COMPLETED) {
+            throw new BadRequestException("You can rate an order once it is completed.");
+        }
+        if (order.getRating() != null) {
+            throw new BadRequestException("This order has already been rated.");
+        }
+        if (rating < 1 || rating > 5) {
+            throw new BadRequestException("Rating must be between 1 and 5.");
+        }
+        order.setRating((short) rating);
+        order.setFeedback(comment == null || comment.isBlank() ? null : comment.trim());
+        order.setRatedAt(Instant.now());
+        auditService.record(actor, "SERVICE_ORDER_RATED", "ServiceOrder", order.getReference(), "Rated " + rating + "/5");
+        List<Quote> quotes = quoteRepository.findByOrderIdOrderByIssuedAtDesc(orderId);
+        return ServiceOrderResponse.from(order, quotes.isEmpty() ? null : quotes.get(0));
+    }
+
     @Transactional
     public InvoiceResponse acceptQuoteAndInvoice(UUID orderId, User actor) {
         ServiceOrder order = requireOrder(orderId);

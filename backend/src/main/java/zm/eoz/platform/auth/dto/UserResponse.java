@@ -12,4 +12,5 @@ public record UserResponse(
         List<String> roles,
         boolean opportunityAlertsEnabled,
         boolean serviceCommsEnabled,
-        boolean mustChangePassword) {}
+        boolean mustChangePassword,
+        boolean mfaEnabled) {}

@@ -34,7 +34,14 @@ import { OpportunityCard } from "@/components/eoz/OpportunityCard";
 import { CountUp, Reveal, trackSpotlight } from "@/components/eoz/Motion";
 import { Monogram } from "@/components/eoz/Monogram";
 import { APPLICATIONS, APPLICATION_STAGES, CATEGORIES, PILLARS, REGIONS } from "@/lib/eoz-data";
-import { api, type ApiOpportunitySummary, type PageResponse } from "@/lib/api-client";
+import {
+  api,
+  organisationLogoUrl,
+  type ApiOpportunitySummary,
+  type ApiOrganisation,
+  type ApiTestimonial,
+  type PageResponse,
+} from "@/lib/api-client";
 import { useOrgSettings } from "@/lib/use-org-settings";
 import { useCountdown, formatCountdown, countdownTone } from "@/lib/use-countdown";
 
@@ -309,6 +316,8 @@ function Home() {
         </div>
       </section>
 
+      <TrustedOrganisations />
+
       {/* ─────────────────────── How it works ─────────────────────── */}
       <section className="py-24">
         <Reveal className="mx-auto max-w-2xl text-center">
@@ -348,6 +357,8 @@ function Home() {
           ))}
         </div>
       </section>
+
+      <FeaturedOpportunities />
 
       {/* ─────────────────────── Listings ─────────────────────── */}
       <section id="listings" className="scroll-mt-24 border-t border-line pt-16 pb-8">
@@ -702,6 +713,8 @@ function Home() {
         </div>
       </section>
 
+      <Testimonials />
+
       {/* ─────────────────────── Explore ─────────────────────── */}
       <section className="py-12">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -912,5 +925,157 @@ function RadioRow({
       </span>
       {label}
     </label>
+  );
+}
+
+/** Verified organisations with live listings. Hidden until there is at least one. */
+function TrustedOrganisations() {
+  const orgsQuery = useQuery({
+    queryKey: ["organisations", "trusted"],
+    queryFn: () =>
+      api.get<PageResponse<ApiOrganisation>>("/organisations", {
+        order: "top",
+        verifiedOnly: "true",
+        size: 12,
+      }),
+  });
+  const orgs = (orgsQuery.data?.items ?? []).filter((o) => o.listingsCount > 0);
+  if (orgs.length === 0) return null;
+  return (
+    <section aria-labelledby="trusted-heading" className="pt-14">
+      <Reveal>
+        <p id="trusted-heading" className="label-mono mb-5 text-center">
+          Verified organisations hiring through EOZ
+        </p>
+        <ul className="flex flex-wrap items-center justify-center gap-3">
+          {orgs.map((o) => {
+            const name = o.tradingName ?? o.legalName;
+            return (
+              <li key={o.id}>
+                <Link
+                  to="/organisations/$organisationId"
+                  params={{ organisationId: o.id }}
+                  className="group flex items-center gap-2.5 rounded-full bg-white/[0.03] py-1.5 pr-4 pl-1.5 ring-1 ring-line transition-all hover:bg-white/[0.07] hover:ring-accent/30"
+                >
+                  {o.logoFileId ? (
+                    <img
+                      src={organisationLogoUrl(o.id)}
+                      alt=""
+                      className="size-8 rounded-full object-cover ring-1 ring-white/10"
+                    />
+                  ) : (
+                    <Monogram name={name} className="size-8 rounded-full text-[11px]" />
+                  )}
+                  <span className="text-sm text-muted transition-colors group-hover:text-fg">{name}</span>
+                  <BadgeCheck aria-label="Verified" className="size-3.5 text-emerald" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </Reveal>
+    </section>
+  );
+}
+
+/** Staff-curated listings. Hidden when nothing is featured. */
+function FeaturedOpportunities() {
+  const featuredQuery = useQuery({
+    queryKey: ["opportunities", "featured"],
+    queryFn: () =>
+      api.get<PageResponse<ApiOpportunitySummary>>("/opportunities", { featured: "true", size: 6 }),
+  });
+  const items = featuredQuery.data?.items ?? [];
+  if (items.length === 0) return null;
+  return (
+    <section aria-labelledby="featured-heading" className="pb-20">
+      <Reveal className="mb-8 flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="eyebrow mb-3">Featured by EOZ</div>
+          <h2 id="featured-heading" className="font-display text-4xl tracking-tight lg:text-5xl">
+            Worth a closer look.
+          </h2>
+        </div>
+      </Reveal>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {items.map((item, i) => (
+          <Reveal key={item.id} delay={i * 80}>
+            <FeaturedCard item={item} />
+          </Reveal>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function FeaturedCard({ item }: { item: ApiOpportunitySummary }) {
+  const countdown = useCountdown(item.deadline, 60_000);
+  return (
+    <Link
+      to="/opportunities/$opportunityId"
+      params={{ opportunityId: item.slug }}
+      onMouseMove={trackSpotlight}
+      className="spotlight ring-gradient glass group relative flex h-full flex-col rounded-2xl p-6 ring-1 ring-amber/25 transition-transform duration-500 hover:-translate-y-1"
+    >
+      <div className="flex items-center justify-between gap-3">
+        <Monogram name={item.organisationName} />
+        <Chip tone={countdownTone(countdown)}>{formatCountdown(countdown)}</Chip>
+      </div>
+      <h3 className="mt-5 font-display text-xl leading-snug tracking-tight transition-colors group-hover:text-accent-soft">
+        {item.title}
+      </h3>
+      <p className="mt-1 text-sm text-muted">
+        {item.organisationName}
+        {item.region ? ` · ${item.region}` : ""}
+      </p>
+      <div className="mt-auto flex items-center justify-between pt-6 text-xs">
+        <span className="rounded-md bg-amber/10 px-2 py-0.5 font-mono text-[10px] text-amber ring-1 ring-inset ring-amber/30">
+          ★ Featured
+        </span>
+        <span className="inline-flex items-center gap-1 font-medium text-accent-soft">
+          View details
+          <ArrowRight aria-hidden className="size-3.5 transition-transform group-hover:translate-x-1" />
+        </span>
+      </div>
+    </Link>
+  );
+}
+
+/** Admin-managed testimonials. Hidden until at least one is active. */
+function Testimonials() {
+  const testimonialsQuery = useQuery({
+    queryKey: ["testimonials"],
+    queryFn: () => api.get<ApiTestimonial[]>("/testimonials"),
+  });
+  const items = (testimonialsQuery.data ?? []).slice(0, 6);
+  if (items.length === 0) return null;
+  return (
+    <section aria-labelledby="testimonials-heading" className="py-16">
+      <Reveal className="mx-auto mb-10 max-w-2xl text-center">
+        <div className="eyebrow mb-4">In their words</div>
+        <h2 id="testimonials-heading" className="font-display text-4xl leading-[1.05] tracking-tight lg:text-5xl">
+          People we have connected.
+        </h2>
+      </Reveal>
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {items.map((t, i) => (
+          <Reveal key={t.id} delay={i * 80}>
+            <figure className="glass flex h-full flex-col rounded-2xl p-6 ring-1 ring-line">
+              <span aria-hidden className="font-display text-5xl leading-none text-accent-soft/60">
+                “
+              </span>
+              <blockquote className="mt-2 flex-1 text-[15px] leading-7 text-fg/90">{t.quote}</blockquote>
+              <figcaption className="mt-6 flex items-center gap-3 border-t border-line pt-4">
+                <Monogram name={t.authorName} className="size-9 rounded-full text-xs" />
+                <span>
+                  <span className="block text-sm font-medium">{t.authorName}</span>
+                  {t.authorRole ? <span className="block text-xs text-muted">{t.authorRole}</span> : null}
+                </span>
+              </figcaption>
+            </figure>
+          </Reveal>
+        ))}
+      </div>
+    </section>
   );
 }

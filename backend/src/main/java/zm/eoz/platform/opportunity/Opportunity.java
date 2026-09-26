@@ -20,6 +20,7 @@ import lombok.Setter;
 import zm.eoz.platform.organisation.Organisation;
 
 @Entity
+@jakarta.persistence.EntityListeners(OpportunityVersionRecorder.Listener.class)
 @Table(name = "opportunities")
 @Getter
 @Setter
@@ -127,6 +128,17 @@ public class Opportunity {
 
     @Column(name = "views_count", nullable = false)
     private long viewsCount;
+
+    /** Staff-curated: shown in the home page's featured strip while published. */
+    @Column(nullable = false)
+    private boolean featured;
+
+    /** Clicks on the employer's official application route from the listing page. */
+    @Column(name = "apply_clicks", nullable = false)
+    private long applyClicks;
+
+    @Column(name = "share_count", nullable = false)
+    private long shareCount;
 
     @ManyToOne
     @jakarta.persistence.JoinColumn(name = "created_by")

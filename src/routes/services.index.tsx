@@ -49,15 +49,26 @@ function Services() {
         title="Help that improves your odds."
         lead="Distribution is free. These are the paid services our team delivers directly, with fixed prices and stated turnaround."
         aside={
-          <Panel>
-            <div className="label-mono mb-2">Book a service</div>
-            <p className="text-sm text-muted">
-              Call {org.phone} or email {org.email}. Payment is arranged before work begins.
-            </p>
-            <Link to="/contact" className="mt-3 inline-block text-sm text-accent-soft">
-              Contact the services desk →
-            </Link>
-          </Panel>
+          <div>
+            <Panel>
+              <div className="label-mono mb-2">Book a service</div>
+              <p className="text-sm text-muted">
+                Call {org.phone} or email {org.email}. Payment is arranged before work begins.
+              </p>
+              <Link to="/contact" className="mt-3 inline-block text-sm text-accent-soft">
+                Contact the services desk →
+              </Link>
+            </Panel>
+            <Panel className="mt-3">
+              <div className="label-mono mb-2">Need software built?</div>
+              <p className="text-sm text-muted">
+                Systems, web and mobile apps, databases and maintenance from our developer partner.
+              </p>
+              <Link to="/developer-services" className="mt-3 inline-block text-sm text-accent-soft">
+                Developer services →
+              </Link>
+            </Panel>
+          </div>
         }
       />
 
@@ -103,7 +114,9 @@ function Services() {
       <Panel className="mb-14">
         <div className="label-mono mb-2">Important distinction</div>
         <p className="text-sm leading-6 text-muted">
-          Ordering a CV, cover letter or application-support service does not apply for a vacancy. For every opportunity, use the employer&apos;s official application route shown on the listing. EOZ service contacts are for support bookings only.
+          Ordering a CV, cover letter or application-support service does not apply for a vacancy.
+          For every opportunity, use the employer&apos;s official application route shown on the
+          listing. EOZ service contacts are for support bookings only.
         </p>
       </Panel>
     </SiteShell>

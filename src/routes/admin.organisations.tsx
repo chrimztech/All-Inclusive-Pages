@@ -4,6 +4,8 @@ import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
 import { api, ApiError, isUnauthenticated, BUSINESS_TYPE_LABELS, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
+import { Fragment, useState } from "react";
+import { VerificationDocuments, VerificationReviews } from "@/components/eoz/VerificationDocuments";
 import type { BusinessType } from "@/lib/api-client";
 
 export const Route = createFileRoute("/admin/organisations")({
@@ -46,6 +48,7 @@ const tone: Record<string, "emerald" | "amber" | "muted" | "rose"> = {
 function Organisations() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [docsFor, setDocsFor] = useState<string | null>(null);
   const orgsQuery = useQuery({
     queryKey: ["admin", "organisations"],
     queryFn: () => api.get<PageResponse<OrganisationRow>>("/organisations", { size: 50 }),
@@ -53,10 +56,11 @@ function Organisations() {
   });
 
   const decide = useMutation({
-    mutationFn: ({ id, decision }: { id: string; decision: string }) =>
-      api.patch(`/organisations/${id}/verification`, { decision }),
+    mutationFn: ({ id, decision, notes }: { id: string; decision: string; notes?: string | undefined }) =>
+      api.patch(`/organisations/${id}/verification`, { decision, notes }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "organisations"] });
+      queryClient.invalidateQueries({ queryKey: ["organisations", variables.id, "verification-reviews"] });
       toast(
         variables.decision === "VERIFIED"
           ? "Organisation verified."
@@ -110,7 +114,8 @@ function Organisations() {
           </thead>
           <tbody>
             {rows.map((o) => (
-              <tr key={o.id} className="border-t border-line">
+              <Fragment key={o.id}>
+              <tr className="border-t border-line">
                 <td className="py-3 pr-4">{o.tradingName ?? o.legalName}</td>
                 <td className="py-3 pr-4">
                   <Chip tone={tone[o.verificationStatus] ?? "muted"}>{o.verificationStatus}</Chip>
@@ -124,15 +129,33 @@ function Organisations() {
                 <td className="py-3">
                   <div className="flex flex-wrap gap-2">
                     <button
+                      onClick={() => setDocsFor(docsFor === o.id ? null : o.id)}
+                      aria-expanded={docsFor === o.id}
+                      className="rounded-md px-3 py-1 text-xs text-fg ring-1 ring-line hover:bg-surface-2"
+                    >
+                      {docsFor === o.id ? "Hide documents" : "Documents"}
+                    </button>
+                    <button
                       disabled={decide.isPending}
-                      onClick={() => decide.mutate({ id: o.id, decision: "VERIFIED" })}
+                      onClick={() => {
+                        const notes = window.prompt("Verify this organisation. Reviewer notes (optional):", "");
+                        if (notes !== null) decide.mutate({ id: o.id, decision: "VERIFIED", notes: notes.trim() || undefined });
+                      }}
                       className="rounded-md px-3 py-1 text-xs text-emerald ring-1 ring-emerald/30 disabled:opacity-60"
                     >
                       Verify
                     </button>
                     <button
                       disabled={decide.isPending}
-                      onClick={() => decide.mutate({ id: o.id, decision: "REJECTED" })}
+                      onClick={() => {
+                        const notes = window.prompt("Reason for rejecting (the organisation will see this):", "");
+                        if (notes === null) return;
+                        if (!notes.trim()) {
+                          toast("A reason is required so the organisation knows what to fix.", "error");
+                          return;
+                        }
+                        decide.mutate({ id: o.id, decision: "REJECTED", notes: notes.trim() });
+                      }}
                       className="rounded-md px-3 py-1 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
                     >
                       Reject
@@ -141,9 +164,16 @@ function Organisations() {
                       <button
                         disabled={decide.isPending}
                         onClick={() => {
-                          if (window.confirm(`Suspend ${o.tradingName ?? o.legalName}? Its listings will no longer be publicly visible.`)) {
-                            decide.mutate({ id: o.id, decision: "SUSPENDED" });
+                          const notes = window.prompt(
+                            `Suspend ${o.tradingName ?? o.legalName}? Its listings will no longer be publicly visible.\n\nReason (required):`,
+                            "",
+                          );
+                          if (notes === null) return;
+                          if (!notes.trim()) {
+                            toast("A reason is required to suspend an organisation.", "error");
+                            return;
                           }
+                          decide.mutate({ id: o.id, decision: "SUSPENDED", notes: notes.trim() });
                         }}
                         className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
                       >
@@ -167,6 +197,19 @@ Type the legal name (${o.legalName}) to confirm:`,
                   </div>
                 </td>
               </tr>
+              {docsFor === o.id ? (
+                <tr>
+                  <td colSpan={7} className="pb-4">
+                    <div className="rounded-xl bg-white/[0.02] p-4 ring-1 ring-line">
+                      <div className="grid gap-6 lg:grid-cols-2">
+                        <VerificationDocuments organisationId={o.id} canUpload={false} />
+                        <VerificationReviews organisationId={o.id} />
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              ) : null}
+              </Fragment>
             ))}
           </tbody>
         </table>

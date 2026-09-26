@@ -33,7 +33,10 @@ public class AuthController {
     private final AuthService authService;
     private final UserRepository userRepository;
 
-    public AuthController(AuthService authService, UserRepository userRepository) {
+    private final ConsentService consentService;
+
+    public AuthController(AuthService authService, UserRepository userRepository, ConsentService consentService) {
+        this.consentService = consentService;
         this.authService = authService;
         this.userRepository = userRepository;
     }
@@ -44,15 +47,54 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ApiResponse<UserResponse> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
-        return ApiResponse.of(authService.login(request, response));
+    public ApiResponse<Object> login(
+            @Valid @RequestBody LoginRequest request, HttpServletRequest http, HttpServletResponse response) {
+        AuthService.LoginOutcome outcome = authService.login(request, response, http);
+        if (outcome.challengeId() != null) {
+            return ApiResponse.of(java.util.Map.of("mfaRequired", true, "challengeId", outcome.challengeId()));
+        }
+        return ApiResponse.of(outcome.user());
+    }
+
+    public record MfaVerifyRequest(java.util.UUID challengeId, String code) {}
+
+    public record MfaCodeRequest(String code) {}
+
+    public record MfaDisableRequest(String password, String code) {}
+
+    @PostMapping("/mfa/verify")
+    public ApiResponse<UserResponse> verifyMfa(
+            @RequestBody MfaVerifyRequest request, HttpServletRequest http, HttpServletResponse response) {
+        if (request.challengeId() == null) {
+            throw new BadRequestException("Sign-in expired. Start again.");
+        }
+        return ApiResponse.of(authService.verifyMfa(request.challengeId(), request.code(), response, http));
+    }
+
+    @PostMapping("/mfa/setup")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public ApiResponse<AuthService.MfaSetup> startMfaSetup() {
+        return ApiResponse.of(authService.startMfaSetup(currentUser()));
+    }
+
+    @PostMapping("/mfa/enable")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public ApiResponse<java.util.List<String>> enableMfa(@RequestBody MfaCodeRequest request) {
+        return ApiResponse.of(authService.enableMfa(currentUser(), request.code()));
+    }
+
+    @PostMapping("/mfa/disable")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> disableMfa(@RequestBody MfaDisableRequest request) {
+        authService.disableMfa(currentUser(), request.password(), request.code());
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/refresh")
     public ApiResponse<UserResponse> refresh(HttpServletRequest request, HttpServletResponse response) {
         String refreshToken = readCookie(request, CookieUtil.REFRESH_COOKIE)
                 .orElseThrow(() -> new BadRequestException("No refresh token present."));
-        return ApiResponse.of(authService.refresh(refreshToken, response));
+        return ApiResponse.of(authService.refresh(refreshToken, response, request));
     }
 
     @PostMapping("/logout")
@@ -108,6 +150,37 @@ public class AuthController {
                 currentUser(), request.opportunityAlertsEnabled(), request.serviceCommsEnabled()));
     }
 
+    @org.springframework.web.bind.annotation.GetMapping("/sessions")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public ApiResponse<java.util.List<AuthService.SessionView>> sessions(HttpServletRequest http) {
+        return ApiResponse.of(authService.sessions(currentUser(), currentSession(http)));
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/sessions/{sessionId}")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> revokeSession(@org.springframework.web.bind.annotation.PathVariable java.util.UUID sessionId) {
+        authService.revokeSession(currentUser(), sessionId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/sessions/revoke-others")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public ApiResponse<Integer> revokeOtherSessions(HttpServletRequest http) {
+        return ApiResponse.of(authService.revokeOtherSessions(currentUser(), currentSession(http)));
+    }
+
+    /** The signed-in user's consent history, newest first. */
+    @org.springframework.web.bind.annotation.GetMapping("/consents")
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public ApiResponse<java.util.List<ConsentService.ConsentEvent>> consents() {
+        return ApiResponse.of(consentService.history(currentUser().getId()));
+    }
+
+    private static java.util.UUID currentSession(HttpServletRequest http) {
+        Object sid = http.getAttribute(zm.eoz.platform.security.JwtAuthFilter.SESSION_ATTRIBUTE);
+        return sid instanceof java.util.UUID id ? id : null;
+    }
+
     private User currentUser() {
         var principal = (UserPrincipal)
                 SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -126,7 +199,8 @@ public class AuthController {
                 user.getRoles().stream().map(zm.eoz.platform.identity.Role::getName).toList(),
                 user.isOpportunityAlertsEnabled(),
                 user.isServiceCommsEnabled(),
-                user.isMustChangePassword());
+                user.isMustChangePassword(),
+                user.isMfaEnabled());
     }
 
     private java.util.Optional<String> readCookie(HttpServletRequest request, String name) {

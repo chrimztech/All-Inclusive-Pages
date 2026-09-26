@@ -75,6 +75,15 @@ public class ServiceCatalogController {
         return ApiResponse.of(serviceCatalogService.sendMessage(id, request, currentUser()));
     }
 
+    public record FeedbackRequest(int rating, String comment) {}
+
+    @PostMapping("/api/v1/services/orders/{id}/feedback")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<zm.eoz.platform.servicecatalog.dto.ServiceOrderResponse> feedback(
+            @PathVariable UUID id, @org.springframework.web.bind.annotation.RequestBody FeedbackRequest request) {
+        return ApiResponse.of(serviceCatalogService.submitFeedback(id, request.rating(), request.comment(), currentUser()));
+    }
+
     @PostMapping("/api/v1/services/orders/{id}/accept-quote")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<InvoiceResponse> acceptQuote(@PathVariable UUID id) {

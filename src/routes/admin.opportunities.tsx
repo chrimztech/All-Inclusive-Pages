@@ -6,6 +6,7 @@ import { ADMIN_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
 import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
+import { VersionHistory } from "@/components/eoz/VersionHistory";
 
 export const Route = createFileRoute("/admin/opportunities")({
   head: () => ({
@@ -30,7 +31,18 @@ type Row = {
   createdByName: string | null;
   flaggedDuplicateOfReference: string | null;
   createdAt: string;
+  deadline: string | null;
+  featured: boolean;
+  viewsCount: number;
+  applyClicks: number;
 };
+
+/** Datetime-local value one week from now, as a sensible default for a new deadline. */
+function inAWeek() {
+  const d = new Date(Date.now() + 7 * 864e5);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
 
 const STATUS_TONE: Record<string, "muted" | "amber" | "accent" | "emerald" | "rose"> = {
   DRAFT: "muted",
@@ -51,6 +63,10 @@ function OpportunityWorkspace() {
   const [status, setStatus] = useState("");
   const [query, setQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [extendingId, setExtendingId] = useState<string | null>(null);
+  const [historyId, setHistoryId] = useState<string | null>(null);
+  const [newDeadline, setNewDeadline] = useState(inAWeek());
+  const [extendReason, setExtendReason] = useState("");
 
   const listQuery = useQuery({
     queryKey: ["admin", "opportunities", status],
@@ -99,6 +115,31 @@ function OpportunityWorkspace() {
       toast("Listing archived.");
     },
     onError: (error) => toast(error instanceof ApiError ? error.message : "Could not archive listing.", "error"),
+  });
+
+  const feature = useMutation({
+    mutationFn: ({ id, featured }: { id: string; featured: boolean }) =>
+      api.patch(`/opportunities/${id}/feature`, { featured }),
+    onSuccess: (_data, { featured }) => {
+      invalidate();
+      queryClient.invalidateQueries({ queryKey: ["opportunities"] });
+      toast(featured ? "Featured on the home page." : "Removed from featured.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update featured status.", "error"),
+  });
+  const extend = useMutation({
+    mutationFn: ({ id }: { id: string }) =>
+      api.patch(`/opportunities/${id}/extend`, {
+        deadline: new Date(newDeadline).toISOString(),
+        reason: extendReason.trim(),
+      }),
+    onSuccess: () => {
+      invalidate();
+      setExtendingId(null);
+      setExtendReason("");
+      toast("Deadline extended. The reason was recorded in the audit log.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not extend the deadline.", "error"),
   });
 
   const rows = (listQuery.data?.items ?? []).filter((r) =>
@@ -190,6 +231,16 @@ function OpportunityWorkspace() {
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 border-t border-line pt-3 text-xs text-muted">
                   <span>Submitted by {r.createdByName ?? "Unknown"}</span>
                   <span>{new Date(r.createdAt).toLocaleDateString()}</span>
+                  <span>
+                    Closes{" "}
+                    {r.deadline
+                      ? new Date(r.deadline).toLocaleString("en-ZM", { timeZone: "Africa/Lusaka" })
+                      : "— no deadline"}
+                  </span>
+                  <span>
+                    {r.viewsCount} views · {r.applyClicks} apply clicks
+                  </span>
+                  {r.featured ? <span className="text-amber">★ Featured</span> : null}
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -236,6 +287,37 @@ function OpportunityWorkspace() {
                     Reopen
                   </button>
                 ) : null}
+                {["PUBLISHED", "SCHEDULED", "APPROVED"].includes(r.status) ? (
+                  <button
+                    onClick={() => feature.mutate({ id: r.id, featured: !r.featured })}
+                    disabled={feature.isPending}
+                    aria-pressed={r.featured}
+                    className={`rounded-md px-3 py-2 text-xs ring-1 disabled:opacity-60 ${
+                      r.featured ? "bg-amber/10 text-amber ring-amber/40" : "text-fg ring-line hover:bg-surface-2"
+                    }`}
+                  >
+                    {r.featured ? "★ Unfeature" : "☆ Feature"}
+                  </button>
+                ) : null}
+                {["PUBLISHED", "SCHEDULED", "APPROVED", "CLOSED", "EXPIRED"].includes(r.status) ? (
+                  <button
+                    onClick={() => {
+                      setExtendingId(extendingId === r.id ? null : r.id);
+                      setNewDeadline(inAWeek());
+                      setExtendReason("");
+                    }}
+                    className="rounded-md px-3 py-2 text-xs text-fg ring-1 ring-line transition-colors hover:bg-surface-2 hover:text-accent-soft"
+                  >
+                    {extendingId === r.id ? "Cancel extension" : "Extend deadline"}
+                  </button>
+                ) : null}
+                <button
+                  onClick={() => setHistoryId(historyId === r.id ? null : r.id)}
+                  aria-expanded={historyId === r.id}
+                  className="rounded-md px-3 py-2 text-xs text-fg ring-1 ring-line transition-colors hover:bg-surface-2 hover:text-accent-soft"
+                >
+                  {historyId === r.id ? "Hide history" : "History"}
+                </button>
                 {r.status !== "ARCHIVED" ? (
                   <button
                     onClick={() => {
@@ -265,6 +347,45 @@ Type the reference (${r.reference}) to confirm:`,
                 </button>
               </div>
             </div>
+            {historyId === r.id ? <VersionHistory opportunityId={r.id} /> : null}
+            {extendingId === r.id ? (
+              <form
+                className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-[auto_1fr_auto] sm:items-end"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  extend.mutate({ id: r.id });
+                }}
+              >
+                <label className="text-xs text-muted">
+                  New closing date (Lusaka time)
+                  <input
+                    type="datetime-local"
+                    required
+                    value={newDeadline}
+                    onChange={(e) => setNewDeadline(e.target.value)}
+                    className="mt-1 block w-full rounded-md bg-surface-2 px-3 py-2 text-sm text-fg outline-none ring-1 ring-line focus:ring-accent/40"
+                  />
+                </label>
+                <label className="text-xs text-muted">
+                  Reason (recorded in the audit log)
+                  <input
+                    required
+                    minLength={5}
+                    value={extendReason}
+                    onChange={(e) => setExtendReason(e.target.value)}
+                    placeholder="e.g. Employer extended the closing date on their careers page"
+                    className="mt-1 block w-full rounded-md bg-surface-2 px-3 py-2 text-sm text-fg outline-none ring-1 ring-line focus:ring-accent/40"
+                  />
+                </label>
+                <button
+                  type="submit"
+                  disabled={extend.isPending || extendReason.trim().length < 5}
+                  className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
+                >
+                  {extend.isPending ? "Saving…" : ["CLOSED", "EXPIRED"].includes(r.status) ? "Extend & re-publish" : "Extend"}
+                </button>
+              </form>
+            ) : null}
             {editingId === r.id ? (
               <ListingEditor
                 opportunityId={r.id}

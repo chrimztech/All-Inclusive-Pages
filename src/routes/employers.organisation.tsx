@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { VerificationDocuments, VerificationReviews } from "@/components/eoz/VerificationDocuments";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { DashNav, EMPLOYER_NAV } from "@/components/eoz/DashNav";
 import {
@@ -381,6 +382,12 @@ function Organisation() {
                 Re-verification is required if legal ownership changes.
               </p>
               <p className="mt-4 text-xs text-muted">{org.listingsCount} published listings.</p>
+            </div>
+            <div className="mt-6 border-t border-line pt-5">
+              <VerificationDocuments organisationId={org.id} canUpload />
+            </div>
+            <div className="mt-6 border-t border-line pt-5">
+              <VerificationReviews organisationId={org.id} limit={5} />
             </div>
           </Panel>
         </section>

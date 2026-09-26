@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { AlertCircle } from "lucide-react";
 import { CANDIDATE_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
 import { PageIntro, Panel, SiteShell, Chip } from "@/components/eoz/SiteShell";
@@ -29,6 +30,8 @@ type Order = {
   latestQuoteAmount: number | null;
   latestQuoteCurrency: string | null;
   latestQuoteAccepted: boolean;
+  rating: number | null;
+  feedback: string | null;
   updatedAt: string;
 };
 
@@ -128,6 +131,7 @@ function ServiceOrders() {
                   </button>
                 </div>
               ) : null}
+              {o.status === "COMPLETED" ? <RateOrder order={o} /> : null}
             </Panel>
           ))}
         </div>
@@ -144,5 +148,80 @@ function ServiceOrders() {
         </aside>
       </section>
     </SiteShell>
+  );
+}
+
+/** Rating for a completed order: 1-5 stars and an optional comment, submitted once. */
+function RateOrder({ order }: { order: Order }) {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [stars, setStars] = useState(0);
+  const [hover, setHover] = useState(0);
+  const [comment, setComment] = useState("");
+  const submit = useMutation({
+    mutationFn: () => api.post(`/services/orders/${order.id}/feedback`, { rating: stars, comment }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidate", "service-orders"] });
+      toast("Thank you for your feedback.");
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not send your rating.", "error"),
+  });
+
+  if (order.rating != null) {
+    return (
+      <div className="mt-4 border-t border-line pt-4 text-sm">
+        <span className="label-mono mr-2">Your rating</span>
+        <span className="text-amber" aria-label={`${order.rating} out of 5`}>
+          {"★".repeat(order.rating)}
+          <span className="text-muted/40">{"★".repeat(5 - order.rating)}</span>
+        </span>
+        {order.feedback ? <p className="mt-1 text-xs text-muted">“{order.feedback}”</p> : null}
+      </div>
+    );
+  }
+
+  return (
+    <form
+      className="mt-4 grid gap-3 border-t border-line pt-4"
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit.mutate();
+      }}
+    >
+      <div className="text-sm">How did we do?</div>
+      <div role="radiogroup" aria-label="Rating" className="flex gap-1" onMouseLeave={() => setHover(0)}>
+        {[1, 2, 3, 4, 5].map((n) => (
+          <button
+            key={n}
+            type="button"
+            role="radio"
+            aria-checked={stars === n}
+            aria-label={`${n} star${n === 1 ? "" : "s"}`}
+            onMouseEnter={() => setHover(n)}
+            onClick={() => setStars(n)}
+            className={`text-2xl leading-none transition-transform hover:scale-110 ${
+              n <= (hover || stars) ? "text-amber" : "text-muted/40"
+            }`}
+          >
+            ★
+          </button>
+        ))}
+      </div>
+      <textarea
+        rows={2}
+        maxLength={1000}
+        value={comment}
+        onChange={(e) => setComment(e.target.value)}
+        placeholder="Anything we should know? (optional)"
+        className="w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/40"
+      />
+      <button
+        type="submit"
+        disabled={stars === 0 || submit.isPending}
+        className="accent-gradient w-fit rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
+      >
+        {submit.isPending ? "Sending…" : "Submit rating"}
+      </button>
+    </form>
   );
 }

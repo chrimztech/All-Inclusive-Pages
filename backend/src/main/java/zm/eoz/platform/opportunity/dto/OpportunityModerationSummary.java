@@ -16,7 +16,11 @@ public record OpportunityModerationSummary(
         String applicationMode,
         String createdByName,
         String flaggedDuplicateOfReference,
-        Instant createdAt) {
+        Instant createdAt,
+        Instant deadline,
+        boolean featured,
+        long viewsCount,
+        long applyClicks) {
 
     public static OpportunityModerationSummary from(Opportunity o) {
         return new OpportunityModerationSummary(
@@ -31,6 +35,10 @@ public record OpportunityModerationSummary(
                 o.getApplicationMode().name(),
                 o.getCreatedBy() != null ? o.getCreatedBy().getFullName() : null,
                 o.getFlaggedDuplicateOf() != null ? o.getFlaggedDuplicateOf().getReference() : null,
-                o.getCreatedAt());
+                o.getCreatedAt(),
+                o.getDeadline(),
+                o.isFeatured(),
+                o.getViewsCount(),
+                o.getApplyClicks());
     }
 }

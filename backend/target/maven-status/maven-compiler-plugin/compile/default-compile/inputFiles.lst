@@ -15,6 +15,7 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\audit\AuditService.
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\audit\dto\AuditEventResponse.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\AuthController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\AuthService.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\ConsentService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\dto\ChangePasswordRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\dto\ForgotPasswordRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\auth\dto\LoginRequest.java
@@ -33,10 +34,13 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\dto\RestoreR
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\RestoreFlagService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\SystemBackup.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\backup\SystemBackupRepository.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\candidate\AlertDispatchService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\candidate\AlertSubscription.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\candidate\AlertSubscriptionRepository.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\candidate\Availability.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\candidate\CandidateController.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\candidate\CandidateCredentialsController.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\candidate\CandidateCredentialsService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\candidate\CandidateEducation.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\candidate\CandidateEducationRepository.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\candidate\CandidateProfile.java
@@ -62,6 +66,7 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\common\exception\Co
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\common\exception\ForbiddenException.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\common\exception\GlobalExceptionHandler.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\common\exception\NotFoundException.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\common\exception\TooManyRequestsException.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\common\PageResponse.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\common\ReferenceNumberService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\config\OpenApiConfig.java
@@ -84,6 +89,8 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\content\dto\Content
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\content\dto\ScheduleRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\content\dto\VariantUpsertRequest.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\EozBackendApplication.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\export\ExportController.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\export\ExportService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\AdminRoleController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\AdminUserController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\AdminUserService.java
@@ -112,11 +119,15 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\identity\Verificati
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\jobs\ScheduledJobs.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\AdminNotificationController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\dto\NotificationResponse.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\EmailDeliveryController.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\EmailDeliveryService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\LoggingSmsSender.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\Notification.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\NotificationController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\NotificationRepository.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\NotificationService.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\NotificationTemplateController.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\NotificationTemplateService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\notification\SmsSender.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\AdminCategoryController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\ApplicationMode.java
@@ -150,6 +161,7 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\Opportu
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\OpportunityRepository.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\OpportunityService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\OpportunityStatus.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\OpportunityVersionRecorder.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\opportunity\WorkArrangement.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\organisation\BusinessType.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\organisation\dto\MemberInviteRequest.java
@@ -172,6 +184,9 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\payments\PaymentWeb
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\payments\PaymentWebhookEvent.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\payments\PaymentWebhookEventRepository.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\payments\PaymentWebhookService.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\privacy\PrivacyController.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\privacy\PrivacyService.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\privacy\RetentionService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\recruitment\CandidateAnswer.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\recruitment\CandidateAnswerRepository.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\recruitment\CandidateTag.java
@@ -220,6 +235,9 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\reporting\ReportOve
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\security\CookieUtil.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\security\JwtAuthFilter.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\security\JwtService.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\security\RateLimitFilter.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\security\SecurityAlertService.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\security\TotpService.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\security\UserPrincipal.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\servicecatalog\AdminFinanceController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\servicecatalog\dto\AssignOfficerRequest.java
@@ -268,3 +286,6 @@ F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\storage\FileAsset.j
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\storage\FileAssetRepository.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\storage\FileController.java
 F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\storage\FileStorageService.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\testimonial\Testimonial.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\testimonial\TestimonialController.java
+F:\All-Inclusive Pages\backend\src\main\java\zm\eoz\platform\testimonial\TestimonialRepository.java

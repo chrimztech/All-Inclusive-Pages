@@ -143,6 +143,34 @@ public class OrganisationController {
 
     public record SetLogoRequest(@jakarta.validation.constraints.NotNull UUID fileId) {}
 
+    public record EvidenceResponse(UUID id, String fileName, String contentType, long sizeBytes, java.time.Instant uploadedAt,
+            String uploadedByName) {
+        static EvidenceResponse from(FileAsset a) {
+            return new EvidenceResponse(a.getId(), a.getFileName(), a.getContentType(), a.getSizeBytes(), a.getUploadedAt(),
+                    a.getUploadedBy() != null ? a.getUploadedBy().getFullName() : null);
+        }
+    }
+
+    @GetMapping("/{id}/verification-reviews")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<List<OrganisationService.ReviewView>> reviews(@PathVariable UUID id) {
+        return ApiResponse.of(organisationService.reviews(id, currentUser()));
+    }
+
+    @GetMapping("/{id}/verification-documents")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<List<EvidenceResponse>> evidence(@PathVariable UUID id) {
+        return ApiResponse.of(organisationService.listEvidence(id, currentUser()).stream().map(EvidenceResponse::from).toList());
+    }
+
+    @PostMapping(value = "/{id}/verification-documents", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<EvidenceResponse> addEvidence(
+            @PathVariable UUID id, @org.springframework.web.bind.annotation.RequestParam("file")
+                    org.springframework.web.multipart.MultipartFile file) {
+        return ApiResponse.of(EvidenceResponse.from(organisationService.addEvidence(id, file, currentUser())));
+    }
+
     @PatchMapping("/{id}/verification")
     @PreAuthorize("hasAuthority('ORGANISATION_VERIFY')")
     public ApiResponse<OrganisationResponse> decide(

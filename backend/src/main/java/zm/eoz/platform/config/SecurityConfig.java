@@ -27,6 +27,12 @@ public class SecurityConfig {
     @Value("${eoz.cors.allowed-origins}")
     private String allowedOrigins;
 
+    @org.springframework.beans.factory.annotation.Value("${eoz.rate-limit.auth-per-minute:20}")
+    private int authPerMinute;
+
+    @org.springframework.beans.factory.annotation.Value("${eoz.rate-limit.forms-per-minute:10}")
+    private int formsPerMinute;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
@@ -34,7 +40,11 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(
-            HttpSecurity http, JwtService jwtService, UserRepository userRepository) throws Exception {
+            HttpSecurity http,
+            JwtService jwtService,
+            UserRepository userRepository,
+            zm.eoz.platform.identity.RefreshTokenRepository refreshTokenRepository)
+            throws Exception {
         http.csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -50,6 +60,7 @@ public class SecurityConfig {
                                 "/api/v1/stats/public",
                                 "/api/v1/fraud-reports",
                                 "/api/v1/contact",
+                                "/api/v1/testimonials",
                                 "/actuator/health",
                                 "/api/v1/openapi/**",
                                 "/api/v1/docs/**")
@@ -57,7 +68,11 @@ public class SecurityConfig {
                         .anyRequest()
                         .authenticated())
                 .addFilterBefore(
-                        new JwtAuthFilter(jwtService, userRepository), UsernamePasswordAuthenticationFilter.class);
+                        new JwtAuthFilter(jwtService, userRepository, refreshTokenRepository),
+                        UsernamePasswordAuthenticationFilter.class)
+                .addFilterBefore(
+                        new zm.eoz.platform.security.RateLimitFilter(authPerMinute, formsPerMinute),
+                        zm.eoz.platform.security.JwtAuthFilter.class);
         return http.build();
     }
 

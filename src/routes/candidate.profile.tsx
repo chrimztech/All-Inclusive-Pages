@@ -6,6 +6,7 @@ import { CANDIDATE_NAV, DashNav } from "@/components/eoz/DashNav";
 import { API_BASE_URL, api, ApiError, isUnauthenticated, uploadFile } from "@/lib/api-client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useToast } from "@/lib/toast";
+import { CertificationsSection, LanguagesSection } from "@/components/eoz/CandidateCredentials";
 
 export const Route = createFileRoute("/candidate/profile")({
   head: () => ({
@@ -460,6 +461,8 @@ function Profile() {
 
           <WorkExperienceSection experience={profile?.workExperience ?? []} />
           <EducationSection education={profile?.education ?? []} />
+          <LanguagesSection />
+          <CertificationsSection />
         </div>
 
         <aside className="space-y-4 lg:col-span-4">

@@ -5,3 +5,8 @@ spring:
     password: 11111111
   flyway:
     clean-disabled: false
+eoz:
+  # Integration tests sign in many times a minute from one address.
+  rate-limit:
+    auth-per-minute: 100000
+    forms-per-minute: 100000

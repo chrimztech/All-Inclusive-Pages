@@ -33,6 +33,16 @@ public class RefreshToken {
 
     private boolean revoked = false;
 
+    /** Stable across refresh-token rotation: one sign-in on one device. */
+    @Column(name = "session_id", nullable = false)
+    private UUID sessionId;
+
+    @Column(name = "user_agent")
+    private String userAgent;
+
+    @Column(name = "ip_address")
+    private String ipAddress;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt = Instant.now();
 }

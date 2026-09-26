@@ -28,10 +28,11 @@ public class JwtService {
         this.accessTokenTtl = Duration.ofMinutes(accessMinutes);
     }
 
-    public String issueAccessToken(UUID userId, String email, List<String> roles) {
+    public String issueAccessToken(UUID userId, String email, List<String> roles, UUID sessionId) {
         Instant now = Instant.now();
         return Jwts.builder()
                 .subject(userId.toString())
+                .claim("sid", sessionId.toString())
                 .claim("email", email)
                 .claim("roles", roles)
                 .issuedAt(Date.from(now))

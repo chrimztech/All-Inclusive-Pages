@@ -353,6 +353,7 @@ const FOOTER_COLUMNS = [
       { to: "/about", label: "About EOZ" },
       { to: "/partners", label: "Partners" },
       { to: "/how-it-works", label: "How it works" },
+      { to: "/developer-services", label: "Developer services" },
       { to: "/contact", label: "Contact" },
     ],
   },

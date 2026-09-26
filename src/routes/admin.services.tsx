@@ -16,6 +16,8 @@ type ServiceOrderRow = {
   status: string;
   assignedOfficerName: string | null;
   revisionCount: number;
+  rating: number | null;
+  feedback: string | null;
   updatedAt: string;
 };
 
@@ -493,6 +495,13 @@ function Services() {
               </div>
               <h2 className="mt-3 font-display text-xl">{o.packageName}</h2>
               <div className="mt-1 text-sm text-muted">{o.customerName}</div>
+              {o.rating != null ? (
+                <div className="mt-1 text-xs" title={o.feedback ?? undefined}>
+                  <span className="text-amber">{"★".repeat(o.rating)}</span>
+                  <span className="text-muted/40">{"★".repeat(5 - o.rating)}</span>
+                  {o.feedback ? <span className="ml-2 text-muted">“{o.feedback}”</span> : null}
+                </div>
+              ) : null}
               <div className="mt-5 flex items-center justify-between border-t border-line pt-3 text-xs text-muted">
                 <span>Assigned: {o.assignedOfficerName ?? "Unassigned"}</span>
                 <button

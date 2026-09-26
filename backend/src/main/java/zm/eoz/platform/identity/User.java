@@ -36,6 +36,8 @@ public class User {
     @Column(nullable = false, unique = true)
     private String email;
 
+    /** Never serialised, even if an entity is accidentally returned from an endpoint. */
+    @com.fasterxml.jackson.annotation.JsonIgnore
     @Column(name = "password_hash", nullable = false)
     private String passwordHash;
 
@@ -57,6 +59,24 @@ public class User {
 
     @Column(name = "must_change_password", nullable = false)
     private boolean mustChangePassword = false;
+
+    /** Consecutive wrong passwords since the last successful sign-in or lockout. */
+    @Column(name = "failed_login_count", nullable = false)
+    private int failedLoginCount = 0;
+
+    @Column(name = "locked_until")
+    private java.time.Instant lockedUntil;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "mfa_secret")
+    private String mfaSecret;
+
+    @Column(name = "mfa_enabled", nullable = false)
+    private boolean mfaEnabled = false;
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    @Column(name = "mfa_last_step")
+    private Long mfaLastStep;
 
     @Column(name = "opportunity_alerts_enabled", nullable = false)
     private boolean opportunityAlertsEnabled = true;

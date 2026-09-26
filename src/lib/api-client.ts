@@ -193,6 +193,7 @@ export type ApiOpportunitySummary = {
   deadline: string | null;
   publishedAt: string | null;
   viewsCount: number;
+  featured: boolean;
 };
 
 export type ApiOpportunityDetail = ApiOpportunitySummary & {
@@ -206,6 +207,9 @@ export type ApiOpportunityDetail = ApiOpportunitySummary & {
   applicationAddress: string | null;
   source: string | null;
   viewsCount: number;
+  applyClicks: number;
+  shareCount: number;
+  organisationId: string | null;
 };
 
 export type ApiCategory = { code: string; name: string; description: string | null };
@@ -220,6 +224,7 @@ export type ApiUser = {
   opportunityAlertsEnabled: boolean;
   serviceCommsEnabled: boolean;
   mustChangePassword: boolean;
+  mfaEnabled: boolean;
 };
 
 export type ApiApplication = {
@@ -308,5 +313,15 @@ export type ApiNotification = {
   title: string;
   body: string | null;
   read: boolean;
+  createdAt: string;
+};
+
+export type ApiTestimonial = {
+  id: string;
+  authorName: string;
+  authorRole: string | null;
+  quote: string;
+  active: boolean;
+  sortOrder: number;
   createdAt: string;
 };

@@ -30,6 +30,7 @@ public class CandidateService {
     private final AlertSubscriptionRepository alertRepository;
     private final OpportunityCategoryRepository categoryRepository;
     private final CandidateApplicationRepository applicationRepository;
+    private final CandidateCredentialsService credentialsService;
     private final CandidateWorkExperienceRepository workExperienceRepository;
     private final CandidateEducationRepository educationRepository;
     private final FileStorageService fileStorageService;
@@ -40,6 +41,7 @@ public class CandidateService {
             AlertSubscriptionRepository alertRepository,
             OpportunityCategoryRepository categoryRepository,
             CandidateApplicationRepository applicationRepository,
+            CandidateCredentialsService credentialsService,
             CandidateWorkExperienceRepository workExperienceRepository,
             CandidateEducationRepository educationRepository,
             FileStorageService fileStorageService,
@@ -48,6 +50,7 @@ public class CandidateService {
         this.alertRepository = alertRepository;
         this.categoryRepository = categoryRepository;
         this.applicationRepository = applicationRepository;
+        this.credentialsService = credentialsService;
         this.workExperienceRepository = workExperienceRepository;
         this.educationRepository = educationRepository;
         this.fileStorageService = fileStorageService;
@@ -242,18 +245,17 @@ public class CandidateService {
         return Map.of(
                 "profile", getProfile(user),
                 "alerts", listAlerts(user.getId()),
-                "applications", applicationRepository.findByCandidateIdOrderBySubmittedAtDesc(user.getId()),
+                "languages", credentialsService.languages(user.getId()),
+                "certifications", credentialsService.certifications(user.getId()),
+                // DTOs only: the entities link to other users (e.g. a listing's creator) and must never be serialised.
+                "applications",
+                        applicationRepository.findByCandidateIdOrderBySubmittedAtDesc(user.getId()).stream()
+                                .map(zm.eoz.platform.application.dto.ApplicationResponse::from)
+                                .toList(),
                 "documents",
                         listDocuments(user.getId()).stream()
                                 .map(d -> Map.of("fileName", d.getFileName(), "uploadedAt", d.getUploadedAt().toString()))
                                 .toList());
     }
 
-    @Transactional
-    public void requestAccountDeletion(User user) {
-        user.setStatus(UserStatus.DEACTIVATED);
-        auditService.record(
-                user, "ACCOUNT_DELETION_REQUESTED", "User", user.getId().toString(),
-                "Candidate requested account deletion; account deactivated pending retention-policy erasure");
-    }
 }

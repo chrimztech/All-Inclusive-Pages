@@ -35,7 +35,12 @@ public record OpportunityDetailResponse(
         String applicationEmail,
         String applicationAddress,
         String source,
-        long viewsCount) {
+        long viewsCount,
+        boolean featured,
+        long applyClicks,
+        long shareCount,
+        /** Linked organisation, when the listing belongs to a registered one (for the "on behalf of" line). */
+        java.util.UUID organisationId) {
 
     public static OpportunityDetailResponse from(Opportunity o) {
         return new OpportunityDetailResponse(
@@ -69,6 +74,10 @@ public record OpportunityDetailResponse(
                 o.getApplicationEmail(),
                 o.getApplicationAddress(),
                 o.getSource(),
-                o.getViewsCount());
+                o.getViewsCount(),
+                o.isFeatured(),
+                o.getApplyClicks(),
+                o.getShareCount(),
+                o.getOrganisation() != null ? o.getOrganisation().getId() : null);
     }
 }

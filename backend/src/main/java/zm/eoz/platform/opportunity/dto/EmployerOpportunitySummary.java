@@ -18,6 +18,9 @@ public record EmployerOpportunitySummary(
         boolean verified,
         long viewsCount,
         long savesCount,
+        long applyClicks,
+        long shareCount,
+        boolean featured,
         Instant deadline,
         Instant publishedAt,
         Instant createdAt) {
@@ -37,6 +40,9 @@ public record EmployerOpportunitySummary(
                 o.isVerified(),
                 o.getViewsCount(),
                 savesCount,
+                o.getApplyClicks(),
+                o.getShareCount(),
+                o.isFeatured(),
                 o.getDeadline(),
                 o.getPublishedAt(),
                 o.getCreatedAt());

@@ -42,6 +42,10 @@ server:
     include-message: always
 
 eoz:
+  rate-limit:
+    # Requests per minute per client IP to sign-in/sign-up/reset/two-step endpoints, and to public forms.
+    auth-per-minute: ${RATE_LIMIT_AUTH_PER_MINUTE:20}
+    forms-per-minute: ${RATE_LIMIT_FORMS_PER_MINUTE:10}
   backup:
     dir: ${BACKUP_DIR:./data/backups}
   payments:
@@ -70,8 +74,12 @@ management:
 springdoc:
   api-docs:
     path: /api/v1/openapi
+    enabled: ${API_DOCS_ENABLED:true}
   swagger-ui:
     path: /api/v1/docs
+    enabled: ${API_DOCS_ENABLED:true}
+    operations-sorter: alpha
+    tags-sorter: alpha
 
 logging:
   level:

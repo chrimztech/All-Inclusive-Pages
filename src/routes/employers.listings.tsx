@@ -7,6 +7,7 @@ import { ListingEditor } from "@/components/eoz/ListingEditor";
 import { useState } from "react";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
+import { VersionHistory } from "@/components/eoz/VersionHistory";
 
 export const Route = createFileRoute("/employers/listings")({
   head: () => ({
@@ -34,6 +35,9 @@ type EmployerOpportunity = {
   verified: boolean;
   viewsCount: number;
   savesCount: number;
+  applyClicks: number;
+  shareCount: number;
+  featured: boolean;
   deadline: string | null;
   publishedAt: string | null;
   createdAt: string;
@@ -56,6 +60,7 @@ function EmployerListings() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [historyId, setHistoryId] = useState<string | null>(null);
   const closeListing = useMutation({
     mutationFn: (id: string) => api.patch(`/opportunities/mine/${id}/close`),
     onSuccess: () => {
@@ -63,6 +68,16 @@ function EmployerListings() {
       toast("Listing updated.");
     },
     onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update the listing.", "error"),
+  });
+  // Copies a listing into a new submission, then opens the editor on the copy so the new deadline can be set.
+  const renewListing = useMutation({
+    mutationFn: (id: string) => api.post<{ id: string; reference: string }>(`/opportunities/manage/${id}/renew`),
+    onSuccess: (copy) => {
+      queryClient.invalidateQueries({ queryKey: ["employer", "opportunities"] });
+      setEditingId(copy.id);
+      toast(`Renewed as ${copy.reference}. Set the new closing date, then save to send it for review.`);
+    },
+    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not renew the listing.", "error"),
   });
   const listingsQuery = useQuery({
     queryKey: ["employer", "opportunities", "mine"],
@@ -142,6 +157,12 @@ function EmployerListings() {
                     <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1 border-t border-line pt-3 text-xs text-muted">
                       <span>{o.viewsCount} views</span>
                       <span>{o.savesCount} saves</span>
+                      <span>{o.applyClicks} apply clicks</span>
+                      <span>{o.shareCount} shares</span>
+                      {o.viewsCount > 0 ? (
+                        <span>{Math.round((o.applyClicks / o.viewsCount) * 100)}% click-through</span>
+                      ) : null}
+                      {o.featured ? <span className="text-amber">★ Featured by EOZ</span> : null}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
@@ -178,8 +199,27 @@ function EmployerListings() {
                         {o.status === "PUBLISHED" ? "Close listing" : "Withdraw"}
                       </button>
                     ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setHistoryId(historyId === o.id ? null : o.id)}
+                      aria-expanded={historyId === o.id}
+                      className="rounded-md px-3 py-2 text-xs text-fg ring-1 ring-line transition-colors hover:bg-surface-2 hover:text-accent-soft"
+                    >
+                      {historyId === o.id ? "Hide history" : "History"}
+                    </button>
+                    {["CLOSED", "EXPIRED", "ARCHIVED"].includes(o.status) ? (
+                      <button
+                        type="button"
+                        disabled={renewListing.isPending}
+                        onClick={() => renewListing.mutate(o.id)}
+                        className="accent-gradient rounded-md px-3 py-2 text-xs font-medium text-ink disabled:opacity-60"
+                      >
+                        {renewListing.isPending && renewListing.variables === o.id ? "Renewing…" : "Renew listing"}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
+                {historyId === o.id ? <VersionHistory opportunityId={o.id} /> : null}
                 {editingId === o.id ? (
                   <ListingEditor
                     opportunityId={o.id}

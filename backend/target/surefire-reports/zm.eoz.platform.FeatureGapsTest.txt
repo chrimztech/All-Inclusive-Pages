@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: zm.eoz.platform.FeatureGapsTest
+-------------------------------------------------------------------------------
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.741 s -- in zm.eoz.platform.FeatureGapsTest

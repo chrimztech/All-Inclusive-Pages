@@ -18,6 +18,7 @@ import { Route as CandidatesRouteImport } from './routes/candidates'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as ContentRouteImport } from './routes/content'
 import { Route as CookieNoticeRouteImport } from './routes/cookie-notice'
+import { Route as DeveloperServicesRouteImport } from './routes/developer-services'
 import { Route as FaqRouteImport } from './routes/faq'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as HowItWorksRouteImport } from './routes/how-it-works'
@@ -27,6 +28,7 @@ import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ReportRouteImport } from './routes/report'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ScamWarningRouteImport } from './routes/scam-warning'
+import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
@@ -35,17 +37,21 @@ import { Route as AdminApplicationsRouteImport } from './routes/admin.applicatio
 import { Route as AdminAuditRouteImport } from './routes/admin.audit'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminContentRouteImport } from './routes/admin.content'
+import { Route as AdminExportsRouteImport } from './routes/admin.exports'
 import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
 import { Route as AdminHealthRouteImport } from './routes/admin.health'
 import { Route as AdminInboxRouteImport } from './routes/admin.inbox'
 import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
+import { Route as AdminNotificationTemplatesRouteImport } from './routes/admin.notification-templates'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
 import { Route as AdminOpportunitiesRouteImport } from './routes/admin.opportunities'
 import { Route as AdminOrganisationsRouteImport } from './routes/admin.organisations'
 import { Route as AdminPermissionsRouteImport } from './routes/admin.permissions'
+import { Route as AdminPrivacyRouteImport } from './routes/admin.privacy'
 import { Route as AdminReportsRouteImport } from './routes/admin.reports'
 import { Route as AdminServicesRouteImport } from './routes/admin.services'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
+import { Route as AdminTestimonialsRouteImport } from './routes/admin.testimonials'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
 import { Route as CandidateIndexRouteImport } from './routes/candidate.index'
 import { Route as CandidateAccountRouteImport } from './routes/candidate.account'
@@ -124,6 +130,11 @@ const CookieNoticeRoute = CookieNoticeRouteImport.update({
   path: '/cookie-notice',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeveloperServicesRoute = DeveloperServicesRouteImport.update({
+  id: '/developer-services',
+  path: '/developer-services',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FaqRoute = FaqRouteImport.update({
   id: '/faq',
   path: '/faq',
@@ -169,6 +180,11 @@ const ScamWarningRoute = ScamWarningRouteImport.update({
   path: '/scam-warning',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
+  id: '/sitemap.xml',
+  path: '/sitemap.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
@@ -209,6 +225,11 @@ const AdminContentRoute = AdminContentRouteImport.update({
   path: '/admin/content',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminExportsRoute = AdminExportsRouteImport.update({
+  id: '/admin/exports',
+  path: '/admin/exports',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminFinanceRoute = AdminFinanceRouteImport.update({
   id: '/admin/finance',
   path: '/admin/finance',
@@ -229,6 +250,12 @@ const AdminModerationRoute = AdminModerationRouteImport.update({
   path: '/admin/moderation',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminNotificationTemplatesRoute =
+  AdminNotificationTemplatesRouteImport.update({
+    id: '/admin/notification-templates',
+    path: '/admin/notification-templates',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const AdminNotificationsRoute = AdminNotificationsRouteImport.update({
   id: '/admin/notifications',
   path: '/admin/notifications',
@@ -249,6 +276,11 @@ const AdminPermissionsRoute = AdminPermissionsRouteImport.update({
   path: '/admin/permissions',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminPrivacyRoute = AdminPrivacyRouteImport.update({
+  id: '/admin/privacy',
+  path: '/admin/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminReportsRoute = AdminReportsRouteImport.update({
   id: '/admin/reports',
   path: '/admin/reports',
@@ -262,6 +294,11 @@ const AdminServicesRoute = AdminServicesRouteImport.update({
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/admin/settings',
   path: '/admin/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminTestimonialsRoute = AdminTestimonialsRouteImport.update({
+  id: '/admin/testimonials',
+  path: '/admin/testimonials',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminUsersRoute = AdminUsersRouteImport.update({
@@ -439,6 +476,7 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/content': typeof ContentRoute
   '/cookie-notice': typeof CookieNoticeRoute
+  '/developer-services': typeof DeveloperServicesRoute
   '/faq': typeof FaqRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
@@ -448,6 +486,7 @@ export interface FileRoutesByFullPath {
   '/report': typeof ReportRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scam-warning': typeof ScamWarningRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -455,17 +494,21 @@ export interface FileRoutesByFullPath {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/content': typeof AdminContentRoute
+  '/admin/exports': typeof AdminExportsRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/inbox': typeof AdminInboxRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/notification-templates': typeof AdminNotificationTemplatesRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/organisations': typeof AdminOrganisationsRoute
   '/admin/permissions': typeof AdminPermissionsRoute
+  '/admin/privacy': typeof AdminPrivacyRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin/users': typeof AdminUsersRoute
   '/candidate/account': typeof CandidateAccountRoute
   '/candidate/alerts': typeof CandidateAlertsRoute
@@ -510,6 +553,7 @@ export interface FileRoutesByTo {
   '/contact': typeof ContactRoute
   '/content': typeof ContentRoute
   '/cookie-notice': typeof CookieNoticeRoute
+  '/developer-services': typeof DeveloperServicesRoute
   '/faq': typeof FaqRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
@@ -519,6 +563,7 @@ export interface FileRoutesByTo {
   '/report': typeof ReportRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scam-warning': typeof ScamWarningRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -526,17 +571,21 @@ export interface FileRoutesByTo {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/content': typeof AdminContentRoute
+  '/admin/exports': typeof AdminExportsRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/inbox': typeof AdminInboxRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/notification-templates': typeof AdminNotificationTemplatesRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/organisations': typeof AdminOrganisationsRoute
   '/admin/permissions': typeof AdminPermissionsRoute
+  '/admin/privacy': typeof AdminPrivacyRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin/users': typeof AdminUsersRoute
   '/candidate/account': typeof CandidateAccountRoute
   '/candidate/alerts': typeof CandidateAlertsRoute
@@ -582,6 +631,7 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/content': typeof ContentRoute
   '/cookie-notice': typeof CookieNoticeRoute
+  '/developer-services': typeof DeveloperServicesRoute
   '/faq': typeof FaqRoute
   '/forgot-password': typeof ForgotPasswordRoute
   '/how-it-works': typeof HowItWorksRoute
@@ -591,6 +641,7 @@ export interface FileRoutesById {
   '/report': typeof ReportRoute
   '/reset-password': typeof ResetPasswordRoute
   '/scam-warning': typeof ScamWarningRoute
+  '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
   '/verification': typeof VerificationRoute
   '/verify-email': typeof VerifyEmailRoute
@@ -598,17 +649,21 @@ export interface FileRoutesById {
   '/admin/audit': typeof AdminAuditRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/content': typeof AdminContentRoute
+  '/admin/exports': typeof AdminExportsRoute
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/inbox': typeof AdminInboxRoute
   '/admin/moderation': typeof AdminModerationRoute
+  '/admin/notification-templates': typeof AdminNotificationTemplatesRoute
   '/admin/notifications': typeof AdminNotificationsRoute
   '/admin/opportunities': typeof AdminOpportunitiesRoute
   '/admin/organisations': typeof AdminOrganisationsRoute
   '/admin/permissions': typeof AdminPermissionsRoute
+  '/admin/privacy': typeof AdminPrivacyRoute
   '/admin/reports': typeof AdminReportsRoute
   '/admin/services': typeof AdminServicesRoute
   '/admin/settings': typeof AdminSettingsRoute
+  '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin/users': typeof AdminUsersRoute
   '/candidate/account': typeof CandidateAccountRoute
   '/candidate/alerts': typeof CandidateAlertsRoute
@@ -655,6 +710,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/content'
     | '/cookie-notice'
+    | '/developer-services'
     | '/faq'
     | '/forgot-password'
     | '/how-it-works'
@@ -664,6 +720,7 @@ export interface FileRouteTypes {
     | '/report'
     | '/reset-password'
     | '/scam-warning'
+    | '/sitemap.xml'
     | '/terms'
     | '/verification'
     | '/verify-email'
@@ -671,17 +728,21 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/categories'
     | '/admin/content'
+    | '/admin/exports'
     | '/admin/finance'
     | '/admin/health'
     | '/admin/inbox'
     | '/admin/moderation'
+    | '/admin/notification-templates'
     | '/admin/notifications'
     | '/admin/opportunities'
     | '/admin/organisations'
     | '/admin/permissions'
+    | '/admin/privacy'
     | '/admin/reports'
     | '/admin/services'
     | '/admin/settings'
+    | '/admin/testimonials'
     | '/admin/users'
     | '/candidate/account'
     | '/candidate/alerts'
@@ -726,6 +787,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/content'
     | '/cookie-notice'
+    | '/developer-services'
     | '/faq'
     | '/forgot-password'
     | '/how-it-works'
@@ -735,6 +797,7 @@ export interface FileRouteTypes {
     | '/report'
     | '/reset-password'
     | '/scam-warning'
+    | '/sitemap.xml'
     | '/terms'
     | '/verification'
     | '/verify-email'
@@ -742,17 +805,21 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/categories'
     | '/admin/content'
+    | '/admin/exports'
     | '/admin/finance'
     | '/admin/health'
     | '/admin/inbox'
     | '/admin/moderation'
+    | '/admin/notification-templates'
     | '/admin/notifications'
     | '/admin/opportunities'
     | '/admin/organisations'
     | '/admin/permissions'
+    | '/admin/privacy'
     | '/admin/reports'
     | '/admin/services'
     | '/admin/settings'
+    | '/admin/testimonials'
     | '/admin/users'
     | '/candidate/account'
     | '/candidate/alerts'
@@ -797,6 +864,7 @@ export interface FileRouteTypes {
     | '/contact'
     | '/content'
     | '/cookie-notice'
+    | '/developer-services'
     | '/faq'
     | '/forgot-password'
     | '/how-it-works'
@@ -806,6 +874,7 @@ export interface FileRouteTypes {
     | '/report'
     | '/reset-password'
     | '/scam-warning'
+    | '/sitemap.xml'
     | '/terms'
     | '/verification'
     | '/verify-email'
@@ -813,17 +882,21 @@ export interface FileRouteTypes {
     | '/admin/audit'
     | '/admin/categories'
     | '/admin/content'
+    | '/admin/exports'
     | '/admin/finance'
     | '/admin/health'
     | '/admin/inbox'
     | '/admin/moderation'
+    | '/admin/notification-templates'
     | '/admin/notifications'
     | '/admin/opportunities'
     | '/admin/organisations'
     | '/admin/permissions'
+    | '/admin/privacy'
     | '/admin/reports'
     | '/admin/services'
     | '/admin/settings'
+    | '/admin/testimonials'
     | '/admin/users'
     | '/candidate/account'
     | '/candidate/alerts'
@@ -869,6 +942,7 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   ContentRoute: typeof ContentRoute
   CookieNoticeRoute: typeof CookieNoticeRoute
+  DeveloperServicesRoute: typeof DeveloperServicesRoute
   FaqRoute: typeof FaqRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
   HowItWorksRoute: typeof HowItWorksRoute
@@ -878,6 +952,7 @@ export interface RootRouteChildren {
   ReportRoute: typeof ReportRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   ScamWarningRoute: typeof ScamWarningRoute
+  SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
   VerificationRoute: typeof VerificationRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
@@ -885,17 +960,21 @@ export interface RootRouteChildren {
   AdminAuditRoute: typeof AdminAuditRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminContentRoute: typeof AdminContentRoute
+  AdminExportsRoute: typeof AdminExportsRoute
   AdminFinanceRoute: typeof AdminFinanceRoute
   AdminHealthRoute: typeof AdminHealthRoute
   AdminInboxRoute: typeof AdminInboxRoute
   AdminModerationRoute: typeof AdminModerationRoute
+  AdminNotificationTemplatesRoute: typeof AdminNotificationTemplatesRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
   AdminOpportunitiesRoute: typeof AdminOpportunitiesRoute
   AdminOrganisationsRoute: typeof AdminOrganisationsRoute
   AdminPermissionsRoute: typeof AdminPermissionsRoute
+  AdminPrivacyRoute: typeof AdminPrivacyRoute
   AdminReportsRoute: typeof AdminReportsRoute
   AdminServicesRoute: typeof AdminServicesRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
+  AdminTestimonialsRoute: typeof AdminTestimonialsRoute
   AdminUsersRoute: typeof AdminUsersRoute
   CandidateAccountRoute: typeof CandidateAccountRoute
   CandidateAlertsRoute: typeof CandidateAlertsRoute
@@ -996,6 +1075,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CookieNoticeRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/developer-services': {
+      id: '/developer-services'
+      path: '/developer-services'
+      fullPath: '/developer-services'
+      preLoaderRoute: typeof DeveloperServicesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/faq': {
       id: '/faq'
       path: '/faq'
@@ -1059,6 +1145,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ScamWarningRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/sitemap.xml': {
+      id: '/sitemap.xml'
+      path: '/sitemap.xml'
+      fullPath: '/sitemap.xml'
+      preLoaderRoute: typeof SitemapDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/terms': {
       id: '/terms'
       path: '/terms'
@@ -1115,6 +1208,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminContentRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/exports': {
+      id: '/admin/exports'
+      path: '/admin/exports'
+      fullPath: '/admin/exports'
+      preLoaderRoute: typeof AdminExportsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/finance': {
       id: '/admin/finance'
       path: '/admin/finance'
@@ -1141,6 +1241,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/moderation'
       fullPath: '/admin/moderation'
       preLoaderRoute: typeof AdminModerationRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/notification-templates': {
+      id: '/admin/notification-templates'
+      path: '/admin/notification-templates'
+      fullPath: '/admin/notification-templates'
+      preLoaderRoute: typeof AdminNotificationTemplatesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/notifications': {
@@ -1171,6 +1278,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminPermissionsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/privacy': {
+      id: '/admin/privacy'
+      path: '/admin/privacy'
+      fullPath: '/admin/privacy'
+      preLoaderRoute: typeof AdminPrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/reports': {
       id: '/admin/reports'
       path: '/admin/reports'
@@ -1190,6 +1304,13 @@ declare module '@tanstack/react-router' {
       path: '/admin/settings'
       fullPath: '/admin/settings'
       preLoaderRoute: typeof AdminSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin/testimonials': {
+      id: '/admin/testimonials'
+      path: '/admin/testimonials'
+      fullPath: '/admin/testimonials'
+      preLoaderRoute: typeof AdminTestimonialsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin/users': {
@@ -1429,6 +1550,7 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   ContentRoute: ContentRoute,
   CookieNoticeRoute: CookieNoticeRoute,
+  DeveloperServicesRoute: DeveloperServicesRoute,
   FaqRoute: FaqRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
   HowItWorksRoute: HowItWorksRoute,
@@ -1438,6 +1560,7 @@ const rootRouteChildren: RootRouteChildren = {
   ReportRoute: ReportRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   ScamWarningRoute: ScamWarningRoute,
+  SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
   VerificationRoute: VerificationRoute,
   VerifyEmailRoute: VerifyEmailRoute,
@@ -1445,17 +1568,21 @@ const rootRouteChildren: RootRouteChildren = {
   AdminAuditRoute: AdminAuditRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminContentRoute: AdminContentRoute,
+  AdminExportsRoute: AdminExportsRoute,
   AdminFinanceRoute: AdminFinanceRoute,
   AdminHealthRoute: AdminHealthRoute,
   AdminInboxRoute: AdminInboxRoute,
   AdminModerationRoute: AdminModerationRoute,
+  AdminNotificationTemplatesRoute: AdminNotificationTemplatesRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
   AdminOpportunitiesRoute: AdminOpportunitiesRoute,
   AdminOrganisationsRoute: AdminOrganisationsRoute,
   AdminPermissionsRoute: AdminPermissionsRoute,
+  AdminPrivacyRoute: AdminPrivacyRoute,
   AdminReportsRoute: AdminReportsRoute,
   AdminServicesRoute: AdminServicesRoute,
   AdminSettingsRoute: AdminSettingsRoute,
+  AdminTestimonialsRoute: AdminTestimonialsRoute,
   AdminUsersRoute: AdminUsersRoute,
   CandidateAccountRoute: CandidateAccountRoute,
   CandidateAlertsRoute: CandidateAlertsRoute,

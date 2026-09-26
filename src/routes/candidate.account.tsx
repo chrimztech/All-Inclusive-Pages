@@ -7,6 +7,8 @@ import { PasswordInput } from "@/components/eoz/PasswordInput";
 import { api, ApiError } from "@/lib/api-client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useToast } from "@/lib/toast";
+import { ConsentHistoryPanel, SessionsPanel } from "@/components/eoz/AccountSecurity";
+import { TwoStepPanel } from "@/components/eoz/TwoStepPanel";
 
 export const Route = createFileRoute("/candidate/account")({
   head: () => ({ meta: [{ title: "Account & Privacy — EOZ" }] }),
@@ -68,7 +70,15 @@ function Account() {
     mutationFn: () => api.post("/candidate/privacy/delete-request"),
     onSuccess: () => {
       setDeletionRequested(true);
-      toast("Deletion requested.");
+      toast(
+        "Your account is closed. Your personal data will be erased after the grace period — contact EOZ before then to keep it.",
+      );
+      // The account is deactivated and signed out everywhere; leave the portal.
+      setTimeout(() => {
+        queryClient.setQueryData(["me"], null);
+        queryClient.clear();
+        navigate({ to: "/" });
+      }, 2500);
     },
     onError: (error) => toast(error instanceof ApiError ? error.message : "Could not submit request.", "error"),
   });
@@ -225,13 +235,17 @@ function Account() {
 
             {deletionRequested ? (
               <p className="rounded-md bg-surface-2 p-3 text-xs text-muted">
-                Deletion requested. Your account has been deactivated pending review against retention and legal
-                requirements — we'll email you before completion.
+                Deletion requested. Your account is closed and you have been signed out. Your personal data is
+                erased after a grace period (30 days by default); contact EOZ before then to change your mind.
               </p>
             ) : (
               <button
                 onClick={() => {
-                  if (window.confirm("This deactivates your account immediately, pending review. Continue?")) {
+                  if (
+                    window.confirm(
+                      "This closes your account and signs you out now. Your personal data will be erased after a grace period (30 days by default). Continue?",
+                    )
+                  ) {
                     requestDeletion.mutate();
                   }
                 }}
@@ -247,6 +261,11 @@ function Account() {
             </p>
           </div>
         </Panel>
+      </section>
+      <section className="grid gap-6 pb-14 lg:grid-cols-2">
+        <SessionsPanel />
+        <ConsentHistoryPanel />
+        <TwoStepPanel />
       </section>
     </SiteShell>
   );

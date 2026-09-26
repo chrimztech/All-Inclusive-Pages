@@ -38,6 +38,8 @@ public class OpportunityService {
     private final zm.eoz.platform.candidate.SavedOpportunityRepository savedOpportunityRepository;
     private final zm.eoz.platform.organisation.OrganisationMemberRepository organisationMemberRepository;
 
+    private final OpportunityVersionRecorder versionRecorder;
+
     public OpportunityService(
             OpportunityRepository opportunityRepository,
             OpportunityCategoryRepository categoryRepository,
@@ -45,7 +47,9 @@ public class OpportunityService {
             AuditService auditService,
             NotificationService notificationService,
             zm.eoz.platform.candidate.SavedOpportunityRepository savedOpportunityRepository,
-            zm.eoz.platform.organisation.OrganisationMemberRepository organisationMemberRepository) {
+            zm.eoz.platform.organisation.OrganisationMemberRepository organisationMemberRepository,
+            OpportunityVersionRecorder versionRecorder) {
+        this.versionRecorder = versionRecorder;
         this.opportunityRepository = opportunityRepository;
         this.categoryRepository = categoryRepository;
         this.referenceNumberService = referenceNumberService;
@@ -67,6 +71,9 @@ public class OpportunityService {
             String workArrangement,
             String experienceLevel,
             String order,
+            Boolean featured,
+            Integer postedWithinDays,
+            java.math.BigDecimal minSalary,
             Pageable pageable) {
         Pageable ordered = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), publicOrder(order, pageable.getSort()));
         String normalizedCategory = (categoryCode == null || categoryCode.isBlank() || categoryCode.equalsIgnoreCase("All"))
@@ -92,6 +99,20 @@ public class OpportunityService {
                         cb.like(cb.lower(root.get("title")), likeTerm),
                         cb.like(cb.lower(root.get("organisationName")), likeTerm),
                         cb.like(cb.lower(root.get("reference")), likeTerm)));
+            }
+            if (postedWithinDays != null && postedWithinDays > 0) {
+                Instant since = Instant.now().minus(java.time.Duration.ofDays(postedWithinDays));
+                predicates.add(cb.greaterThanOrEqualTo(root.get("publishedAt"), since));
+            }
+            if (minSalary != null) {
+                // Only listings that publish their pay; a range qualifies if its top reaches the minimum asked for.
+                predicates.add(cb.isTrue(root.get("salaryVisible")));
+                predicates.add(cb.greaterThanOrEqualTo(
+                        cb.coalesce(root.<java.math.BigDecimal>get("salaryMax"), root.<java.math.BigDecimal>get("salaryMin")),
+                        minSalary));
+            }
+            if (Boolean.TRUE.equals(featured)) {
+                predicates.add(cb.isTrue(root.get("featured")));
             }
             if (Boolean.TRUE.equals(verifiedOnly)) {
                 predicates.add(cb.isTrue(root.get("verified")));
@@ -415,6 +436,16 @@ public class OpportunityService {
     }
 
     @Transactional(readOnly = true)
+    public List<OpportunityVersionRecorder.Version> versions(java.util.UUID id, User actor) {
+        Opportunity opportunity =
+                opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
+        if (!canManage(opportunity, actor)) {
+            throw new zm.eoz.platform.common.exception.ForbiddenException("You do not have access to this listing.");
+        }
+        return versionRecorder.history(id);
+    }
+
+    @Transactional(readOnly = true)
     public OpportunityDetailResponse getForManage(java.util.UUID id, User actor) {
         Opportunity opportunity =
                 opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
@@ -532,6 +563,121 @@ public class OpportunityService {
         notifyCreator(opportunity, "OPPORTUNITY_REOPENED", "Your listing was reopened",
                 "\"" + opportunity.getTitle() + "\" (" + opportunity.getReference() + ") was reopened and is back in the review queue.");
         return OpportunityDetailResponse.from(opportunity);
+    }
+
+    /** Counts a click on the official application route. Only live listings count; unknown ids are ignored. */
+    @Transactional
+    public void recordApplyClick(java.util.UUID id) {
+        opportunityRepository.incrementApplyClicks(id);
+    }
+
+    @Transactional
+    public void recordShare(java.util.UUID id) {
+        opportunityRepository.incrementShares(id);
+    }
+
+    /** Adds or removes a listing from the home page's featured strip. Only listings that are or will be live qualify. */
+    @Transactional
+    public OpportunityDetailResponse setFeatured(java.util.UUID id, boolean featured, User actor) {
+        Opportunity opportunity =
+                opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
+        if (featured && !List.of(OpportunityStatus.PUBLISHED, OpportunityStatus.SCHEDULED, OpportunityStatus.APPROVED)
+                .contains(opportunity.getStatus())) {
+            throw new BadRequestException("Only approved, scheduled or published listings can be featured.");
+        }
+        if (opportunity.isFeatured() != featured) {
+            opportunity.setFeatured(featured);
+            auditService.record(actor, featured ? "FEATURED" : "UNFEATURED", "Opportunity", opportunity.getReference(),
+                    (featured ? "Featured \"" : "Removed from featured: \"") + opportunity.getTitle() + "\"");
+        }
+        return OpportunityDetailResponse.from(opportunity);
+    }
+
+    /**
+     * Authorised deadline extension. Requires a reason, which is written to the audit log. A listing that already
+     * closed or expired at its old deadline goes live again with the new one.
+     */
+    @Transactional
+    public OpportunityDetailResponse extendDeadline(java.util.UUID id, Instant newDeadline, String reason, User actor) {
+        Opportunity opportunity =
+                opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
+        if (reason == null || reason.trim().length() < 5) {
+            throw new BadRequestException("Give a reason for the extension (at least 5 characters).");
+        }
+        if (newDeadline == null || !newDeadline.isAfter(Instant.now())) {
+            throw new BadRequestException("The new deadline must be in the future.");
+        }
+        if (opportunity.getDeadline() != null && !newDeadline.isAfter(opportunity.getDeadline())) {
+            throw new BadRequestException("The new deadline must be later than the current one.");
+        }
+        OpportunityStatus status = opportunity.getStatus();
+        if (!List.of(OpportunityStatus.PUBLISHED, OpportunityStatus.SCHEDULED, OpportunityStatus.APPROVED,
+                        OpportunityStatus.CLOSED, OpportunityStatus.EXPIRED)
+                .contains(status)) {
+            throw new BadRequestException("A " + status + " listing cannot have its deadline extended.");
+        }
+        Instant previous = opportunity.getDeadline();
+        opportunity.setDeadline(newDeadline);
+        boolean relisted = status == OpportunityStatus.CLOSED || status == OpportunityStatus.EXPIRED;
+        if (relisted) {
+            opportunity.setStatus(OpportunityStatus.PUBLISHED);
+        }
+        auditService.record(actor, "DEADLINE_EXTENDED", "Opportunity", opportunity.getReference(),
+                "Deadline " + (previous != null ? previous : "none") + " -> " + newDeadline
+                        + (relisted ? " (re-published)" : "") + ". Reason: " + reason.trim());
+        notifyCreator(opportunity, "OPPORTUNITY_DEADLINE_EXTENDED", "Your listing's deadline was extended",
+                "\"" + opportunity.getTitle() + "\" (" + opportunity.getReference() + ") now closes on " + newDeadline
+                        + (relisted ? " and is live again." : "."));
+        return OpportunityDetailResponse.from(opportunity);
+    }
+
+    /**
+     * Copies a listing into a new submission (new reference, no deadline) for its owner or staff, e.g. to re-run
+     * a vacancy that closed. The copy goes to review and is marked as related to the original so moderators see it.
+     */
+    @Transactional
+    public OpportunityDetailResponse renew(java.util.UUID id, User actor) {
+        Opportunity source =
+                opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
+        if (!canManage(source, actor)) {
+            throw new zm.eoz.platform.common.exception.ForbiddenException("You do not have access to this listing.");
+        }
+        Opportunity copy = new Opportunity();
+        copy.setReference(referenceNumberService.next("EOZ-OPP"));
+        copy.setSlug(slugify(source.getTitle()));
+        copy.setTitle(source.getTitle());
+        copy.setCategory(source.getCategory());
+        copy.setOrganisation(source.getOrganisation());
+        copy.setOrganisationName(source.getOrganisationName());
+        copy.setDescription(source.getDescription());
+        copy.setResponsibilities(source.getResponsibilities());
+        copy.setRequirements(source.getRequirements());
+        copy.setBenefits(source.getBenefits());
+        copy.setLocation(source.getLocation());
+        copy.setRegion(source.getRegion());
+        copy.setWorkMode(source.getWorkMode());
+        copy.setEmploymentType(source.getEmploymentType());
+        copy.setWorkArrangement(source.getWorkArrangement());
+        copy.setExperienceLevel(source.getExperienceLevel());
+        copy.setOpportunityValue(source.getOpportunityValue());
+        copy.setOpportunityValueUnit(source.getOpportunityValueUnit());
+        copy.setSalaryMin(source.getSalaryMin());
+        copy.setSalaryMax(source.getSalaryMax());
+        copy.setSalaryVisible(source.isSalaryVisible());
+        copy.setCurrency(source.getCurrency());
+        copy.setSlots(source.getSlots());
+        copy.setApplicationMode(source.getApplicationMode());
+        copy.setApplicationUrl(source.getApplicationUrl());
+        copy.setApplicationEmail(source.getApplicationEmail());
+        copy.setApplicationAddress(source.getApplicationAddress());
+        copy.setSource(source.getSource());
+        copy.setStatus(OpportunityStatus.PENDING_REVIEW);
+        copy.setCreatedBy(actor);
+        copy.setFlaggedDuplicateOf(source);
+        copy = opportunityRepository.save(copy);
+        auditService.record(actor, "RENEWED", "Opportunity", copy.getReference(),
+                "Renewed from " + source.getReference() + " as a new submission");
+        return OpportunityDetailResponse.from(copy);
     }
 
     @Transactional

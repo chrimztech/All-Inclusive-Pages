@@ -54,6 +54,14 @@ public class ServiceOrder {
     @Column(name = "revision_count", nullable = false)
     private int revisionCount;
 
+    /** Customer satisfaction, 1-5, given once the order is completed. */
+    private Short rating;
+
+    private String feedback;
+
+    @Column(name = "rated_at")
+    private Instant ratedAt;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

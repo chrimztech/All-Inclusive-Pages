@@ -1,5 +1,9 @@
+zm\eoz\platform\security\TotpAndRateLimitTest.class
+zm\eoz\platform\payments\PaymentWebhookTest.class
+zm\eoz\platform\SecurityOperationsTest.class
+zm\eoz\platform\FeatureGapsTest.class
+zm\eoz\platform\auth\AuthFlowTest.class
 zm\eoz\platform\opportunity\OpportunityModerationTest.class
 zm\eoz\platform\candidate\CandidateProfileTest.class
-zm\eoz\platform\payments\PaymentWebhookTest.class
+zm\eoz\platform\AccountSecurityAndHistoryTest.class
 zm\eoz\platform\PlatformFeaturesTest.class
-zm\eoz\platform\auth\AuthFlowTest.class

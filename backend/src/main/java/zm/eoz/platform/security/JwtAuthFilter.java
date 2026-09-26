@@ -20,10 +20,18 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserRepository userRepository;
+    private final zm.eoz.platform.identity.RefreshTokenRepository refreshTokenRepository;
 
-    public JwtAuthFilter(JwtService jwtService, UserRepository userRepository) {
+    /** Request attribute holding the caller's session id, so endpoints can tell "this device" apart. */
+    public static final String SESSION_ATTRIBUTE = "eoz.sessionId";
+
+    public JwtAuthFilter(
+            JwtService jwtService,
+            UserRepository userRepository,
+            zm.eoz.platform.identity.RefreshTokenRepository refreshTokenRepository) {
         this.jwtService = jwtService;
         this.userRepository = userRepository;
+        this.refreshTokenRepository = refreshTokenRepository;
     }
 
     @Override
@@ -33,13 +41,24 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         extractCookie(request, CookieUtil.ACCESS_COOKIE)
                 .flatMap(jwtService::parse)
-                .ifPresent(claims -> authenticate(claims, request.getRequestURI()));
+                .ifPresent(claims -> authenticate(claims, request));
 
         chain.doFilter(request, response);
     }
 
-    private void authenticate(Claims claims, String path) {
+    private void authenticate(Claims claims, HttpServletRequest request) {
+        String path = request.getRequestURI();
         UUID userId = UUID.fromString(claims.getSubject());
+        // A revoked session loses access at once, not when its short-lived access token expires. Tokens issued
+        // before sessions existed carry no sid and simply run out.
+        Object sid = claims.get("sid");
+        if (sid != null) {
+            UUID sessionId = UUID.fromString(sid.toString());
+            if (!refreshTokenRepository.existsBySessionIdAndRevokedFalseAndExpiresAtAfter(sessionId, java.time.Instant.now())) {
+                return;
+            }
+            request.setAttribute(SESSION_ATTRIBUTE, sessionId);
+        }
         Optional<User> user = userRepository.findById(userId);
         if (user.isEmpty() || user.get().getStatus() != zm.eoz.platform.identity.UserStatus.ACTIVE) {
             return;

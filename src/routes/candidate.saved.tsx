@@ -6,6 +6,7 @@ import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { CANDIDATE_NAV, DashNav } from "@/components/eoz/DashNav";
 import { OpportunityCard } from "@/components/eoz/OpportunityCard";
 import { api, isUnauthenticated, type ApiOpportunitySummary } from "@/lib/api-client";
+import { filterSaved } from "@/lib/saved-search";
 
 export const Route = createFileRoute("/candidate/saved")({
   head: () => ({
@@ -115,21 +116,3 @@ function Saved() {
   );
 }
 
-/** Letters and digits only, so "opp 2026 12" and "EOZ-OPP-2026-000012" can meet. */
-function compact(value: string) {
-  return value.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
-/** Matches every word of the query against a listing's reference, organisation or title. */
-function filterSaved(items: ApiOpportunitySummary[], query: string) {
-  const words = query.toLowerCase().split(/\s+/).filter(Boolean);
-  if (!words.length) return items;
-  const whole = compact(query);
-  return items.filter((o) => {
-    const text = `${o.reference} ${o.organisationName} ${o.title}`.toLowerCase();
-    if (whole.length >= 3 && compact(o.reference).includes(whole)) return true;
-    return words.every(
-      (w) => text.includes(w) || (compact(w) !== "" && compact(o.reference).includes(compact(w))),
-    );
-  });
-}

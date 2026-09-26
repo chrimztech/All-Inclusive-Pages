@@ -64,12 +64,16 @@ export const ADMIN_NAV = [
   { to: "/admin/applications", label: "Applications" },
   { to: "/admin/inbox", label: "Inbox" },
   { to: "/admin/notifications", label: "Notifications" },
+  { to: "/admin/notification-templates", label: "Email templates" },
   { to: "/admin/categories", label: "Categories" },
+  { to: "/admin/testimonials", label: "Testimonials" },
   { to: "/admin/reports", label: "Reports" },
+  { to: "/admin/exports", label: "Exports" },
   { to: "/admin/users", label: "Users & RBAC" },
   { to: "/admin/permissions", label: "Permissions" },
   { to: "/admin/settings", label: "Settings" },
   { to: "/admin/audit", label: "Audit log" },
+  { to: "/admin/privacy", label: "Privacy requests" },
   { to: "/admin/health", label: "System health" },
 ] as const;
 

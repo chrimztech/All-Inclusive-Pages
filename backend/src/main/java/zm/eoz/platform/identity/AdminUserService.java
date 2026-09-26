@@ -25,12 +25,16 @@ public class AdminUserService {
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenRepository refreshTokenRepository;
 
+    private final zm.eoz.platform.security.SecurityAlertService securityAlertService;
+
     public AdminUserService(
             UserRepository userRepository,
             RoleRepository roleRepository,
             AuditService auditService,
             PasswordEncoder passwordEncoder,
-            RefreshTokenRepository refreshTokenRepository) {
+            RefreshTokenRepository refreshTokenRepository,
+            zm.eoz.platform.security.SecurityAlertService securityAlertService) {
+        this.securityAlertService = securityAlertService;
         this.refreshTokenRepository = refreshTokenRepository;
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
@@ -80,8 +84,21 @@ public class AdminUserService {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Unknown status: " + status);
         }
+        UserStatus previous = user.getStatus();
         user.setStatus(target);
+        if (target == UserStatus.ACTIVE) {
+            // Re-activating also lifts a failed-sign-in lockout.
+            user.setFailedLoginCount(0);
+            user.setLockedUntil(null);
+        } else {
+            // Suspended or deactivated accounts lose every signed-in session straight away.
+            refreshTokenRepository.findByUser_IdAndRevokedFalse(user.getId()).forEach(t -> t.setRevoked(true));
+        }
         auditService.record(actor, "USER_STATUS_CHANGED", "User", user.getId().toString(), "Set status to " + target);
+        if (previous != target) {
+            securityAlertService.alertAdministrators("Account status changed",
+                    actor.getFullName() + " changed " + user.getEmail() + " from " + previous + " to " + target + ".");
+        }
         return UserAdminResponse.from(user);
     }
 
@@ -111,8 +128,13 @@ public class AdminUserService {
         Set<Role> roles = roleNames.stream()
                 .map(name -> roleRepository.findByName(name).orElseThrow(() -> new BadRequestException("Unknown role: " + name)))
                 .collect(Collectors.toSet());
+        java.util.List<String> before = user.getRoles().stream().map(Role::getName).sorted().toList();
         user.setRoles(roles);
         auditService.record(actor, "USER_ROLES_CHANGED", "User", user.getId().toString(), "Set roles to " + roleNames);
+        if (!before.equals(roleNames.stream().sorted().toList())) {
+            securityAlertService.alertAdministrators("Privileges changed",
+                    actor.getFullName() + " changed the roles of " + user.getEmail() + " from " + before + " to " + roleNames + ".");
+        }
         return UserAdminResponse.from(user);
     }
 

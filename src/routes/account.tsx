@@ -7,6 +7,8 @@ import { PasswordInput } from "@/components/eoz/PasswordInput";
 import { api, ApiError, type ApiUser } from "@/lib/api-client";
 import { landingRouteFor, useCurrentUser } from "@/lib/use-current-user";
 import { useToast } from "@/lib/toast";
+import { ConsentHistoryPanel, SessionsPanel } from "@/components/eoz/AccountSecurity";
+import { TwoStepPanel } from "@/components/eoz/TwoStepPanel";
 
 export const Route = createFileRoute("/account")({
   head: () => ({ meta: [{ title: "Account & Security — EOZ" }, { name: "robots", content: "noindex,nofollow" }] }),
@@ -249,6 +251,11 @@ function AccountPage() {
             ) : null}
           </div>
         ) : null}
+      </section>
+      <section className="grid gap-6 pb-14 lg:grid-cols-2">
+        <SessionsPanel />
+        <ConsentHistoryPanel />
+        <TwoStepPanel />
       </section>
     </SiteShell>
   );

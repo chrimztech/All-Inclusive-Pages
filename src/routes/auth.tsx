@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ShieldCheck, Sparkles, Users } from "lucide-react";
 import { SiteShell, Panel } from "@/components/eoz/SiteShell";
 import { PasswordInput } from "@/components/eoz/PasswordInput";
+import { MfaChallengeForm } from "@/components/eoz/MfaChallengeForm";
 import { ORG } from "@/lib/eoz-data";
 import { api, ApiError, type ApiUser } from "@/lib/api-client";
 import { landingRouteFor } from "@/lib/use-current-user";
@@ -113,11 +114,21 @@ function Auth() {
 
   const landingTo = (user: ApiUser) => redirect ?? landingRouteFor(user);
 
+  const [mfaChallenge, setMfaChallenge] = useState<string | null>(null);
+  const signedIn = async (user: ApiUser) => {
+    await queryClient.invalidateQueries({ queryKey: ["me"] });
+    navigate({ to: landingTo(user) });
+  };
+
   const loginMutation = useMutation({
-    mutationFn: () => api.post<ApiUser>("/auth/login", { email, password }),
-    onSuccess: async (user) => {
-      await queryClient.invalidateQueries({ queryKey: ["me"] });
-      navigate({ to: landingTo(user) });
+    mutationFn: () =>
+      api.post<ApiUser | { mfaRequired: true; challengeId: string }>("/auth/login", { email, password }),
+    onSuccess: async (result) => {
+      if ("mfaRequired" in result && result.mfaRequired) {
+        setMfaChallenge(result.challengeId);
+        return;
+      }
+      await signedIn(result as ApiUser);
     },
     onError: (error) =>
       toast(
@@ -210,7 +221,19 @@ function Auth() {
               : "Sign in to your candidate, employer or staff portal."}
           </p>
 
-          <Panel className="mt-6 shadow-2xl shadow-black/30">
+          {mfaChallenge ? (
+            <Panel className="mt-6 shadow-2xl shadow-black/30">
+              <MfaChallengeForm
+                challengeId={mfaChallenge}
+                onSuccess={signedIn}
+                onCancel={() => {
+                  setMfaChallenge(null);
+                  setPassword("");
+                }}
+              />
+            </Panel>
+          ) : null}
+          <Panel className={`mt-6 shadow-2xl shadow-black/30 ${mfaChallenge ? "hidden" : ""}`}>
           <form
             className="grid gap-4"
             onSubmit={(e) => {
