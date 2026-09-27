@@ -7,7 +7,10 @@ import { useToast } from "@/lib/toast";
 
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
-    meta: [{ title: "Reset your password — Echo Opportunities Zambia" }, { name: "robots", content: "noindex" }],
+    meta: [
+      { title: "Reset your password — Echo Opportunities Zambia" },
+      { name: "robots", content: "noindex" },
+    ],
   }),
   component: ForgotPassword,
 });
@@ -21,7 +24,8 @@ function ForgotPassword() {
 
   const mutation = useMutation({
     mutationFn: () => api.post("/auth/forgot-password", { email }),
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Something went wrong.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Something went wrong.", "error"),
   });
 
   return (

@@ -83,6 +83,7 @@ public class CandidateService {
 
     @Transactional
     public CandidateProfileResponse setPhoto(UUID fileId, User user) {
+        fileStorageService.requireOwnUpload(fileId, user, true);
         CandidateProfile profile = profileRepository.findById(user.getId()).orElseGet(() -> new CandidateProfile(user.getId()));
         profile.setPhotoFileId(fileId);
         profile.setUpdatedAt(java.time.Instant.now());
@@ -91,6 +92,7 @@ public class CandidateService {
 
     @Transactional
     public CandidateProfileResponse setResume(UUID fileId, User user) {
+        fileStorageService.requireOwnUpload(fileId, user, false);
         CandidateProfile profile = profileRepository.findById(user.getId()).orElseGet(() -> new CandidateProfile(user.getId()));
         profile.setResumeFileId(fileId);
         profile.setUpdatedAt(java.time.Instant.now());

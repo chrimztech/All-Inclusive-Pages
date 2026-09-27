@@ -104,13 +104,19 @@ export function TwoStepPanel() {
             ))}
           </ul>
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <button type="button" onClick={downloadCodes} className="btn-secondary px-3 py-1.5 text-xs">
+            <button
+              type="button"
+              onClick={downloadCodes}
+              className="btn-secondary px-3 py-1.5 text-xs"
+            >
               Download
             </button>
             <button
               type="button"
               onClick={() =>
-                navigator.clipboard?.writeText(recoveryCodes.join("\n")).then(() => toast("Copied."))
+                navigator.clipboard
+                  ?.writeText(recoveryCodes.join("\n"))
+                  .then(() => toast("Copied."))
               }
               className="btn-secondary px-3 py-1.5 text-xs"
             >

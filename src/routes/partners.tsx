@@ -43,7 +43,8 @@ export const Route = createFileRoute("/partners")({
       { property: "og:title", content: "Partners — Echo Opportunities Zambia" },
       {
         property: "og:description",
-        content: "Ways organisations and community channels work with EOZ to reach Zambian candidates.",
+        content:
+          "Ways organisations and community channels work with EOZ to reach Zambian candidates.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -82,8 +83,8 @@ function Partners() {
           <Panel>
             <Chip>Open</Chip>
             <p className="mt-3 text-sm text-muted">
-              Partnerships are free for public-interest listings. Paid placement is limited to featured slots and is always
-              labelled.
+              Partnerships are free for public-interest listings. Paid placement is limited to
+              featured slots and is always labelled.
             </p>
           </Panel>
         }

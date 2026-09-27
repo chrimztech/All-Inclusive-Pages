@@ -45,9 +45,33 @@ public class SecurityConfig {
             UserRepository userRepository,
             zm.eoz.platform.identity.RefreshTokenRepository refreshTokenRepository)
             throws Exception {
+        // CSRF: session cookies are SameSite=Lax (never sent on cross-site POST/PATCH/DELETE) and CORS is an
+        // allow-list, so a token-based CSRF filter would add nothing for this JSON API.
         http.csrf(csrf -> csrf.disable())
+                .headers(headers -> headers
+                        .httpStrictTransportSecurity(hsts -> hsts.includeSubDomains(true).maxAgeInSeconds(31_536_000))
+                        .referrerPolicy(r -> r.policy(
+                                org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy
+                                        .STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
+                        .addHeaderWriter(new org.springframework.security.web.header.writers.StaticHeadersWriter(
+                                "Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()"))
+                        // JSON responses never need to load anything; the Swagger UI pages are exempt.
+                        .addHeaderWriter(new org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter(
+                                request -> {
+                                    String path = request.getRequestURI();
+                                    return !path.startsWith("/api/v1/docs") && !path.startsWith("/api/v1/swagger-ui");
+                                },
+                                new org.springframework.security.web.header.writers.StaticHeadersWriter(
+                                        "Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'"))))
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                // Signed-out requests to protected URLs get 401 (sign in), not 403 (not allowed), as RFC 7807 JSON.
+                .exceptionHandling(ex -> ex.authenticationEntryPoint((request, response, e) -> {
+                    response.setStatus(401);
+                    response.setContentType("application/problem+json");
+                    response.getWriter().write("{\"type\":\"https://eoz.zm/problems/unauthenticated\",\"title\":\"Unauthorized\","
+                            + "\"status\":401,\"detail\":\"Sign in to continue.\"}");
+                }))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/api/v1/auth/**",
@@ -60,10 +84,15 @@ public class SecurityConfig {
                                 "/api/v1/stats/public",
                                 "/api/v1/fraud-reports",
                                 "/api/v1/contact",
+                                "/api/v1/unsubscribe",
+                                "/api/v1/unsubscribe/**",
                                 "/api/v1/testimonials",
                                 "/actuator/health",
+                                "/actuator/health/liveness",
+                                "/actuator/health/readiness",
                                 "/api/v1/openapi/**",
-                                "/api/v1/docs/**")
+                                "/api/v1/docs/**",
+                                "/api/v1/swagger-ui/**")
                         .permitAll()
                         .anyRequest()
                         .authenticated())
@@ -83,6 +112,7 @@ public class SecurityConfig {
         config.setAllowedMethods(List.of("GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
+        config.setExposedHeaders(List.of(zm.eoz.platform.common.CorrelationIdFilter.HEADER, "Retry-After"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);
         return source;

@@ -16,9 +16,18 @@ type ToastContextValue = {
 const ToastContext = createContext<ToastContextValue | null>(null);
 
 const TONE_STYLES: Record<ToastTone, { ring: string; icon: ReactNode }> = {
-  success: { ring: "ring-emerald/30", icon: <CheckCircle2 aria-hidden="true" className="size-4 shrink-0 text-emerald" /> },
-  error: { ring: "ring-rose/30", icon: <XCircle aria-hidden="true" className="size-4 shrink-0 text-rose" /> },
-  info: { ring: "ring-accent/30", icon: <Info aria-hidden="true" className="size-4 shrink-0 text-accent-soft" /> },
+  success: {
+    ring: "ring-emerald/30",
+    icon: <CheckCircle2 aria-hidden="true" className="size-4 shrink-0 text-emerald" />,
+  },
+  error: {
+    ring: "ring-rose/30",
+    icon: <XCircle aria-hidden="true" className="size-4 shrink-0 text-rose" />,
+  },
+  info: {
+    ring: "ring-accent/30",
+    icon: <Info aria-hidden="true" className="size-4 shrink-0 text-accent-soft" />,
+  },
 };
 
 export function ToastProvider({ children }: { children: ReactNode }) {

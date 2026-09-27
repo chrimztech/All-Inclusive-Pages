@@ -417,7 +417,6 @@ public class ServiceCatalogService {
         return invoiceRepository.findAllByOrderByIssuedAtDesc(pageable).map(InvoiceResponse::from);
     }
 
-    private static final Set<String> ASSIGNABLE_STAFF_ROLES = Set.of("SERVICE_OFFICER", "MANAGER", "ADMIN");
 
     @Transactional(readOnly = true)
     public List<zm.eoz.platform.servicecatalog.dto.StaffOptionResponse> searchAssignableStaff(String query) {
@@ -425,7 +424,7 @@ public class ServiceCatalogService {
         return userRepository.findByFullNameContainingIgnoreCaseOrEmailContainingIgnoreCase(
                         q, q, org.springframework.data.domain.PageRequest.of(0, 10))
                 .stream()
-                .filter(u -> u.getRoles().stream().anyMatch(r -> ASSIGNABLE_STAFF_ROLES.contains(r.getName())))
+                .filter(u -> zm.eoz.platform.security.Access.hasAny(u, "SERVICE_MANAGE"))
                 .map(zm.eoz.platform.servicecatalog.dto.StaffOptionResponse::from)
                 .toList();
     }
@@ -437,9 +436,9 @@ public class ServiceCatalogService {
 
     public record FinanceSummary(long unpaidInvoices, long paidInvoices) {}
 
+    /** Staff who work on orders: service desk (view/manage) and finance. */
     private boolean hasStaffRole(User user) {
-        return user.getRoles().stream()
-                .anyMatch(r -> Set.of("SERVICE_OFFICER", "FINANCE_OFFICER", "MANAGER", "ADMIN").contains(r.getName()));
+        return zm.eoz.platform.security.Access.hasAny(user, "SERVICE_VIEW", "SERVICE_MANAGE", "FINANCE_MANAGE");
     }
 
     private ServiceOrder requireOrder(UUID id) {

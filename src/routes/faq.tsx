@@ -42,7 +42,8 @@ export const Route = createFileRoute("/faq")({
       { property: "og:title", content: "Frequently Asked Questions — Echo Opportunities Zambia" },
       {
         property: "og:description",
-        content: "Answers on verification, applying directly to employers, pricing and posting vacancies.",
+        content:
+          "Answers on verification, applying directly to employers, pricing and posting vacancies.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },

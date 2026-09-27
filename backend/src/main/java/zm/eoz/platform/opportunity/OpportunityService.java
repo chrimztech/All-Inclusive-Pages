@@ -200,6 +200,7 @@ public class OpportunityService {
         opportunity.setSalaryMin(request.salaryMin());
         opportunity.setSalaryMax(request.salaryMax());
         opportunity.setSalaryVisible(request.salaryVisible());
+        requireFutureDeadline(request.deadline());
         opportunity.setDeadline(request.deadline());
         opportunity.setApplicationMode(mode);
         opportunity.setApplicationUrl(request.applicationUrl());
@@ -318,6 +319,7 @@ public class OpportunityService {
     @Transactional
     public OpportunityDetailResponse approve(java.util.UUID id, User actor) {
         Opportunity opportunity = requireStatus(id, OpportunityStatus.PENDING_REVIEW);
+        requireStillOpen(opportunity, "approved");
         opportunity.setStatus(OpportunityStatus.APPROVED);
         auditService.record(
                 actor, "APPROVED", "Opportunity", opportunity.getReference(), "Approved \"" + opportunity.getTitle() + "\"");
@@ -332,6 +334,9 @@ public class OpportunityService {
         if (scheduledAt.isBefore(Instant.now())) {
             throw new BadRequestException("scheduledAt must be in the future.");
         }
+        if (opportunity.getDeadline() != null && !scheduledAt.isBefore(opportunity.getDeadline())) {
+            throw new BadRequestException("Schedule publication before the closing date.");
+        }
         opportunity.setScheduledAt(scheduledAt);
         opportunity.setStatus(OpportunityStatus.SCHEDULED);
         auditService.record(
@@ -344,6 +349,11 @@ public class OpportunityService {
     public int publishDueScheduled() {
         List<Opportunity> due = opportunityRepository.findByStatusAndScheduledAtBefore(OpportunityStatus.SCHEDULED, Instant.now());
         for (Opportunity o : due) {
+            if (o.getDeadline() != null && !o.getDeadline().isAfter(Instant.now())) {
+                // Closed before its publication slot came round: never show it.
+                o.setStatus(OpportunityStatus.EXPIRED);
+                continue;
+            }
             o.setStatus(OpportunityStatus.PUBLISHED);
             o.setPublishedAt(Instant.now());
             notifyCreator(o, "OPPORTUNITY_PUBLISHED", "Your listing is now live",
@@ -361,6 +371,7 @@ public class OpportunityService {
             throw new BadRequestException(
                     "Opportunity is " + opportunity.getStatus() + ", expected APPROVED or SCHEDULED to publish.");
         }
+        requireStillOpen(opportunity, "published");
         opportunity.setStatus(OpportunityStatus.PUBLISHED);
         opportunity.setPublishedAt(Instant.now());
         auditService.record(
@@ -415,7 +426,21 @@ public class OpportunityService {
         return OpportunityDetailResponse.from(opportunity);
     }
 
-    private boolean canManage(Opportunity opportunity, User actor) {
+    /** Publication gate: a closing date, when given, must be in the future. */
+    private static void requireFutureDeadline(Instant deadline) {
+        if (deadline != null && !deadline.isAfter(Instant.now())) {
+            throw new BadRequestException("The closing date must be in the future.");
+        }
+    }
+
+    private static void requireStillOpen(Opportunity opportunity, String action) {
+        if (opportunity.getDeadline() != null && !opportunity.getDeadline().isAfter(Instant.now())) {
+            throw new BadRequestException("The closing date has passed, so this listing can't be " + action
+                    + ". Extend the deadline first.");
+        }
+    }
+
+    boolean canManage(Opportunity opportunity, User actor) {
         boolean staff = actor.getRoles().stream()
                 .flatMap(r -> r.getPermissions().stream())
                 .anyMatch(p -> "OPPORTUNITY_MODERATE".equals(p.getCode()));
@@ -462,11 +487,18 @@ public class OpportunityService {
     @Transactional
     public OpportunityDetailResponse update(
             java.util.UUID id, zm.eoz.platform.opportunity.dto.OpportunityUpdateRequest request, User actor) {
+        return update(id, request, actor, null);
+    }
+
+    @Transactional
+    public OpportunityDetailResponse update(
+            java.util.UUID id, zm.eoz.platform.opportunity.dto.OpportunityUpdateRequest request, User actor, String ifMatch) {
         Opportunity opportunity =
                 opportunityRepository.findById(id).orElseThrow(() -> new NotFoundException("Opportunity not found: " + id));
         if (!canManage(opportunity, actor)) {
             throw new zm.eoz.platform.common.exception.ForbiddenException("You do not have access to this listing.");
         }
+        zm.eoz.platform.common.Versions.check(ifMatch, opportunity.getVersion(), "listing");
         OpportunityStatus current = opportunity.getStatus();
         if (current == OpportunityStatus.CLOSED || current == OpportunityStatus.EXPIRED || current == OpportunityStatus.ARCHIVED) {
             throw new BadRequestException("A " + current + " listing cannot be edited. Reopen it first.");
@@ -489,7 +521,10 @@ public class OpportunityService {
         if (request.location() != null) opportunity.setLocation(request.location());
         if (request.region() != null) opportunity.setRegion(request.region());
         if (request.workMode() != null) opportunity.setWorkMode(request.workMode());
-        if (request.deadline() != null) opportunity.setDeadline(request.deadline());
+        if (request.deadline() != null && !request.deadline().equals(opportunity.getDeadline())) {
+            requireFutureDeadline(request.deadline());
+            opportunity.setDeadline(request.deadline());
+        }
         if (request.applicationUrl() != null) opportunity.setApplicationUrl(request.applicationUrl());
         if (request.applicationEmail() != null) opportunity.setApplicationEmail(request.applicationEmail());
         if (request.applicationAddress() != null) opportunity.setApplicationAddress(request.applicationAddress());

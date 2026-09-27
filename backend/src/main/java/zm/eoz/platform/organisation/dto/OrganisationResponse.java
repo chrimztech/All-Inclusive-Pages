@@ -23,7 +23,9 @@ public record OrganisationResponse(
         String contactPersonRole,
         String contactPhone,
         String linkedinUrl,
-        String facebookUrl) {
+        String facebookUrl,
+        /** Optimistic-lock version; send it back as If-Match when editing. */
+        Long version) {
 
     public static OrganisationResponse from(zm.eoz.platform.organisation.Organisation org, long listingsCount) {
         return new OrganisationResponse(
@@ -47,6 +49,7 @@ public record OrganisationResponse(
                 org.getContactPersonRole(),
                 org.getContactPhone(),
                 org.getLinkedinUrl(),
-                org.getFacebookUrl());
+                org.getFacebookUrl(),
+                org.getVersion());
     }
 }

@@ -18,6 +18,7 @@ import { useOrgSettings } from "@/lib/use-org-settings";
 import { api } from "@/lib/api-client";
 import { useCurrentUser, landingRouteFor } from "@/lib/use-current-user";
 import { FacebookIcon, LinkedInIcon, TikTokIcon, WhatsAppIcon } from "./SocialIcons";
+import { isStaff } from "@/lib/access";
 
 const NAV = [
   { to: "/", label: "Discover" },
@@ -426,6 +427,7 @@ function FooterCta() {
 }
 
 function Footer() {
+  const { user: footerUser } = useCurrentUser();
   const org = useOrgSettings();
   return (
     <footer className="relative z-10 mt-20 overflow-hidden border-t border-line">
@@ -495,9 +497,11 @@ function Footer() {
             <span className="font-mono">
               © {new Date().getFullYear()} {org.shortName}. All rights reserved.
             </span>
-            <Link to="/admin" className="hover:text-fg">
-              Staff console
-            </Link>
+            {isStaff(footerUser) ? (
+              <Link to="/admin" className="hover:text-fg">
+                Staff console
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>

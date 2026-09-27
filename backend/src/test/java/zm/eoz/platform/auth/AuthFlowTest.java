@@ -80,7 +80,9 @@ class AuthFlowTest {
     }
 
     @Test
-    void meWithoutCookieIsForbidden() throws Exception {
-        mockMvc.perform(get("/api/v1/auth/me")).andExpect(status().isForbidden());
+    void meWithoutCookieAsksToSignIn() throws Exception {
+        mockMvc.perform(get("/api/v1/auth/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.detail").value("Sign in to continue."));
     }
 }

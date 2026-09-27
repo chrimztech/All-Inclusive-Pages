@@ -51,6 +51,11 @@ public class RoleAdminService {
         Role role = roleRepository
                 .findByName(roleName)
                 .orElseThrow(() -> new NotFoundException("Role not found: " + roleName));
+        // Every sign-up gets one of these roles; a permission here would make every member of the public staff.
+        if (("CANDIDATE".equals(roleName) || "EMPLOYER".equals(roleName)) && !permissionCodes.isEmpty()) {
+            throw new BadRequestException("Candidate and employer accounts can't hold staff permissions. Give the person a"
+                    + " staff role instead.");
+        }
 
         var permissions = new HashSet<Permission>();
         for (String code : permissionCodes) {

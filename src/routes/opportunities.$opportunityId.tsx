@@ -1,22 +1,14 @@
 import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { useState } from "react";
-import {
-  Building2,
-  Check,
-  Copy,
-  ExternalLink,
-  Link2,
-  Mail,
-  MapPin,
-  Share2,
-} from "lucide-react";
+import { Building2, Check, Copy, ExternalLink, Link2, Mail, MapPin, Share2 } from "lucide-react";
 import { FacebookIcon, LinkedInIcon, WhatsAppIcon } from "@/components/eoz/SocialIcons";
 import { SiteShell, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ORG } from "@/lib/eoz-data";
 import { DeadlineChip, SaveToggle } from "@/components/eoz/OpportunityCard";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { safeHttpUrl } from "@/lib/safe-url";
+import { ListingAttachments } from "@/components/eoz/ListingAttachments";
 import {
   api,
   ApiError,
@@ -204,6 +196,7 @@ function Detail() {
             </>
           ) : null}
 
+          <ListingAttachments opportunityId={item.id} />
           <h2 className="mt-10 font-display text-2xl tracking-tight">How to apply</h2>
           <Panel className="mt-4">
             <div className="label-mono mb-2">Official application route</div>
@@ -284,8 +277,9 @@ function ApplyRoute({ item }: { item: ApiOpportunityDetail }) {
   if (closed) {
     return (
       <p className="text-sm text-muted">
-        This opportunity closed on {new Date(item.deadline!).toLocaleString("en-ZM", { timeZone: "Africa/Lusaka" })}{" "}
-        (Lusaka time). New applications are no longer accepted.
+        This opportunity closed on{" "}
+        {new Date(item.deadline!).toLocaleString("en-ZM", { timeZone: "Africa/Lusaka" })} (Lusaka
+        time). New applications are no longer accepted.
       </p>
     );
   }
@@ -293,7 +287,11 @@ function ApplyRoute({ item }: { item: ApiOpportunityDetail }) {
   if (item.applicationMode === "EXTERNAL_URL") {
     const url = safeHttpUrl(item.applicationUrl);
     if (!url) {
-      return <p className="text-sm text-rose">The application link for this listing is invalid. Please report it.</p>;
+      return (
+        <p className="text-sm text-rose">
+          The application link for this listing is invalid. Please report it.
+        </p>
+      );
     }
     return (
       <div>
@@ -308,7 +306,8 @@ function ApplyRoute({ item }: { item: ApiOpportunityDetail }) {
           <ExternalLink aria-hidden="true" className="size-4" />
         </a>
         <p className="mt-2 text-xs text-muted">
-          External link — opens <span className="font-mono text-fg/80">{url.hostname}</span> in a new tab.
+          External link — opens <span className="font-mono text-fg/80">{url.hostname}</span> in a
+          new tab.
         </p>
       </div>
     );
@@ -349,7 +348,11 @@ function ApplyRoute({ item }: { item: ApiOpportunityDetail }) {
           }}
           className="btn-secondary px-3 py-1.5 text-xs"
         >
-          {copied ? <Check aria-hidden="true" className="size-3.5" /> : <Copy aria-hidden="true" className="size-3.5" />}
+          {copied ? (
+            <Check aria-hidden="true" className="size-3.5" />
+          ) : (
+            <Copy aria-hidden="true" className="size-3.5" />
+          )}
           {copied ? "Copied" : "Copy address"}
         </button>
       </div>
@@ -419,7 +422,11 @@ function ShareBar({ item }: { item: ApiOpportunityDetail }) {
           }}
           className="btn-secondary h-10 px-3 text-xs"
         >
-          {copied ? <Check aria-hidden="true" className="size-3.5" /> : <Link2 aria-hidden="true" className="size-3.5" />}
+          {copied ? (
+            <Check aria-hidden="true" className="size-3.5" />
+          ) : (
+            <Link2 aria-hidden="true" className="size-3.5" />
+          )}
           {copied ? "Link copied" : "Copy link"}
         </button>
       </div>

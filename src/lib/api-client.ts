@@ -15,6 +15,8 @@ type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
   params?: Record<string, string | number | undefined> | undefined;
+  /** Version the edit is based on; the server refuses the save (409) if the record changed since. */
+  ifMatch?: number | null | undefined;
 };
 
 /**
@@ -28,7 +30,10 @@ let lastRefreshAt = 0;
 async function refreshSession(): Promise<boolean> {
   if (Date.now() - lastRefreshAt < 10_000) return false;
   if (!refreshInFlight) {
-    refreshInFlight = fetch(`${API_BASE_URL}/auth/refresh`, { method: "POST", credentials: "include" })
+    refreshInFlight = fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    })
       .then(async (r) => {
         await r.arrayBuffer().catch(() => undefined);
         if (r.ok) lastRefreshAt = Date.now();
@@ -42,7 +47,15 @@ async function refreshSession(): Promise<boolean> {
   return refreshInFlight;
 }
 
-const NO_REFRESH_PATHS = ["/auth/login", "/auth/register", "/auth/refresh", "/auth/logout", "/auth/forgot-password", "/auth/reset-password", "/auth/verify-email"];
+const NO_REFRESH_PATHS = [
+  "/auth/login",
+  "/auth/register",
+  "/auth/refresh",
+  "/auth/logout",
+  "/auth/forgot-password",
+  "/auth/reset-password",
+  "/auth/verify-email",
+];
 
 async function request<T>(path: string, options: RequestOptions = {}, retried = false): Promise<T> {
   const url = new URL(`${API_BASE_URL}${path}`);
@@ -58,10 +71,13 @@ async function request<T>(path: string, options: RequestOptions = {}, retried = 
     method: options.method ?? "GET",
     credentials: "include",
   };
+  const headers: Record<string, string> = {};
   if (options.body !== undefined) {
-    init.headers = { "Content-Type": "application/json" };
+    headers["Content-Type"] = "application/json";
     init.body = JSON.stringify(options.body);
   }
+  if (options.ifMatch != null) headers["If-Match"] = `"${options.ifMatch}"`;
+  if (Object.keys(headers).length > 0) init.headers = headers;
 
   const response = await fetch(url.toString(), init);
 
@@ -85,12 +101,13 @@ async function request<T>(path: string, options: RequestOptions = {}, retried = 
       detail?: string;
       title?: string;
       fieldErrors?: Record<string, string>;
+      requestId?: string;
     } | null;
-    throw new ApiError(
-      response.status,
-      problem?.detail ?? problem?.title ?? "Something went wrong. Please try again.",
-      problem?.fieldErrors,
-    );
+    const requestId = problem?.requestId ?? response.headers.get("X-Request-Id");
+    let message = problem?.detail ?? problem?.title ?? "Something went wrong. Please try again.";
+    // Server faults: give the person a reference support can find in the logs.
+    if (response.status >= 500 && requestId) message += ` (reference ${requestId.slice(0, 8)})`;
+    throw new ApiError(response.status, message, problem?.fieldErrors);
   }
 
   return (payload as { data: T }).data;
@@ -99,7 +116,8 @@ async function request<T>(path: string, options: RequestOptions = {}, retried = 
 export const api = {
   get: <T>(path: string, params?: RequestOptions["params"]) => request<T>(path, { params }),
   post: <T>(path: string, body?: unknown) => request<T>(path, { method: "POST", body }),
-  patch: <T>(path: string, body?: unknown) => request<T>(path, { method: "PATCH", body }),
+  patch: <T>(path: string, body?: unknown, opts?: { ifMatch?: number | null | undefined }) =>
+    request<T>(path, { method: "PATCH", body, ifMatch: opts?.ifMatch }),
   put: <T>(path: string, body?: unknown) => request<T>(path, { method: "PUT", body }),
   del: <T>(path: string) => request<T>(path, { method: "DELETE" }),
 };
@@ -225,6 +243,10 @@ export type ApiUser = {
   serviceCommsEnabled: boolean;
   mustChangePassword: boolean;
   mfaEnabled: boolean;
+  /** Permission codes from the person's roles. Used only to hide screens; the API enforces them. */
+  permissions: string[];
+  /** Member of an organisation's team (such members use the employer portal whatever their role). */
+  organisationMember?: boolean;
 };
 
 export type ApiApplication = {
@@ -274,6 +296,8 @@ export const SIZE_BAND_LABELS: Record<OrganisationSizeBand, string> = {
 };
 
 export type ApiOrganisation = {
+  /** Optimistic-lock version, sent back as If-Match when editing. */
+  version?: number | null;
   id: string;
   legalName: string;
   tradingName: string | null;
@@ -324,4 +348,33 @@ export type ApiTestimonial = {
   active: boolean;
   sortOrder: number;
   createdAt: string;
+};
+
+export type ApiServicePackage = {
+  slug: string;
+  name: string;
+  description: string;
+  price: number;
+  currency: string;
+  turnaround: string;
+  includes: string[];
+};
+
+export type ApiServiceOrder = {
+  id: string;
+  reference: string;
+  packageSlug: string;
+  packageName: string;
+  customerName: string;
+  status: string;
+  requirements: string | null;
+  assignedOfficerName: string | null;
+  revisionCount: number;
+  latestQuoteAmount: number | null;
+  latestQuoteCurrency: string | null;
+  latestQuoteAccepted: boolean;
+  rating: number | null;
+  feedback: string | null;
+  createdAt: string;
+  updatedAt: string;
 };

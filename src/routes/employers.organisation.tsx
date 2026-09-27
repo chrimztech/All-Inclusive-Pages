@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import { VerificationDocuments, VerificationReviews } from "@/components/eoz/VerificationDocuments";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { DashNav, EMPLOYER_NAV } from "@/components/eoz/DashNav";
@@ -17,6 +18,7 @@ import {
   type OrganisationSizeBand,
 } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
+import { FormErrorSummary } from "@/components/eoz/FormErrorSummary";
 
 export const Route = createFileRoute("/employers/organisation")({
   head: () => ({ meta: [{ title: "Organisation Profile — EOZ Employers" }] }),
@@ -55,55 +57,103 @@ function Organisation() {
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [facebookUrl, setFacebookUrl] = useState("");
 
+  const { resetTo, prompt: unsavedPrompt } = useUnsavedChanges({
+    legalName,
+    tradingName,
+    registrationNumber,
+    sector,
+    size,
+    website,
+    address,
+    description,
+    businessType,
+    sizeBand,
+    tpin,
+    foundedYear,
+    contactPersonName,
+    contactPersonRole,
+    contactPhone,
+    linkedinUrl,
+    facebookUrl,
+  });
+
   useEffect(() => {
     if (org) {
-      setLegalName(org.legalName);
-      setTradingName(org.tradingName ?? "");
-      setRegistrationNumber(org.registrationNumber ?? "");
-      setSector(org.sector ?? "");
-      setSize(org.size ?? "");
-      setWebsite(org.website ?? "");
-      setAddress(org.address ?? "");
-      setDescription(org.description ?? "");
-      setBusinessType(org.businessType ?? "");
-      setSizeBand(org.sizeBand ?? "");
-      setTpin(org.tpin ?? "");
-      setFoundedYear(org.foundedYear ? String(org.foundedYear) : "");
-      setContactPersonName(org.contactPersonName ?? "");
-      setContactPersonRole(org.contactPersonRole ?? "");
-      setContactPhone(org.contactPhone ?? "");
-      setLinkedinUrl(org.linkedinUrl ?? "");
-      setFacebookUrl(org.facebookUrl ?? "");
+      const saved = {
+        legalName: org.legalName,
+        tradingName: org.tradingName ?? "",
+        registrationNumber: org.registrationNumber ?? "",
+        sector: org.sector ?? "",
+        size: org.size ?? "",
+        website: org.website ?? "",
+        address: org.address ?? "",
+        description: org.description ?? "",
+        businessType: org.businessType ?? "",
+        sizeBand: org.sizeBand ?? "",
+        tpin: org.tpin ?? "",
+        foundedYear: org.foundedYear ? String(org.foundedYear) : "",
+        contactPersonName: org.contactPersonName ?? "",
+        contactPersonRole: org.contactPersonRole ?? "",
+        contactPhone: org.contactPhone ?? "",
+        linkedinUrl: org.linkedinUrl ?? "",
+        facebookUrl: org.facebookUrl ?? "",
+      };
+      setLegalName(saved.legalName);
+      setTradingName(saved.tradingName);
+      setRegistrationNumber(saved.registrationNumber);
+      setSector(saved.sector);
+      setSize(saved.size);
+      setWebsite(saved.website);
+      setAddress(saved.address);
+      setDescription(saved.description);
+      setBusinessType(saved.businessType);
+      setSizeBand(saved.sizeBand);
+      setTpin(saved.tpin);
+      setFoundedYear(saved.foundedYear);
+      setContactPersonName(saved.contactPersonName);
+      setContactPersonRole(saved.contactPersonRole);
+      setContactPhone(saved.contactPhone);
+      setLinkedinUrl(saved.linkedinUrl);
+      setFacebookUrl(saved.facebookUrl);
+      resetTo(saved);
     }
-  }, [org]);
+  }, [org, resetTo]);
 
   const mutation = useMutation({
     mutationFn: () =>
-      api.patch(`/organisations/${org?.id}`, {
-        legalName,
-        tradingName: tradingName || undefined,
-        registrationNumber: registrationNumber || undefined,
-        sector: sector || undefined,
-        size: size || undefined,
-        website: website || undefined,
-        address: address || undefined,
-        description: description || undefined,
-        businessType: businessType || undefined,
-        sizeBand: sizeBand || undefined,
-        tpin: tpin || undefined,
-        foundedYear: foundedYear ? Number(foundedYear) : undefined,
-        contactPersonName: contactPersonName || undefined,
-        contactPersonRole: contactPersonRole || undefined,
-        contactPhone: contactPhone || undefined,
-        linkedinUrl: linkedinUrl || undefined,
-        facebookUrl: facebookUrl || undefined,
-      }),
+      api.patch(
+        `/organisations/${org?.id}`,
+        {
+          legalName,
+          tradingName: tradingName || undefined,
+          registrationNumber: registrationNumber || undefined,
+          sector: sector || undefined,
+          size: size || undefined,
+          website: website || undefined,
+          address: address || undefined,
+          description: description || undefined,
+          businessType: businessType || undefined,
+          sizeBand: sizeBand || undefined,
+          tpin: tpin || undefined,
+          foundedYear: foundedYear ? Number(foundedYear) : undefined,
+          contactPersonName: contactPersonName || undefined,
+          contactPersonRole: contactPersonRole || undefined,
+          contactPhone: contactPhone || undefined,
+          linkedinUrl: linkedinUrl || undefined,
+          facebookUrl: facebookUrl || undefined,
+        },
+        { ifMatch: org?.version },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["employer", "organisations", "mine"] });
       toast("Profile updated.");
     },
-    onError: (error) =>
-      toast(error instanceof ApiError ? error.message : "Could not save changes.", "error"),
+    onError: (error) => {
+      toast(error instanceof ApiError ? error.message : "Could not save changes.", "error");
+      if (error instanceof ApiError && error.status === 409) {
+        void queryClient.invalidateQueries({ queryKey: ["employer", "organisations", "mine"] });
+      }
+    },
   });
 
   const logoMutation = useMutation({
@@ -130,6 +180,7 @@ function Organisation() {
         lead="A complete, verified organisation profile gives candidates the context they need and helps EOZ moderate your opportunities faster."
       />
       <DashNav items={EMPLOYER_NAV} />
+      {unsavedPrompt}
 
       {isUnauthenticated(orgsQuery.error) ? (
         <Panel className="mb-6">
@@ -356,6 +407,12 @@ function Organisation() {
                   className={inputCls}
                 />
               </label>
+              <div className="sm:col-span-2">
+                <FormErrorSummary
+                  error={mutation.error}
+                  labels={{ legalName: "Legal name", tpin: "TPIN", foundedYear: "Year founded" }}
+                />
+              </div>
               <button
                 type="submit"
                 disabled={mutation.isPending}

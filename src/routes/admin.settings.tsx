@@ -50,12 +50,18 @@ function AdminSettings() {
   });
   const toggleFlag = useMutation({
     mutationFn: (flag: FeatureFlag) =>
-      api.put(`/admin/feature-flags/${flag.key}`, { enabled: !flag.enabled, description: flag.description }),
+      api.put(`/admin/feature-flags/${flag.key}`, {
+        enabled: !flag.enabled,
+        description: flag.description,
+      }),
     onSuccess: (_data, flag) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "feature-flags"] });
-      toast(`${flag.key.replace(/^moderation\./, "").replace(/-/g, " ")} turned ${flag.enabled ? "off" : "on"}.`);
+      toast(
+        `${flag.key.replace(/^moderation\./, "").replace(/-/g, " ")} turned ${flag.enabled ? "off" : "on"}.`,
+      );
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update the setting.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not update the setting.", "error"),
   });
 
   const [name, setName] = useState("");
@@ -100,7 +106,8 @@ function AdminSettings() {
       queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
       toast("Organisation details saved.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not save changes.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not save changes.", "error"),
   });
 
   return (
@@ -114,7 +121,9 @@ function AdminSettings() {
 
       {isUnauthenticated(settingsQuery.error) ? (
         <Panel className="mb-4">
-          <p className="text-sm text-muted">Sign in with an admin account to change platform settings.</p>
+          <p className="text-sm text-muted">
+            Sign in with an admin account to change platform settings.
+          </p>
         </Panel>
       ) : null}
 
@@ -123,7 +132,9 @@ function AdminSettings() {
           <Panel>
             <div className="eyebrow mb-1">Moderation rules</div>
             {isUnauthenticated(flagsQuery.error) ? (
-              <p className="mb-4 text-xs text-muted">Sign in with an admin account to view moderation rules.</p>
+              <p className="mb-4 text-xs text-muted">
+                Sign in with an admin account to view moderation rules.
+              </p>
             ) : flagsQuery.isLoading ? (
               <p className="mb-4 text-xs text-muted">Loading…</p>
             ) : (
@@ -137,10 +148,14 @@ function AdminSettings() {
                     className="flex w-full items-start justify-between gap-4 border-b border-line pb-4 text-left last:border-0 last:pb-0 disabled:opacity-60"
                   >
                     <div>
-                      <div className="text-sm text-fg">{flag.key.replace(/^moderation\./, "").replace(/-/g, " ")}</div>
+                      <div className="text-sm text-fg">
+                        {flag.key.replace(/^moderation\./, "").replace(/-/g, " ")}
+                      </div>
                       <div className="mt-1 text-xs text-muted">{flag.description}</div>
                     </div>
-                    <Chip tone={flag.enabled ? "emerald" : "muted"}>{flag.enabled ? "On" : "Off"}</Chip>
+                    <Chip tone={flag.enabled ? "emerald" : "muted"}>
+                      {flag.enabled ? "On" : "Off"}
+                    </Chip>
                   </button>
                 ))}
               </div>
@@ -162,7 +177,11 @@ function AdminSettings() {
               </label>
               <label className="block text-sm">
                 <span className="label-mono">Location</span>
-                <input value={location} onChange={(e) => setLocation(e.target.value)} className={field} />
+                <input
+                  value={location}
+                  onChange={(e) => setLocation(e.target.value)}
+                  className={field}
+                />
               </label>
               <label className="block text-sm">
                 <span className="label-mono">Phone</span>
@@ -174,23 +193,43 @@ function AdminSettings() {
               </label>
               <label className="block text-sm sm:col-span-2">
                 <span className="label-mono">Tagline</span>
-                <input value={tagline} onChange={(e) => setTagline(e.target.value)} className={field} />
+                <input
+                  value={tagline}
+                  onChange={(e) => setTagline(e.target.value)}
+                  className={field}
+                />
               </label>
               <label className="block text-sm">
                 <span className="label-mono">WhatsApp channel URL</span>
-                <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} className={field} />
+                <input
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  className={field}
+                />
               </label>
               <label className="block text-sm">
                 <span className="label-mono">Facebook URL</span>
-                <input value={facebook} onChange={(e) => setFacebook(e.target.value)} className={field} />
+                <input
+                  value={facebook}
+                  onChange={(e) => setFacebook(e.target.value)}
+                  className={field}
+                />
               </label>
               <label className="block text-sm">
                 <span className="label-mono">LinkedIn URL</span>
-                <input value={linkedin} onChange={(e) => setLinkedin(e.target.value)} className={field} />
+                <input
+                  value={linkedin}
+                  onChange={(e) => setLinkedin(e.target.value)}
+                  className={field}
+                />
               </label>
               <label className="block text-sm">
                 <span className="label-mono">TikTok URL</span>
-                <input value={tiktok} onChange={(e) => setTiktok(e.target.value)} className={field} />
+                <input
+                  value={tiktok}
+                  onChange={(e) => setTiktok(e.target.value)}
+                  className={field}
+                />
               </label>
               <button
                 type="submit"
@@ -218,7 +257,9 @@ function AdminSettings() {
               </li>
             ))}
           </ul>
-          <p className="mt-4 text-xs text-muted">Categories are managed via the API's category seed data.</p>
+          <p className="mt-4 text-xs text-muted">
+            Categories are managed via the API's category seed data.
+          </p>
         </Panel>
       </section>
     </SiteShell>

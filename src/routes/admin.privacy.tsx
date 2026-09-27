@@ -6,10 +6,14 @@ import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
 import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
 import { api, ApiError, isUnauthenticated } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
+import { useCan } from "@/lib/use-current-user";
 
 export const Route = createFileRoute("/admin/privacy")({
   head: () => ({
-    meta: [{ title: "Privacy Requests - EOZ Staff" }, { name: "robots", content: "noindex,nofollow" }],
+    meta: [
+      { title: "Privacy Requests - EOZ Staff" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
   }),
   component: PrivacyAdmin,
 });
@@ -29,19 +33,26 @@ type PrivacyRequest = {
 
 const TONE = { PENDING: "amber", COMPLETED: "emerald", CANCELLED: "muted" } as const;
 const lusaka = (iso: string) =>
-  new Date(iso).toLocaleString("en-ZM", { timeZone: "Africa/Lusaka", dateStyle: "medium", timeStyle: "short" });
+  new Date(iso).toLocaleString("en-ZM", {
+    timeZone: "Africa/Lusaka",
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
 
 function PrivacyAdmin() {
+  const can = useCan();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [status, setStatus] = useState<"" | "PENDING" | "COMPLETED" | "CANCELLED">("PENDING");
   const requestsQuery = useQuery({
     queryKey: ["admin", "privacy", status],
-    queryFn: () => api.get<PrivacyRequest[]>("/admin/privacy/requests", { status: status || undefined }),
+    queryFn: () =>
+      api.get<PrivacyRequest[]>("/admin/privacy/requests", { status: status || undefined }),
     retry: false,
   });
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["admin", "privacy"] });
-  const fail = (e: unknown, fallback: string) => toast(e instanceof ApiError ? e.message : fallback, "error");
+  const fail = (e: unknown, fallback: string) =>
+    toast(e instanceof ApiError ? e.message : fallback, "error");
 
   const complete = useMutation({
     mutationFn: (id: string) => api.post(`/admin/privacy/requests/${id}/complete`),
@@ -73,7 +84,9 @@ function PrivacyAdmin() {
       <DashNav items={ADMIN_NAV} />
       {isUnauthenticated(requestsQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with an account that manages users to review privacy requests.</p>
+          <p className="text-sm text-muted">
+            Sign in with an account that manages users to review privacy requests.
+          </p>
         </Panel>
       ) : null}
 
@@ -85,7 +98,11 @@ function PrivacyAdmin() {
                 <UserX aria-hidden="true" className="size-4 text-accent-soft" />
                 Account deletion requests
               </div>
-              <div role="group" aria-label="Filter" className="inline-flex rounded-xl bg-white/[0.03] p-1 text-xs ring-1 ring-line">
+              <div
+                role="group"
+                aria-label="Filter"
+                className="inline-flex rounded-xl bg-white/[0.03] p-1 text-xs ring-1 ring-line"
+              >
                 {(["PENDING", "COMPLETED", "CANCELLED", ""] as const).map((s) => (
                   <button
                     key={s || "ALL"}
@@ -157,8 +174,8 @@ function PrivacyAdmin() {
           </Panel>
         </div>
         <div className="space-y-6 lg:col-span-4">
-          <GracePeriod />
-          <RetentionRun />
+          {can("SETTINGS_MANAGE") ? <GracePeriod /> : null}
+          {can("SYSTEM_MANAGE") ? <RetentionRun /> : null}
         </div>
       </section>
     </SiteShell>
@@ -173,11 +190,13 @@ function GracePeriod() {
     queryFn: () => api.get<{ key: string; value: string }[]>("/admin/settings"),
     retry: false,
   });
-  const current = settingsQuery.data?.find((s) => s.key === "privacy.deletion_grace_days")?.value ?? "30";
+  const current =
+    settingsQuery.data?.find((s) => s.key === "privacy.deletion_grace_days")?.value ?? "30";
   const [days, setDays] = useState(current);
   useEffect(() => setDays(current), [current]);
   const save = useMutation({
-    mutationFn: () => api.put("/admin/settings/privacy.deletion_grace_days", { value: String(Number(days)) }),
+    mutationFn: () =>
+      api.put("/admin/settings/privacy.deletion_grace_days", { value: String(Number(days)) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
       toast("Grace period saved. It applies to new requests.");
@@ -188,7 +207,9 @@ function GracePeriod() {
   return (
     <Panel className="p-6">
       <div className="mb-2 text-sm font-medium">Deletion grace period</div>
-      <p className="mb-3 text-xs text-muted">Days between a deletion request and automatic erasure.</p>
+      <p className="mb-3 text-xs text-muted">
+        Days between a deletion request and automatic erasure.
+      </p>
       <form
         className="flex items-end gap-2"
         onSubmit={(e) => {
@@ -229,7 +250,8 @@ function RetentionRun() {
       setResult(r);
       toast("Retention clean-up finished.");
     },
-    onError: (e) => toast(e instanceof ApiError ? e.message : "Could not run the clean-up.", "error"),
+    onError: (e) =>
+      toast(e instanceof ApiError ? e.message : "Could not run the clean-up.", "error"),
   });
   const LABELS: Record<string, string> = {
     sessions: "Old sessions",
@@ -247,10 +269,16 @@ function RetentionRun() {
         Retention clean-up
       </div>
       <p className="mb-3 text-xs leading-5 text-muted">
-        Runs automatically every day. Removes old sessions and tokens, sent email records after 90 days, read
-        notifications after a year, expired exports, and erases accounts whose grace period has ended.
+        Runs automatically every day. Removes old sessions and tokens, sent email records after 90
+        days, read notifications after a year, expired exports, and erases accounts whose grace
+        period has ended.
       </p>
-      <button type="button" disabled={run.isPending} onClick={() => run.mutate()} className="btn-secondary px-3 py-2 text-xs">
+      <button
+        type="button"
+        disabled={run.isPending}
+        onClick={() => run.mutate()}
+        className="btn-secondary px-3 py-2 text-xs"
+      >
         {run.isPending ? "Running…" : "Run now"}
       </button>
       {result ? (

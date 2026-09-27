@@ -30,3 +30,16 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Test output
+test-results/
+playwright-report/
+coverage/
+
+# Local environment (secrets). .env.example is the committed template.
+.env
+.env.local
+
+# Backend build output and runtime data (uploads, backups with password hashes, exports). Never commit.
+backend/target/
+backend/data/

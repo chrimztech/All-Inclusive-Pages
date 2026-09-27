@@ -90,7 +90,8 @@ public class ApplicationController {
         Resource resource = fileStorageService.load(asset);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(asset.getContentType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + asset.getFileName() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, org.springframework.http.ContentDisposition.attachment()
+                        .filename(asset.getFileName(), java.nio.charset.StandardCharsets.UTF_8).build().toString())
                 .body(resource);
     }
 

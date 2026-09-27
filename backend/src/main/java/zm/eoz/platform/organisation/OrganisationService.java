@@ -98,8 +98,14 @@ public class OrganisationService {
 
     @Transactional
     public OrganisationResponse update(UUID organisationId, OrganisationUpdateRequest request, User actor) {
+        return update(organisationId, request, actor, null);
+    }
+
+    @Transactional
+    public OrganisationResponse update(UUID organisationId, OrganisationUpdateRequest request, User actor, String ifMatch) {
         requireMemberAccess(organisationId, actor);
         Organisation org = requireOrganisation(organisationId);
+        zm.eoz.platform.common.Versions.check(ifMatch, org.getVersion(), "organisation profile");
         org.setLegalName(request.legalName());
         org.setTradingName(request.tradingName());
         org.setRegistrationNumber(request.registrationNumber());
@@ -128,6 +134,7 @@ public class OrganisationService {
     public OrganisationResponse setLogo(UUID organisationId, UUID logoFileId, User actor) {
         requireMemberAccess(organisationId, actor);
         Organisation org = requireOrganisation(organisationId);
+        fileStorageService.requireOwnUpload(logoFileId, actor, true);
         org.setLogoFileId(logoFileId);
         organisationRepository.save(org);
         auditService.record(actor, "LOGO_UPDATED", "Organisation", organisationId.toString(), "Updated logo for \"" + org.getLegalName() + "\"");
@@ -261,8 +268,14 @@ public class OrganisationService {
         return actor.getRoles().stream().flatMap(r -> r.getPermissions().stream()).anyMatch(p -> code.equals(p.getCode()));
     }
 
+    /** Whether the person belongs to any organisation's team (grants the employer area to invited members). */
+    @Transactional(readOnly = true)
+    public boolean isMemberOfAny(UUID userId) {
+        return !memberRepository.findById_UserId(userId).isEmpty();
+    }
+
     private void requireMemberAccess(UUID organisationId, User actor) {
-        boolean isStaff = actor.getRoles().stream().anyMatch(r -> Set.of("MANAGER", "ADMIN").contains(r.getName()));
+        boolean isStaff = zm.eoz.platform.security.Access.hasAny(actor, "ORGANISATION_VERIFY");
         boolean isMember = memberRepository.findById_OrganisationIdAndId_UserId(organisationId, actor.getId()).isPresent();
         if (!isStaff && !isMember) {
             throw new ForbiddenException("You are not a member of this organisation.");
@@ -270,7 +283,7 @@ public class OrganisationService {
     }
 
     private void requireOwnerAccess(UUID organisationId, User actor) {
-        boolean isStaff = actor.getRoles().stream().anyMatch(r -> Set.of("MANAGER", "ADMIN").contains(r.getName()));
+        boolean isStaff = zm.eoz.platform.security.Access.hasAny(actor, "ORGANISATION_VERIFY");
         boolean isOwner = memberRepository
                 .findById_OrganisationIdAndId_UserId(organisationId, actor.getId())
                 .map(m -> m.getRoleInOrg() == OrganisationMember.RoleInOrg.OWNER)

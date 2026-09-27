@@ -40,6 +40,14 @@ public class AuditEvent {
 
     private String summary;
 
+    @Column(name = "correlation_id")
+    private String correlationId;
+
+    private String ip;
+
+    @Column(name = "user_agent")
+    private String userAgent;
+
     @Column(name = "occurred_at", nullable = false)
     private Instant occurredAt = Instant.now();
 }

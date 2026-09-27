@@ -28,6 +28,8 @@ import zm.eoz.platform.identity.User;
 import zm.eoz.platform.identity.UserRepository;
 import zm.eoz.platform.notification.EmailDeliveryService;
 import zm.eoz.platform.notification.NotificationService;
+import zm.eoz.platform.security.LegacySecretEncryptor;
+import zm.eoz.platform.security.SecretCipher;
 import zm.eoz.platform.security.TotpService;
 
 /**
@@ -51,6 +53,8 @@ class SecurityOperationsTest {
     @Autowired private EmailDeliveryService emailDeliveryService;
     @Autowired private NotificationService notificationService;
     @Autowired private ExportService exportService;
+    @Autowired private SecretCipher secretCipher;
+    @Autowired private LegacySecretEncryptor legacySecretEncryptor;
 
     @Test
     void fiveWrongPasswordsLockTheAccountAndAlertAdministrators() throws Exception {
@@ -102,6 +106,10 @@ class SecurityOperationsTest {
                 .andReturn();
         List<String> recovery = JsonPath.read(enabled.getResponse().getContentAsString(), "$.data");
 
+        // The authenticator key is encrypted at rest, not stored as the raw base32 secret.
+        String stored = jdbc.queryForObject("select mfa_secret from users where lower(email) = lower(?)", String.class, email);
+        assertThat(stored).startsWith("v1:").doesNotContain(secret);
+
         // Password alone no longer signs in.
         MvcResult first = mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
                         .content(credentials(email, PASSWORD)))
@@ -135,6 +143,29 @@ class SecurityOperationsTest {
                         .content("{\"password\":\"" + PASSWORD + "\",\"code\":\"" + recovery.get(1) + "\"}"))
                 .andExpect(status().isNoContent());
         login(email);
+    }
+
+    @Test
+    void secretsSavedBeforeEncryptionStillWorkAndAreEncryptedOnStartup() throws Exception {
+        String email = unique("legacy-mfa");
+        register("CANDIDATE", email);
+        String secret = totpService.newSecret();
+        jdbc.update("update users set mfa_secret = ?, mfa_enabled = true where lower(email) = lower(?)", secret, email);
+
+        MvcResult first = mockMvc.perform(post("/api/v1/auth/login").contentType(MediaType.APPLICATION_JSON)
+                        .content(credentials(email, PASSWORD)))
+                .andExpect(jsonPath("$.data.mfaRequired").value(true))
+                .andReturn();
+        String challenge = JsonPath.read(first.getResponse().getContentAsString(), "$.data.challengeId");
+        String code = totpService.codeAt(secret, Instant.now().getEpochSecond() / 30);
+        mockMvc.perform(post("/api/v1/auth/mfa/verify").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"challengeId\":\"" + challenge + "\",\"code\":\"" + code + "\"}"))
+                .andExpect(status().isOk());
+
+        legacySecretEncryptor.run(null);
+        String stored = jdbc.queryForObject("select mfa_secret from users where lower(email) = lower(?)", String.class, email);
+        assertThat(stored).startsWith("v1:");
+        assertThat(secretCipher.decrypt(stored)).isEqualTo(secret);
     }
 
     @Test
@@ -252,6 +283,19 @@ class SecurityOperationsTest {
                 .andExpect(jsonPath("$.info.title").value("Echo Opportunities Zambia API"))
                 .andExpect(jsonPath("$.components.securitySchemes.session.name").value("eoz_at"))
                 .andExpect(jsonPath("$.paths['/api/v1/auth/mfa/verify']").exists());
+
+        // The browsable docs page is public too, not just the JSON.
+        String uiPath = mockMvc.perform(get("/api/v1/docs"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn().getResponse().getRedirectedUrl();
+        mockMvc.perform(get(uiPath))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/openapi/swagger-config"))
+                .andExpect(status().isOk());
+
+        // A mistyped URL is a 404, not a server error.
+        mockMvc.perform(get("/api/v1/docs/nothing-here.html"))
+                .andExpect(status().isNotFound());
     }
 
     // ---------------------------------------------------------------- helpers

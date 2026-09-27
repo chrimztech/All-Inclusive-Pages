@@ -15,7 +15,8 @@ export const Route = createFileRoute("/about")({
       { property: "og:title", content: "About EOZ — Echo Opportunities Zambia" },
       {
         property: "og:description",
-        content: "Who we are, what we distribute, and why applications always stay with the employer.",
+        content:
+          "Who we are, what we distribute, and why applications always stay with the employer.",
       },
     ],
   }),
@@ -28,7 +29,13 @@ function About() {
     <SiteShell>
       <PageIntro
         eyebrow="( 08 ) — About"
-        title={<>Connecting talent.<br />Creating opportunities.</>}
+        title={
+          <>
+            Connecting talent.
+            <br />
+            Creating opportunities.
+          </>
+        }
         lead={`${org.name} is a Zambian recruitment and professional services agency/platform. We connect people and organisations to meaningful opportunities, reliable information and practical support.`}
       />
 
@@ -96,13 +103,22 @@ function About() {
         <Panel>
           <div className="label-mono mb-3">Who we serve</div>
           <ul className="grid gap-2 text-sm text-muted sm:grid-cols-2">
-            {AUDIENCES.map((audience) => <li key={audience}>· {audience}</li>)}
+            {AUDIENCES.map((audience) => (
+              <li key={audience}>· {audience}</li>
+            ))}
           </ul>
         </Panel>
         <Panel>
           <div className="label-mono mb-3">Operating principles</div>
           <div className="flex flex-wrap gap-2">
-            {BRAND_VALUES.map((value) => <span key={value} className="rounded-full px-3 py-1.5 text-xs text-muted ring-1 ring-line">{value}</span>)}
+            {BRAND_VALUES.map((value) => (
+              <span
+                key={value}
+                className="rounded-full px-3 py-1.5 text-xs text-muted ring-1 ring-line"
+              >
+                {value}
+              </span>
+            ))}
           </div>
         </Panel>
       </section>
@@ -129,21 +145,62 @@ function About() {
       <section className="pb-10">
         <Panel>
           <div className="label-mono mb-3">Our distribution network</div>
-          <p className="max-w-[65ch] text-sm text-muted">EOZ shares opportunities and career information through a strong WhatsApp presence alongside Facebook, LinkedIn and TikTok. Each channel can adapt the presentation, but verified employer facts and the official application route remain unchanged.</p>
+          <p className="max-w-[65ch] text-sm text-muted">
+            EOZ shares opportunities and career information through a strong WhatsApp presence
+            alongside Facebook, LinkedIn and TikTok. Each channel can adapt the presentation, but
+            verified employer facts and the official application route remain unchanged.
+          </p>
           <div className="mt-4 flex flex-wrap gap-3 text-sm">
-            <a href={org.social.whatsapp} target="_blank" rel="noreferrer" className="text-accent-soft hover:text-fg">WhatsApp channel</a>
-            <a href={org.social.facebook} target="_blank" rel="noreferrer" className="text-accent-soft hover:text-fg">Facebook</a>
-            <a href={org.social.linkedin} target="_blank" rel="noreferrer" className="text-accent-soft hover:text-fg">LinkedIn</a>
-            <a href={org.social.tiktok} target="_blank" rel="noreferrer" className="text-accent-soft hover:text-fg">TikTok</a>
+            <a
+              href={org.social.whatsapp}
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent-soft hover:text-fg"
+            >
+              WhatsApp channel
+            </a>
+            <a
+              href={org.social.facebook}
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent-soft hover:text-fg"
+            >
+              Facebook
+            </a>
+            <a
+              href={org.social.linkedin}
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent-soft hover:text-fg"
+            >
+              LinkedIn
+            </a>
+            <a
+              href={org.social.tiktok}
+              target="_blank"
+              rel="noreferrer"
+              className="text-accent-soft hover:text-fg"
+            >
+              TikTok
+            </a>
           </div>
         </Panel>
       </section>
 
       <section className="grid gap-4 pb-14 lg:grid-cols-3">
         {[
-          { t: "Verify", d: "Every listing is checked against the original source before it is published." },
-          { t: "Publish", d: "Category, region, deadline and application method are stated on every card." },
-          { t: "Support", d: "Optional paid services help candidates and organisations present themselves well." },
+          {
+            t: "Verify",
+            d: "Every listing is checked against the original source before it is published.",
+          },
+          {
+            t: "Publish",
+            d: "Category, region, deadline and application method are stated on every card.",
+          },
+          {
+            t: "Support",
+            d: "Optional paid services help candidates and organisations present themselves well.",
+          },
         ].map((c) => (
           <Panel key={c.t}>
             <h2 className="font-display text-xl tracking-tight">{c.t}</h2>

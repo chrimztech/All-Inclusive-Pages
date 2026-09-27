@@ -3,6 +3,9 @@ spring:
     url: jdbc:postgresql://localhost:5432/eoz_db_test
     username: postgres
     password: 11111111
+    # Several test contexts stay cached at once; keep each pool small so PostgreSQL has connections to spare.
+    hikari:
+      maximum-pool-size: 3
   flyway:
     clean-disabled: false
 eoz:
@@ -10,3 +13,6 @@ eoz:
   rate-limit:
     auth-per-minute: 100000
     forms-per-minute: 100000
+  # Tests call job methods directly; scheduled runs would race them (and back up the test database).
+  scheduling:
+    enabled: false

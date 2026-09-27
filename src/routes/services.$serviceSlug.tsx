@@ -32,7 +32,10 @@ export const Route = createFileRoute("/services/$serviceSlug")({
   head: ({ loaderData }) => {
     if (!loaderData) {
       return {
-        meta: [{ title: "Service unavailable — Echo Opportunities Zambia" }, { name: "robots", content: "noindex" }],
+        meta: [
+          { title: "Service unavailable — Echo Opportunities Zambia" },
+          { name: "robots", content: "noindex" },
+        ],
       };
     }
     const { service } = loaderData;
@@ -146,12 +149,18 @@ function BookServiceForm({ slug }: { slug: string }) {
   const { toast } = useToast();
   const [requirements, setRequirements] = useState("");
   const mutation = useMutation({
-    mutationFn: () => api.post("/services/orders", { slug, requirements: requirements || undefined }),
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Sign in to book this service.", "error"),
+    mutationFn: () =>
+      api.post("/services/orders", { slug, requirements: requirements || undefined }),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Sign in to book this service.", "error"),
   });
 
   if (mutation.isSuccess) {
-    return <p className="mt-4 text-sm text-emerald-400">Order submitted — track it from your dashboard.</p>;
+    return (
+      <p className="mt-4 text-sm text-emerald-400">
+        Order submitted — track it from your dashboard.
+      </p>
+    );
   }
 
   return (

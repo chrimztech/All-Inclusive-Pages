@@ -26,9 +26,11 @@ import zm.eoz.platform.servicecatalog.dto.ServicePackageResponse;
 public class ServiceCatalogController {
 
     private final ServiceCatalogService serviceCatalogService;
+    private final ReceiptService receiptService;
     private final UserRepository userRepository;
 
-    public ServiceCatalogController(ServiceCatalogService serviceCatalogService, UserRepository userRepository) {
+    public ServiceCatalogController(ServiceCatalogService serviceCatalogService, UserRepository userRepository, ReceiptService receiptService) {
+        this.receiptService = receiptService;
         this.serviceCatalogService = serviceCatalogService;
         this.userRepository = userRepository;
     }
@@ -53,6 +55,13 @@ public class ServiceCatalogController {
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<List<ServiceOrderResponse>> mine() {
         return ApiResponse.of(serviceCatalogService.listMine(currentUser().getId()));
+    }
+
+    /** Receipt for a paid invoice (its customer or finance staff). */
+    @GetMapping("/api/v1/services/invoices/{id}/receipt")
+    @PreAuthorize("isAuthenticated()")
+    public ApiResponse<ReceiptService.Receipt> receipt(@PathVariable UUID id) {
+        return ApiResponse.of(receiptService.get(id, currentUser()));
     }
 
     @GetMapping("/api/v1/services/invoices/mine")

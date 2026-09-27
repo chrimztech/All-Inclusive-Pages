@@ -5,6 +5,7 @@ import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
+import { useCan } from "@/lib/use-current-user";
 
 export const Route = createFileRoute("/admin/moderation")({
   head: () => ({
@@ -12,12 +13,14 @@ export const Route = createFileRoute("/admin/moderation")({
       { title: "Moderation Queue — EOZ Staff Console" },
       {
         name: "description",
-        content: "Review, approve or reject submitted opportunities before they reach the public board.",
+        content:
+          "Review, approve or reject submitted opportunities before they reach the public board.",
       },
       { property: "og:title", content: "Moderation Queue — EOZ Staff Console" },
       {
         property: "og:description",
-        content: "Verification workflow for submitted listings: draft, pending review, approved, rejected.",
+        content:
+          "Verification workflow for submitted listings: draft, pending review, approved, rejected.",
       },
     ],
   }),
@@ -57,15 +60,18 @@ const toneFor: Record<string, "amber" | "emerald" | "muted"> = {
 };
 
 function Moderation() {
+  const can = useCan();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const queueQuery = useQuery({
     queryKey: ["admin", "moderation-queue"],
-    queryFn: () => api.get<PageResponse<QueueItem>>("/opportunities/moderation/queue", { size: 50 }),
+    queryFn: () =>
+      api.get<PageResponse<QueueItem>>("/opportunities/moderation/queue", { size: 50 }),
     retry: false,
   });
 
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "moderation-queue"] });
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["admin", "moderation-queue"] });
   function errorMessage(error: unknown, fallback: string) {
     return error instanceof ApiError ? error.message : fallback;
   }
@@ -109,7 +115,8 @@ function Moderation() {
     onError: (error) => toast(errorMessage(error, "Could not schedule listing."), "error"),
   });
   const reject = useMutation({
-    mutationFn: ({ id, reason }: { id: string; reason: string }) => api.patch(`/opportunities/${id}/reject`, { reason }),
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      api.patch(`/opportunities/${id}/reject`, { reason }),
     onSuccess: () => {
       invalidate();
       toast("Listing rejected.");
@@ -118,15 +125,21 @@ function Moderation() {
   });
 
   const busy =
-    approve.isPending || publish.isPending || requestChanges.isPending || reject.isPending || scheduleListing.isPending;
+    approve.isPending ||
+    publish.isPending ||
+    requestChanges.isPending ||
+    reject.isPending ||
+    scheduleListing.isPending;
   const items = queueQuery.data?.items ?? [];
 
   const fraudReportsQuery = useQuery({
     queryKey: ["admin", "fraud-reports"],
-    queryFn: () => api.get<PageResponse<FraudReport>>("/admin/fraud-reports", { status: "OPEN", size: 50 }),
+    queryFn: () =>
+      api.get<PageResponse<FraudReport>>("/admin/fraud-reports", { status: "OPEN", size: 50 }),
     retry: false,
   });
-  const invalidateFraudReports = () => queryClient.invalidateQueries({ queryKey: ["admin", "fraud-reports"] });
+  const invalidateFraudReports = () =>
+    queryClient.invalidateQueries({ queryKey: ["admin", "fraud-reports"] });
 
   const resolveFraudReport = useMutation({
     mutationFn: (id: string) => api.patch(`/admin/fraud-reports/${id}`, { status: "RESOLVED" }),
@@ -182,7 +195,9 @@ function Moderation() {
                   {m.organisationName} · {m.categoryName}
                   {m.region ? ` · ${m.region}` : ""}
                 </div>
-                {m.source ? <div className="mt-1 text-xs text-muted">Source: {m.source}</div> : null}
+                {m.source ? (
+                  <div className="mt-1 text-xs text-muted">Source: {m.source}</div>
+                ) : null}
               </div>
               <div className="flex flex-wrap gap-2">
                 {m.status === "PENDING_REVIEW" ? (
@@ -197,8 +212,11 @@ function Moderation() {
                     <button
                       disabled={busy}
                       onClick={() => {
-                        const reason = window.prompt("What needs to change? The employer will see this.");
-                        if (reason && reason.trim()) requestChanges.mutate({ id: m.id, reason: reason.trim() });
+                        const reason = window.prompt(
+                          "What needs to change? The employer will see this.",
+                        );
+                        if (reason && reason.trim())
+                          requestChanges.mutate({ id: m.id, reason: reason.trim() });
                       }}
                       className="rounded-md px-3 py-1.5 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
                     >
@@ -207,14 +225,21 @@ function Moderation() {
                     <button
                       disabled={busy}
                       onClick={() => {
-                        const reason = window.prompt("Why is this listing being rejected? The employer will see this.");
-                        if (reason && reason.trim()) reject.mutate({ id: m.id, reason: reason.trim() });
+                        const reason = window.prompt(
+                          "Why is this listing being rejected? The employer will see this.",
+                        );
+                        if (reason && reason.trim())
+                          reject.mutate({ id: m.id, reason: reason.trim() });
                       }}
                       className="rounded-md px-3 py-1.5 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
                     >
                       Reject
                     </button>
                   </>
+                ) : !can("OPPORTUNITY_PUBLISH") ? (
+                  <span className="text-xs text-muted">
+                    Approved — awaiting someone who can publish
+                  </span>
                 ) : (
                   <>
                     <button
@@ -280,7 +305,9 @@ function Moderation() {
               <div>
                 <div className="mb-1 flex items-center gap-2">
                   <Chip tone="rose">{r.reason}</Chip>
-                  {r.listingReference ? <span className="label-mono">Ref {r.listingReference}</span> : null}
+                  {r.listingReference ? (
+                    <span className="label-mono">Ref {r.listingReference}</span>
+                  ) : null}
                 </div>
                 {r.opportunityTitle ? (
                   <h2 className="font-display text-xl tracking-tight">{r.opportunityTitle}</h2>

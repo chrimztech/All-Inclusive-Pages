@@ -22,14 +22,13 @@ import zm.eoz.platform.identity.User;
 
 /**
  * Real, working pg_dump-based backups — not a placeholder. Requires pg_dump on PATH (bundled
- * with any PostgreSQL client install). Retains the most recent {@link #RETENTION_COUNT} backups
- * on disk and prunes older ones after each successful run.
+ * with any PostgreSQL client install). Keeps the newest {@code eoz.backup.keep} (default 14) successful
+ * backups and prunes older ones after each successful run (see {@link #prune()}).
  */
 @Service
 public class BackupService {
 
     private static final Logger log = LoggerFactory.getLogger(BackupService.class);
-    private static final int RETENTION_COUNT = 14;
     private static final Pattern JDBC_URL_PATTERN =
             Pattern.compile("jdbc:postgresql://([^:/]+)(?::(\\d+))?/([^?]+)");
 
@@ -37,6 +36,7 @@ public class BackupService {
     private final AuditService auditService;
     private final RestoreFlagService restoreFlagService;
     private final Path backupDir;
+    private final int keep;
     private final String host;
     private final String port;
     private final String database;
@@ -48,6 +48,7 @@ public class BackupService {
             AuditService auditService,
             RestoreFlagService restoreFlagService,
             @Value("${eoz.backup.dir:./data/backups}") String backupDirPath,
+            @Value("${eoz.backup.keep:14}") int keep,
             @Value("${spring.datasource.url}") String jdbcUrl,
             @Value("${spring.datasource.username}") String dbUser,
             @Value("${spring.datasource.password}") String dbPassword) {
@@ -55,6 +56,7 @@ public class BackupService {
         this.auditService = auditService;
         this.restoreFlagService = restoreFlagService;
         this.backupDir = Path.of(backupDirPath);
+        this.keep = keep;
         this.dbUser = dbUser;
         this.dbPassword = dbPassword;
 
@@ -71,6 +73,37 @@ public class BackupService {
         } catch (IOException e) {
             throw new IllegalStateException("Could not create backup directory: " + this.backupDir, e);
         }
+    }
+
+    /**
+     * Deletes all but the newest {@code eoz.backup.keep} successful backups (files and records), so the backup
+     * disk cannot fill up. Failed attempts older than the oldest kept backup are removed too. Never deletes the
+     * only good backup. @return backups removed
+     */
+    @Transactional
+    public int prune() {
+        if (keep < 1) return 0;
+        List<SystemBackup> all = backupRepository.findAllByOrderByStartedAtDesc();
+        List<SystemBackup> good = all.stream().filter(b -> b.getStatus() == SystemBackup.Status.SUCCESS).toList();
+        if (good.size() <= keep) return 0;
+        Instant cutoff = good.get(keep - 1).getStartedAt();
+        int removed = 0;
+        for (SystemBackup b : all) {
+            if (!b.getStartedAt().isBefore(cutoff) || b.getStatus() == SystemBackup.Status.RUNNING) continue;
+            try {
+                Files.deleteIfExists(resolve(b));
+            } catch (IOException e) {
+                log.warn("Could not delete old backup file {}: {}", b.getFileName(), e.getMessage());
+                continue;
+            }
+            backupRepository.delete(b);
+            removed++;
+        }
+        if (removed > 0) {
+            auditService.record(null, "BACKUPS_PRUNED", "SystemBackup", null,
+                    "Removed " + removed + " old backup(s); keeping the newest " + keep + ".");
+        }
+        return removed;
     }
 
     @Transactional
@@ -255,21 +288,4 @@ public class BackupService {
         }
     }
 
-    /** Deletes files and rows for backups beyond the retention count, oldest first. */
-    private void prune() {
-        List<SystemBackup> successes = backupRepository.findAllByOrderByStartedAtDesc().stream()
-                .filter(b -> b.getStatus() == SystemBackup.Status.SUCCESS)
-                .toList();
-        if (successes.size() <= RETENTION_COUNT) {
-            return;
-        }
-        for (SystemBackup old : successes.subList(RETENTION_COUNT, successes.size())) {
-            try {
-                Files.deleteIfExists(resolve(old));
-            } catch (IOException e) {
-                log.warn("Could not delete pruned backup file {}", old.getFileName(), e);
-            }
-            backupRepository.delete(old);
-        }
-    }
 }

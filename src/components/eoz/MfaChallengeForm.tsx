@@ -62,7 +62,11 @@ export function MfaChallengeForm({
           {verify.error instanceof ApiError ? verify.error.message : "Could not verify the code."}
         </p>
       ) : null}
-      <button type="submit" disabled={verify.isPending || !code.trim()} className="btn-primary px-4 py-3 text-sm disabled:opacity-60">
+      <button
+        type="submit"
+        disabled={verify.isPending || !code.trim()}
+        className="btn-primary px-4 py-3 text-sm disabled:opacity-60"
+      >
         {verify.isPending ? "Verifying…" : "Verify and sign in"}
       </button>
       <div className="flex flex-wrap justify-between gap-2 text-xs">

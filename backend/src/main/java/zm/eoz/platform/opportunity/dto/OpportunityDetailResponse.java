@@ -40,7 +40,9 @@ public record OpportunityDetailResponse(
         long applyClicks,
         long shareCount,
         /** Linked organisation, when the listing belongs to a registered one (for the "on behalf of" line). */
-        java.util.UUID organisationId) {
+        java.util.UUID organisationId,
+        /** Optimistic-lock version; send it back as If-Match when editing to avoid overwriting someone else's changes. */
+        Long version) {
 
     public static OpportunityDetailResponse from(Opportunity o) {
         return new OpportunityDetailResponse(
@@ -78,6 +80,7 @@ public record OpportunityDetailResponse(
                 o.isFeatured(),
                 o.getApplyClicks(),
                 o.getShareCount(),
-                o.getOrganisation() != null ? o.getOrganisation().getId() : null);
+                o.getOrganisation() != null ? o.getOrganisation().getId() : null,
+                o.getVersion());
     }
 }

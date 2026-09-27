@@ -14,7 +14,8 @@ export const Route = createFileRoute("/terms")({
       { property: "og:title", content: "Terms of Use — Echo Opportunities Zambia" },
       {
         property: "og:description",
-        content: "Platform role, listing accuracy, employer obligations and limitations of liability.",
+        content:
+          "Platform role, listing accuracy, employer obligations and limitations of liability.",
       },
     ],
   }),

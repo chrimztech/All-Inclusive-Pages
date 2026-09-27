@@ -29,17 +29,23 @@ function TalentPool() {
 
   const poolQuery = useQuery({
     queryKey: ["admin", "talent-pool", query, tag],
-    queryFn: () => api.get<TalentPoolCandidate[]>("/recruitment/talent-pool", { q: query || undefined, tag: tag || undefined }),
+    queryFn: () =>
+      api.get<TalentPoolCandidate[]>("/recruitment/talent-pool", {
+        q: query || undefined,
+        tag: tag || undefined,
+      }),
     retry: false,
   });
 
   const addTag = useMutation({
-    mutationFn: ({ id, value }: { id: string; value: string }) => api.post(`/recruitment/candidates/${id}/tags`, { tag: value }),
+    mutationFn: ({ id, value }: { id: string; value: string }) =>
+      api.post(`/recruitment/candidates/${id}/tags`, { tag: value }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "talent-pool"] });
       toast("Tag added.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not add tag.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not add tag.", "error"),
   });
 
   const results = poolQuery.data ?? [];
@@ -58,7 +64,9 @@ function TalentPool() {
 
       {isUnauthenticated(poolQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with a recruitment, manager or admin account to search the talent pool.</p>
+          <p className="text-sm text-muted">
+            Sign in with a recruitment, manager or admin account to search the talent pool.
+          </p>
         </Panel>
       ) : null}
 

@@ -6,7 +6,10 @@ import { ADMIN_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
 
-export const Route = createFileRoute("/admin/finance")({ head: () => ({ meta: [{ title: "Finance — EOZ Staff" }] }), component: Finance });
+export const Route = createFileRoute("/admin/finance")({
+  head: () => ({ meta: [{ title: "Finance — EOZ Staff" }] }),
+  component: Finance,
+});
 
 type InvoiceRow = {
   id: string;
@@ -140,17 +143,28 @@ function Finance() {
       <DashNav items={ADMIN_NAV} />
       {isUnauthenticated(summaryQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with a finance, manager or admin account to view finance data.</p>
+          <p className="text-sm text-muted">
+            Sign in with a finance, manager or admin account to view finance data.
+          </p>
         </Panel>
       ) : null}
       <div className="grid gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Unpaid invoices" value={String(summaryQuery.data?.unpaidInvoices ?? "—")} />
-        <StatTile label="Paid invoices" value={String(summaryQuery.data?.paidInvoices ?? "—")} tone="text-accent-soft" />
+        <StatTile
+          label="Unpaid invoices"
+          value={String(summaryQuery.data?.unpaidInvoices ?? "—")}
+        />
+        <StatTile
+          label="Paid invoices"
+          value={String(summaryQuery.data?.paidInvoices ?? "—")}
+          tone="text-accent-soft"
+        />
       </div>
       <Panel className="mb-14">
         <div className="label-mono">Recent transactions</div>
         <div className="mt-4 space-y-3">
-          {invoices.length === 0 && !invoicesQuery.isLoading ? <p className="text-sm text-muted">No invoices yet.</p> : null}
+          {invoices.length === 0 && !invoicesQuery.isLoading ? (
+            <p className="text-sm text-muted">No invoices yet.</p>
+          ) : null}
           {invoices.map((inv) => {
             const isOpen = expanded === inv.id;
             return (
@@ -166,7 +180,15 @@ function Finance() {
                   <span className="font-mono text-xs">
                     {inv.currency} {inv.amount}
                   </span>
-                  <Chip tone={inv.status === "PAID" ? "emerald" : inv.status === "CANCELLED" ? "rose" : "amber"}>
+                  <Chip
+                    tone={
+                      inv.status === "PAID"
+                        ? "emerald"
+                        : inv.status === "CANCELLED"
+                          ? "rose"
+                          : "amber"
+                    }
+                  >
                     {inv.status.replace(/_/g, " ")}
                   </Chip>
                 </button>
@@ -237,7 +259,11 @@ function Finance() {
                           type="button"
                           disabled={cancelInvoice.isPending}
                           onClick={() => {
-                            if (window.confirm(`Cancel invoice ${inv.reference}? The customer will be notified.`)) {
+                            if (
+                              window.confirm(
+                                `Cancel invoice ${inv.reference}? The customer will be notified.`,
+                              )
+                            ) {
                               cancelInvoice.mutate(inv.id);
                             }
                           }}
@@ -268,7 +294,11 @@ function Finance() {
                             placeholder="Amount"
                             className={field}
                           />
-                          <select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)} className={field}>
+                          <select
+                            value={paymentMethod}
+                            onChange={(e) => setPaymentMethod(e.target.value)}
+                            className={field}
+                          >
                             <option value="MOBILE_MONEY">Mobile money</option>
                             <option value="BANK_TRANSFER">Bank transfer</option>
                             <option value="CASH">Cash</option>

@@ -44,7 +44,8 @@ function Account() {
       queryClient.invalidateQueries({ queryKey: ["me"] });
       toast("Preferences saved.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not save preferences.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not save preferences.", "error"),
   });
 
   const changePassword = useMutation({
@@ -54,7 +55,8 @@ function Account() {
       toast("Password changed. Please sign in again.");
       navigate({ to: "/auth", search: { mode: "signin" } });
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not change password.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not change password.", "error"),
   });
 
   const exportData = useMutation({
@@ -63,7 +65,8 @@ function Account() {
       setExportedData(data);
       toast("Export ready to download.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Export failed.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Export failed.", "error"),
   });
 
   const requestDeletion = useMutation({
@@ -80,7 +83,8 @@ function Account() {
         navigate({ to: "/" });
       }, 2500);
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not submit request.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not submit request.", "error"),
   });
 
   function downloadExport() {
@@ -127,7 +131,9 @@ function Account() {
               <span>
                 <strong>Opportunity alerts</strong>
                 <br />
-                <span className="text-xs text-muted">Use my preferences to send relevant opportunity notifications.</span>
+                <span className="text-xs text-muted">
+                  Use my preferences to send relevant opportunity notifications.
+                </span>
               </span>
             </label>
             <label className="flex items-start gap-3">
@@ -137,14 +143,19 @@ function Account() {
                 onChange={(e) => {
                   const next = e.target.checked;
                   setServiceCommsEnabled(next);
-                  savePreferences.mutate({ opportunityAlertsEnabled: alertsEnabled, serviceCommsEnabled: next });
+                  savePreferences.mutate({
+                    opportunityAlertsEnabled: alertsEnabled,
+                    serviceCommsEnabled: next,
+                  });
                 }}
                 className="mt-1 size-4 accent-accent"
               />
               <span>
                 <strong>Service communications</strong>
                 <br />
-                <span className="text-xs text-muted">Send updates about orders I have requested.</span>
+                <span className="text-xs text-muted">
+                  Send updates about orders I have requested.
+                </span>
               </span>
             </label>
             <p className="text-xs text-muted">
@@ -202,7 +213,9 @@ function Account() {
                 className="mt-1 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/40"
               />
             </label>
-            {passwordMismatch ? <p className="text-xs text-rose-400">Passwords do not match.</p> : null}
+            {passwordMismatch ? (
+              <p className="text-xs text-rose-400">Passwords do not match.</p>
+            ) : null}
             <button
               type="submit"
               disabled={changePassword.isPending}
@@ -210,7 +223,9 @@ function Account() {
             >
               {changePassword.isPending ? "Saving…" : "Change password"}
             </button>
-            <p className="text-xs text-muted">You'll be signed out on other devices after this change.</p>
+            <p className="text-xs text-muted">
+              You'll be signed out on other devices after this change.
+            </p>
           </form>
         </Panel>
         <Panel>
@@ -235,8 +250,9 @@ function Account() {
 
             {deletionRequested ? (
               <p className="rounded-md bg-surface-2 p-3 text-xs text-muted">
-                Deletion requested. Your account is closed and you have been signed out. Your personal data is
-                erased after a grace period (30 days by default); contact EOZ before then to change your mind.
+                Deletion requested. Your account is closed and you have been signed out. Your
+                personal data is erased after a grace period (30 days by default); contact EOZ
+                before then to change your mind.
               </p>
             ) : (
               <button
@@ -257,7 +273,8 @@ function Account() {
               </button>
             )}
             <p className="text-xs text-muted">
-              Requests are reviewed against retention and legal requirements. We will email you before completion.
+              Requests are reviewed against retention and legal requirements. We will email you
+              before completion.
             </p>
           </div>
         </Panel>

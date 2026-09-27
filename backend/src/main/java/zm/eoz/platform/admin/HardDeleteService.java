@@ -74,6 +74,11 @@ public class HardDeleteService {
                 "select count(*) from user_roles ur join roles r on r.id = ur.role_id where r.name = 'ADMIN' and ur.user_id = ?",
                 Long.class,
                 id);
+        boolean actorIsAdmin = actor.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getName()));
+        if (targetIsAdmin != null && targetIsAdmin > 0 && !actorIsAdmin) {
+            throw new zm.eoz.platform.common.exception.ForbiddenException(
+                    "Only an administrator can delete an administrator's account.");
+        }
         if (targetIsAdmin != null && targetIsAdmin > 0 && (otherAdmins == null || otherAdmins == 0)) {
             throw new BadRequestException("This is the only administrator account and cannot be deleted.");
         }

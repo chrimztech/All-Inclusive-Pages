@@ -22,7 +22,6 @@ import zm.eoz.platform.organisation.OrganisationMemberRepository;
 @Service
 public class ApplicationService {
 
-    private static final Set<String> STAFF_ROLES = Set.of("MANAGER", "ADMIN", "RECRUITMENT_OFFICER");
 
     private final CandidateApplicationRepository applicationRepository;
     private final OpportunityRepository opportunityRepository;
@@ -169,13 +168,12 @@ public class ApplicationService {
         return application.getResumeFileId();
     }
 
-    /** Staff, or a member of the organisation the opportunity belongs to (falling back to its creator when unlinked). */
+    /** APPLICATION_MANAGE, or a member of the listing's organisation (its creator when not linked to one). */
     private Opportunity requireOpportunityAccess(java.util.UUID opportunityId, User actor) {
         Opportunity opportunity = opportunityRepository
                 .findById(opportunityId)
                 .orElseThrow(() -> new NotFoundException("Opportunity not found: " + opportunityId));
-        boolean isStaff = actor.getRoles().stream().anyMatch(r -> STAFF_ROLES.contains(r.getName()));
-        boolean isAuthorised = isStaff;
+        boolean isAuthorised = zm.eoz.platform.security.Access.hasAny(actor, "APPLICATION_MANAGE");
         if (!isAuthorised && opportunity.getOrganisation() != null) {
             isAuthorised = organisationMemberRepository
                     .findById_OrganisationIdAndId_UserId(opportunity.getOrganisation().getId(), actor.getId())

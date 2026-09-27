@@ -3,17 +3,49 @@ import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ORG } from "@/lib/eoz-data";
 
 const CANDIDATE_STEPS = [
-  { n: "01", t: "Discover", d: "Filter jobs, internships, scholarships, grants, tenders and training by category, region and deadline." },
-  { n: "02", t: "Check the source", d: "Every listing shows the organisation, the official source and a reference number you can quote." },
-  { n: "03", t: "Apply directly", d: "Use the employer's own application method. EOZ never collects or forwards your documents." },
-  { n: "04", t: "Track it yourself", d: "Save listings and record your own progress so nothing lapses before the closing date." },
+  {
+    n: "01",
+    t: "Discover",
+    d: "Filter jobs, internships, scholarships, grants, tenders and training by category, region and deadline.",
+  },
+  {
+    n: "02",
+    t: "Check the source",
+    d: "Every listing shows the organisation, the official source and a reference number you can quote.",
+  },
+  {
+    n: "03",
+    t: "Apply directly",
+    d: "Use the employer's own application method. EOZ never collects or forwards your documents.",
+  },
+  {
+    n: "04",
+    t: "Track it yourself",
+    d: "Save listings and record your own progress so nothing lapses before the closing date.",
+  },
 ];
 
 const EMPLOYER_STEPS = [
-  { n: "01", t: "Register", d: "Create an organisation account with a contact person and your official web presence." },
-  { n: "02", t: "Submit a listing", d: "Provide the role, closing date and — required — the official channel candidates must use." },
-  { n: "03", t: "Review", d: "Our staff verify the source before publication, usually within one working day." },
-  { n: "04", t: "Reach candidates", d: "Once approved, the listing is distributed across the board and our channels until it closes." },
+  {
+    n: "01",
+    t: "Register",
+    d: "Create an organisation account with a contact person and your official web presence.",
+  },
+  {
+    n: "02",
+    t: "Submit a listing",
+    d: "Provide the role, closing date and — required — the official channel candidates must use.",
+  },
+  {
+    n: "03",
+    t: "Review",
+    d: "Our staff verify the source before publication, usually within one working day.",
+  },
+  {
+    n: "04",
+    t: "Reach candidates",
+    d: "Once approved, the listing is distributed across the board and our channels until it closes.",
+  },
 ];
 
 export const Route = createFileRoute("/how-it-works")({
@@ -77,13 +109,22 @@ function HowItWorks() {
       </section>
 
       <Panel className="mb-14 flex flex-wrap items-center gap-3">
-        <Link to="/opportunities" className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink">
+        <Link
+          to="/opportunities"
+          className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink"
+        >
           Browse opportunities
         </Link>
-        <Link to="/employers/post" className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg">
+        <Link
+          to="/employers/post"
+          className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg"
+        >
           Post an opportunity
         </Link>
-        <Link to="/verification" className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg">
+        <Link
+          to="/verification"
+          className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg"
+        >
           How verification works
         </Link>
       </Panel>

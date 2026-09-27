@@ -23,6 +23,7 @@ public class AdminUserService {
     private final RoleRepository roleRepository;
     private final AuditService auditService;
     private final PasswordEncoder passwordEncoder;
+    private final zm.eoz.platform.security.PasswordPolicy passwordPolicy;
     private final RefreshTokenRepository refreshTokenRepository;
 
     private final zm.eoz.platform.security.SecurityAlertService securityAlertService;
@@ -32,6 +33,7 @@ public class AdminUserService {
             RoleRepository roleRepository,
             AuditService auditService,
             PasswordEncoder passwordEncoder,
+            zm.eoz.platform.security.PasswordPolicy passwordPolicy,
             RefreshTokenRepository refreshTokenRepository,
             zm.eoz.platform.security.SecurityAlertService securityAlertService) {
         this.securityAlertService = securityAlertService;
@@ -40,6 +42,7 @@ public class AdminUserService {
         this.roleRepository = roleRepository;
         this.auditService = auditService;
         this.passwordEncoder = passwordEncoder;
+        this.passwordPolicy = passwordPolicy;
     }
 
     @Transactional
@@ -50,6 +53,7 @@ public class AdminUserService {
         Role role = roleRepository
                 .findByName(request.role())
                 .orElseThrow(() -> new BadRequestException("Unknown role: " + request.role()));
+        requireCanGrant(Set.of(role), actor);
 
         User user = new User();
         user.setFullName(request.fullName());
@@ -58,6 +62,9 @@ public class AdminUserService {
         String password = request.password() == null || request.password().isBlank()
                 ? TemporaryPassword.generate()
                 : request.password();
+        if (request.password() != null && !request.password().isBlank()) {
+            passwordPolicy.validate(password, request.email(), request.fullName());
+        }
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setMustChangePassword(true);
         user.setRoles(Set.of(role));
@@ -84,6 +91,13 @@ public class AdminUserService {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Unknown status: " + status);
         }
+        if (user.getId().equals(actor.getId())) {
+            throw new BadRequestException("You can't change the status of your own account. Ask another administrator.");
+        }
+        requireCanManage(user, actor);
+        if (target != UserStatus.ACTIVE && isAdmin(user)) {
+            requireAnotherActiveAdmin(user);
+        }
         UserStatus previous = user.getStatus();
         user.setStatus(target);
         if (target == UserStatus.ACTIVE) {
@@ -105,6 +119,7 @@ public class AdminUserService {
     @Transactional
     public UserAdminResponse updateDetails(UUID userId, String fullName, String phone, User actor) {
         User user = requireUser(userId);
+        requireCanManage(user, actor);
         user.setFullName(fullName.trim());
         user.setPhone(phone == null || phone.isBlank() ? null : phone.trim());
         auditService.record(actor, "USER_UPDATED", "User", user.getId().toString(), "Updated details for " + user.getEmail());
@@ -114,7 +129,11 @@ public class AdminUserService {
     @Transactional
     public String resetPassword(UUID userId, String newPassword, User actor) {
         User user = requireUser(userId);
+        requireCanManage(user, actor);
         String password = newPassword == null || newPassword.isBlank() ? TemporaryPassword.generate() : newPassword;
+        if (newPassword != null && !newPassword.isBlank()) {
+            passwordPolicy.validate(newPassword, user.getEmail(), user.getFullName());
+        }
         user.setPasswordHash(passwordEncoder.encode(password));
         user.setMustChangePassword(true);
         refreshTokenRepository.findByUser_IdAndRevokedFalse(user.getId()).forEach(rt -> rt.setRevoked(true));
@@ -125,9 +144,23 @@ public class AdminUserService {
     @Transactional
     public UserAdminResponse assignRoles(UUID userId, List<String> roleNames, zm.eoz.platform.identity.User actor) {
         User user = requireUser(userId);
+        if (roleNames == null || roleNames.isEmpty()) {
+            throw new BadRequestException("Give the account at least one role.");
+        }
+        if (user.getId().equals(actor.getId())) {
+            throw new BadRequestException("You can't change your own roles. Ask another administrator.");
+        }
+        requireCanManage(user, actor);
         Set<Role> roles = roleNames.stream()
                 .map(name -> roleRepository.findByName(name).orElseThrow(() -> new BadRequestException("Unknown role: " + name)))
                 .collect(Collectors.toSet());
+        // Both the roles being added and those being removed must be within the actor's own authority.
+        Set<Role> touched = new java.util.HashSet<>(roles);
+        touched.addAll(user.getRoles());
+        requireCanGrant(touched, actor);
+        if (isAdmin(user) && roles.stream().noneMatch(r -> "ADMIN".equals(r.getName()))) {
+            requireAnotherActiveAdmin(user);
+        }
         java.util.List<String> before = user.getRoles().stream().map(Role::getName).sorted().toList();
         user.setRoles(roles);
         auditService.record(actor, "USER_ROLES_CHANGED", "User", user.getId().toString(), "Set roles to " + roleNames);
@@ -136,6 +169,79 @@ public class AdminUserService {
                     actor.getFullName() + " changed the roles of " + user.getEmail() + " from " + before + " to " + roleNames + ".");
         }
         return UserAdminResponse.from(user);
+    }
+
+    // ---------------------------------------------------------------- privilege-escalation guards
+
+    private static boolean isAdmin(User user) {
+        return user.getRoles().stream().anyMatch(r -> "ADMIN".equals(r.getName()));
+    }
+
+    private static Set<String> permissionsOf(User user) {
+        return user.getRoles().stream()
+                .flatMap(r -> r.getPermissions().stream())
+                .map(zm.eoz.platform.identity.Permission::getCode)
+                .collect(Collectors.toSet());
+    }
+
+    /** Administrator accounts can only be changed by administrators (no taking over an admin via password reset). */
+    private static void requireCanManage(User target, User actor) {
+        if (isAdmin(target) && !isAdmin(actor)) {
+            throw new zm.eoz.platform.common.exception.ForbiddenException(
+                    "Only an administrator can change an administrator's account.");
+        }
+    }
+
+    /**
+     * Nobody can hand out more access than they hold: outside the ADMIN role, a role can be granted (or removed) only
+     * if all of its permissions are ones the actor has, and the ADMIN role only by administrators.
+     */
+    private static void requireCanGrant(java.util.Collection<Role> roles, User actor) {
+        if (isAdmin(actor)) return;
+        Set<String> own = permissionsOf(actor);
+        for (Role role : roles) {
+            if ("ADMIN".equals(role.getName())) {
+                throw new zm.eoz.platform.common.exception.ForbiddenException("Only an administrator can grant or remove the ADMIN role.");
+            }
+            java.util.List<String> beyond = role.getPermissions().stream()
+                    .map(zm.eoz.platform.identity.Permission::getCode)
+                    .filter(code -> !own.contains(code))
+                    .sorted()
+                    .toList();
+            if (!beyond.isEmpty()) {
+                throw new zm.eoz.platform.common.exception.ForbiddenException("You can't grant or remove the " + role.getName()
+                        + " role: it includes permissions you don't have (" + String.join(", ", beyond) + ").");
+            }
+        }
+    }
+
+    /** The roles this person may grant or remove, by the same rule {@link #requireCanGrant} enforces. */
+    @Transactional(readOnly = true)
+    public java.util.List<String> grantableRoles(User actor) {
+        return roleRepository.findAll().stream()
+                .filter(role -> {
+                    try {
+                        requireCanGrant(Set.of(role), actor);
+                        return true;
+                    } catch (zm.eoz.platform.common.exception.ForbiddenException e) {
+                        return false;
+                    }
+                })
+                .map(Role::getName)
+                .sorted()
+                .toList();
+    }
+
+    /** Refuses to leave the platform without an active administrator. */
+    private void requireAnotherActiveAdmin(User leaving) {
+        long others = userRepository.findAll().stream()
+                .filter(u -> !u.getId().equals(leaving.getId()))
+                .filter(u -> u.getStatus() == UserStatus.ACTIVE)
+                .filter(AdminUserService::isAdmin)
+                .count();
+        if (others == 0) {
+            throw new BadRequestException("This is the last active administrator. Make someone else an administrator first.");
+        }
     }
 
     private User requireUser(UUID id) {

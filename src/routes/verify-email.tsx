@@ -11,7 +11,10 @@ export const Route = createFileRoute("/verify-email")({
     token: typeof search["token"] === "string" ? search["token"] : undefined,
   }),
   head: () => ({
-    meta: [{ title: "Verify your email — Echo Opportunities Zambia" }, { name: "robots", content: "noindex" }],
+    meta: [
+      { title: "Verify your email — Echo Opportunities Zambia" },
+      { name: "robots", content: "noindex" },
+    ],
   }),
   component: VerifyEmail,
 });
@@ -29,7 +32,11 @@ function VerifyEmail() {
   const mutation = useMutation({
     mutationFn: () => api.post("/auth/verify-email", { token }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["me"] }),
-    onError: (error) => toast(error instanceof ApiError ? error.message : "This code is invalid or has expired.", "error"),
+    onError: (error) =>
+      toast(
+        error instanceof ApiError ? error.message : "This code is invalid or has expired.",
+        "error",
+      ),
   });
 
   return (
@@ -65,7 +72,12 @@ function VerifyEmail() {
             >
               <label>
                 <span className="label-mono">Verification code</span>
-                <input required value={token} onChange={(e) => setToken(e.target.value)} className={inputCls} />
+                <input
+                  required
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  className={inputCls}
+                />
               </label>
               <button
                 type="submit"

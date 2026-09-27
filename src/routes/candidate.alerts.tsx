@@ -31,7 +31,14 @@ export const Route = createFileRoute("/candidate/alerts")({
   component: CandidateAlerts,
 });
 
-type Alert = { id: string; categoryName: string | null; keyword: string | null; region: string | null; frequency: string; active: boolean };
+type Alert = {
+  id: string;
+  categoryName: string | null;
+  keyword: string | null;
+  region: string | null;
+  frequency: string;
+  active: boolean;
+};
 
 function CandidateAlerts() {
   const queryClient = useQueryClient();
@@ -41,7 +48,10 @@ function CandidateAlerts() {
     queryFn: () => api.get<Alert[]>("/candidate/alerts"),
     retry: false,
   });
-  const categoriesQuery = useQuery({ queryKey: ["categories"], queryFn: () => api.get<ApiCategory[]>("/categories") });
+  const categoriesQuery = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => api.get<ApiCategory[]>("/categories"),
+  });
 
   const [categoryCode, setCategoryCode] = useState("");
   const [region, setRegion] = useState("");
@@ -51,13 +61,20 @@ function CandidateAlerts() {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["candidate", "alerts"] });
 
   const create = useMutation({
-    mutationFn: () => api.post("/candidate/alerts", { categoryCode: categoryCode || undefined, region: region || undefined, keyword: keyword || undefined, frequency }),
+    mutationFn: () =>
+      api.post("/candidate/alerts", {
+        categoryCode: categoryCode || undefined,
+        region: region || undefined,
+        keyword: keyword || undefined,
+        frequency,
+      }),
     onSuccess: () => {
       setKeyword("");
       invalidate();
       toast("Alert created.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not create the alert.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not create the alert.", "error"),
   });
   const remove = useMutation({
     mutationFn: (id: string) => api.del(`/candidate/alerts/${id}`),
@@ -65,7 +82,8 @@ function CandidateAlerts() {
       invalidate();
       toast("Alert deleted.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not delete the alert.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not delete the alert.", "error"),
   });
 
   const alerts = alertsQuery.data ?? [];
@@ -89,7 +107,9 @@ function CandidateAlerts() {
         <div className="space-y-4 lg:col-span-2">
           {alerts.length === 0 ? (
             <Panel>
-              <p className="text-sm text-muted">No alerts yet — create one to get notified of new matches.</p>
+              <p className="text-sm text-muted">
+                No alerts yet — create one to get notified of new matches.
+              </p>
             </Panel>
           ) : null}
           {alerts.map((a) => (
@@ -127,7 +147,11 @@ function CandidateAlerts() {
           >
             <label className="block text-sm">
               <span className="label-mono">Category</span>
-              <select value={categoryCode} onChange={(e) => setCategoryCode(e.target.value)} className={field}>
+              <select
+                value={categoryCode}
+                onChange={(e) => setCategoryCode(e.target.value)}
+                className={field}
+              >
                 <option value="">Any category</option>
                 {(categoriesQuery.data ?? []).map((c) => (
                   <option key={c.code} value={c.code}>
@@ -147,11 +171,20 @@ function CandidateAlerts() {
             </label>
             <label className="block text-sm">
               <span className="label-mono">Keywords</span>
-              <input value={keyword} onChange={(e) => setKeyword(e.target.value)} className={field} placeholder="e.g. nursing, monitoring" />
+              <input
+                value={keyword}
+                onChange={(e) => setKeyword(e.target.value)}
+                className={field}
+                placeholder="e.g. nursing, monitoring"
+              />
             </label>
             <label className="block text-sm">
               <span className="label-mono">Frequency</span>
-              <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className={field}>
+              <select
+                value={frequency}
+                onChange={(e) => setFrequency(e.target.value)}
+                className={field}
+              >
                 <option value="DAILY">Daily</option>
                 <option value="WEEKLY">Weekly</option>
                 <option value="INSTANT">Instant</option>

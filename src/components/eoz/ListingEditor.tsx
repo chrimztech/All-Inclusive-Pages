@@ -3,8 +3,10 @@ import { useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api-client";
 import { REGIONS } from "@/lib/eoz-data";
 import { useToast } from "@/lib/toast";
+import { ListingAttachments } from "@/components/eoz/ListingAttachments";
 
 type Detail = {
+  version: number | null;
   id: string;
   title: string;
   categoryCode: string;
@@ -32,7 +34,8 @@ const APPLICATION_MODE_OPTIONS = [
   { value: "EXTERNAL_URL", label: "Online portal or website" },
 ];
 
-const inputCls = "mt-1 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/40";
+const inputCls =
+  "mt-1 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/40";
 
 function toLocalInput(iso: string | null): string {
   if (!iso) return "";
@@ -92,139 +95,214 @@ export function ListingEditor({
     }
   }, [detailQuery.data]);
 
-  const set = (key: string) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const set = (key: string) => (e: { target: { value: string } }) =>
+    setForm((f) => ({ ...f, [key]: e.target.value }));
 
   const save = useMutation({
     mutationFn: () =>
-      api.patch(`/opportunities/manage/${opportunityId}`, {
-        ...form,
-        deadline: form["deadline"] ? new Date(form["deadline"]).toISOString() : undefined,
-      }),
+      api.patch(
+        `/opportunities/manage/${opportunityId}`,
+        {
+          ...form,
+          deadline: form["deadline"] ? new Date(form["deadline"]).toISOString() : undefined,
+        },
+        { ifMatch: detailQuery.data?.version },
+      ),
     onSuccess: () => {
       invalidateKeys.forEach((key) => queryClient.invalidateQueries({ queryKey: key }));
       toast(isStaff ? "Listing updated." : "Listing updated and sent back for review.");
       onClose();
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not save the listing.", "error"),
+    onError: (error) => {
+      toast(error instanceof ApiError ? error.message : "Could not save the listing.", "error");
+      // Someone else saved first: load their version so the editor shows it.
+      if (error instanceof ApiError && error.status === 409) void detailQuery.refetch();
+    },
   });
 
   if (detailQuery.isLoading) return <p className="mt-4 text-sm text-muted">Loading listing…</p>;
   if (detailQuery.isError) {
     return (
       <p className="mt-4 text-sm text-rose">
-        {detailQuery.error instanceof ApiError ? detailQuery.error.message : "Could not load the listing."}
+        {detailQuery.error instanceof ApiError
+          ? detailQuery.error.message
+          : "Could not load the listing."}
       </p>
     );
   }
 
   const mode = form["applicationMode"] ?? detailQuery.data?.applicationMode;
   // Staff-only routes (e.g. information-only) stay selectable when a listing already uses them.
-  const modeOptions = APPLICATION_MODE_OPTIONS.some((o) => o.value === mode) || !mode
-    ? APPLICATION_MODE_OPTIONS
-    : [...APPLICATION_MODE_OPTIONS, { value: mode, label: mode.replace(/_/g, " ").toLowerCase() }];
+  const modeOptions =
+    APPLICATION_MODE_OPTIONS.some((o) => o.value === mode) || !mode
+      ? APPLICATION_MODE_OPTIONS
+      : [
+          ...APPLICATION_MODE_OPTIONS,
+          { value: mode, label: mode.replace(/_/g, " ").toLowerCase() },
+        ];
 
   return (
-    <form
-      className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2"
-      onSubmit={(e) => {
-        e.preventDefault();
-        save.mutate();
-      }}
-    >
-      {!isStaff ? (
-        <p className="text-xs text-amber sm:col-span-2">
-          Saving sends this listing back to the review queue, so a reviewer can re-check the changes before it is live.
-        </p>
-      ) : null}
-      <label className="text-xs text-muted sm:col-span-2">
-        Title
-        <input required value={form["title"] ?? ""} onChange={set("title")} className={inputCls} />
-      </label>
-      <label className="text-xs text-muted">
-        Category
-        <select value={form["categoryCode"] ?? ""} onChange={set("categoryCode")} className={inputCls}>
-          {(categoriesQuery.data ?? []).map((c) => (
-            <option key={c.code} value={c.code}>
-              {c.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="text-xs text-muted">
-        Closing date
-        <input type="datetime-local" value={form["deadline"] ?? ""} onChange={set("deadline")} className={inputCls} />
-      </label>
-      <label className="text-xs text-muted sm:col-span-2">
-        Description
-        <textarea required rows={5} value={form["description"] ?? ""} onChange={set("description")} className={inputCls} />
-      </label>
-      <label className="text-xs text-muted">
-        Responsibilities
-        <textarea rows={3} value={form["responsibilities"] ?? ""} onChange={set("responsibilities")} className={inputCls} />
-      </label>
-      <label className="text-xs text-muted">
-        Requirements
-        <textarea rows={3} value={form["requirements"] ?? ""} onChange={set("requirements")} className={inputCls} />
-      </label>
-      <label className="text-xs text-muted sm:col-span-2">
-        Benefits
-        <textarea rows={2} value={form["benefits"] ?? ""} onChange={set("benefits")} className={inputCls} />
-      </label>
-      <label className="text-xs text-muted">
-        Location
-        <input value={form["location"] ?? ""} onChange={set("location")} className={inputCls} />
-      </label>
-      <label className="text-xs text-muted">
-        Region
-        <select value={form["region"] ?? ""} onChange={set("region")} className={inputCls}>
-          <option value="">—</option>
-          {REGIONS.map((r) => (
-            <option key={r} value={r}>
-              {r}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="text-xs text-muted sm:col-span-2">
-        How candidates apply
-        <select value={mode ?? ""} onChange={set("applicationMode")} className={inputCls}>
-          {modeOptions.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      {mode === "EXTERNAL_URL" ? (
+    <>
+      <form
+        className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          save.mutate();
+        }}
+      >
+        {!isStaff ? (
+          <p className="text-xs text-amber sm:col-span-2">
+            Saving sends this listing back to the review queue, so a reviewer can re-check the
+            changes before it is live.
+          </p>
+        ) : null}
         <label className="text-xs text-muted sm:col-span-2">
-          Application link
-          <input required type="url" value={form["applicationUrl"] ?? ""} onChange={set("applicationUrl")} className={inputCls} />
+          Title
+          <input
+            required
+            value={form["title"] ?? ""}
+            onChange={set("title")}
+            className={inputCls}
+          />
         </label>
-      ) : null}
-      {mode === "EMPLOYER_EMAIL" ? (
+        <label className="text-xs text-muted">
+          Category
+          <select
+            value={form["categoryCode"] ?? ""}
+            onChange={set("categoryCode")}
+            className={inputCls}
+          >
+            {(categoriesQuery.data ?? []).map((c) => (
+              <option key={c.code} value={c.code}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-muted">
+          Closing date
+          <input
+            type="datetime-local"
+            value={form["deadline"] ?? ""}
+            onChange={set("deadline")}
+            className={inputCls}
+          />
+        </label>
         <label className="text-xs text-muted sm:col-span-2">
-          Application email
-          <input required type="email" value={form["applicationEmail"] ?? ""} onChange={set("applicationEmail")} className={inputCls} />
+          Description
+          <textarea
+            required
+            rows={5}
+            value={form["description"] ?? ""}
+            onChange={set("description")}
+            className={inputCls}
+          />
         </label>
-      ) : null}
-      {mode === "PHYSICAL_ADDRESS" ? (
+        <label className="text-xs text-muted">
+          Responsibilities
+          <textarea
+            rows={3}
+            value={form["responsibilities"] ?? ""}
+            onChange={set("responsibilities")}
+            className={inputCls}
+          />
+        </label>
+        <label className="text-xs text-muted">
+          Requirements
+          <textarea
+            rows={3}
+            value={form["requirements"] ?? ""}
+            onChange={set("requirements")}
+            className={inputCls}
+          />
+        </label>
         <label className="text-xs text-muted sm:col-span-2">
-          Application address
-          <input required value={form["applicationAddress"] ?? ""} onChange={set("applicationAddress")} className={inputCls} />
+          Benefits
+          <textarea
+            rows={2}
+            value={form["benefits"] ?? ""}
+            onChange={set("benefits")}
+            className={inputCls}
+          />
         </label>
-      ) : null}
-      <div className="flex gap-2 sm:col-span-2">
-        <button
-          type="submit"
-          disabled={save.isPending || !form["title"]?.trim()}
-          className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
-        >
-          {save.isPending ? "Saving…" : isStaff ? "Save changes" : "Save and resubmit"}
-        </button>
-        <button type="button" onClick={onClose} className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg">
-          Cancel
-        </button>
-      </div>
-    </form>
+        <label className="text-xs text-muted">
+          Location
+          <input value={form["location"] ?? ""} onChange={set("location")} className={inputCls} />
+        </label>
+        <label className="text-xs text-muted">
+          Region
+          <select value={form["region"] ?? ""} onChange={set("region")} className={inputCls}>
+            <option value="">—</option>
+            {REGIONS.map((r) => (
+              <option key={r} value={r}>
+                {r}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="text-xs text-muted sm:col-span-2">
+          How candidates apply
+          <select value={mode ?? ""} onChange={set("applicationMode")} className={inputCls}>
+            {modeOptions.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        {mode === "EXTERNAL_URL" ? (
+          <label className="text-xs text-muted sm:col-span-2">
+            Application link
+            <input
+              required
+              type="url"
+              value={form["applicationUrl"] ?? ""}
+              onChange={set("applicationUrl")}
+              className={inputCls}
+            />
+          </label>
+        ) : null}
+        {mode === "EMPLOYER_EMAIL" ? (
+          <label className="text-xs text-muted sm:col-span-2">
+            Application email
+            <input
+              required
+              type="email"
+              value={form["applicationEmail"] ?? ""}
+              onChange={set("applicationEmail")}
+              className={inputCls}
+            />
+          </label>
+        ) : null}
+        {mode === "PHYSICAL_ADDRESS" ? (
+          <label className="text-xs text-muted sm:col-span-2">
+            Application address
+            <input
+              required
+              value={form["applicationAddress"] ?? ""}
+              onChange={set("applicationAddress")}
+              className={inputCls}
+            />
+          </label>
+        ) : null}
+        <div className="flex gap-2 sm:col-span-2">
+          <button
+            type="submit"
+            disabled={save.isPending || !form["title"]?.trim()}
+            className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
+          >
+            {save.isPending ? "Saving…" : isStaff ? "Save changes" : "Save and resubmit"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+      <ListingAttachments opportunityId={opportunityId} editable />
+    </>
   );
 }

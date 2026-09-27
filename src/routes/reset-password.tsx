@@ -11,7 +11,10 @@ export const Route = createFileRoute("/reset-password")({
     token: typeof search["token"] === "string" ? search["token"] : undefined,
   }),
   head: () => ({
-    meta: [{ title: "Set a new password — Echo Opportunities Zambia" }, { name: "robots", content: "noindex" }],
+    meta: [
+      { title: "Set a new password — Echo Opportunities Zambia" },
+      { name: "robots", content: "noindex" },
+    ],
   }),
   component: ResetPassword,
 });
@@ -29,7 +32,8 @@ function ResetPassword() {
 
   const mutation = useMutation({
     mutationFn: () => api.post("/auth/reset-password", { token, newPassword }),
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Something went wrong.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Something went wrong.", "error"),
   });
 
   return (
@@ -37,13 +41,19 @@ function ResetPassword() {
       <section className="mx-auto max-w-md py-14">
         <div className="eyebrow mb-4">( 10 ) — Access</div>
         <h1 className="font-display text-4xl tracking-tight">Set a new password</h1>
-        <p className="mt-3 text-sm text-muted">Paste the code we sent you, then choose a new password.</p>
+        <p className="mt-3 text-sm text-muted">
+          Paste the code we sent you, then choose a new password.
+        </p>
 
         <Panel className="mt-6">
           {mutation.isSuccess ? (
             <div className="text-sm">
               <p className="text-emerald-400">Password updated. Sign in with your new password.</p>
-              <Link to="/auth" search={{ mode: "signin" }} className="mt-4 inline-block text-accent-soft">
+              <Link
+                to="/auth"
+                search={{ mode: "signin" }}
+                className="mt-4 inline-block text-accent-soft"
+              >
                 Go to sign in →
               </Link>
             </div>
@@ -62,7 +72,12 @@ function ResetPassword() {
             >
               <label>
                 <span className="label-mono">Reset code</span>
-                <input required value={token} onChange={(e) => setToken(e.target.value)} className={inputCls} />
+                <input
+                  required
+                  value={token}
+                  onChange={(e) => setToken(e.target.value)}
+                  className={inputCls}
+                />
               </label>
               <label>
                 <span className="label-mono">New password</span>
@@ -73,6 +88,10 @@ function ResetPassword() {
                   onChange={(e) => setNewPassword(e.target.value)}
                   className={inputCls}
                 />
+                <span className="mt-1 block text-[11px] leading-4 text-muted">
+                  At least 8 characters. Common or breached passwords, and ones containing your name
+                  or email, are not accepted.
+                </span>
               </label>
               <label>
                 <span className="label-mono">Confirm new password</span>

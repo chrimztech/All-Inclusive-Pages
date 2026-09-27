@@ -62,6 +62,12 @@ public class AdminUserController {
         return ApiResponse.of(java.util.Map.of("temporaryPassword", password));
     }
 
+    /** Roles the signed-in user may grant; the Users page offers only these. */
+    @GetMapping("/grantable-roles")
+    public ApiResponse<java.util.List<String>> grantableRoles() {
+        return ApiResponse.of(adminUserService.grantableRoles(currentUser()));
+    }
+
     @PatchMapping("/{id}/roles")
     public ApiResponse<UserAdminResponse> assignRoles(@PathVariable UUID id, @Valid @RequestBody RoleAssignmentRequest request) {
         return ApiResponse.of(adminUserService.assignRoles(id, request.roles(), currentUser()));

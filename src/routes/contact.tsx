@@ -49,7 +49,8 @@ function Contact() {
   const mutation = useMutation({
     mutationFn: () =>
       api.post("/contact", { name, email, phone: phone || undefined, reason, message }),
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not send this enquiry.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not send this enquiry.", "error"),
   });
 
   return (
@@ -96,11 +97,19 @@ function Contact() {
                 </label>
                 <label>
                   <span className="label-mono">Phone</span>
-                  <input className={inputCls} value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  <input
+                    className={inputCls}
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                  />
                 </label>
                 <label>
                   <span className="label-mono">Reason</span>
-                  <select className={inputCls} value={reason} onChange={(e) => setReason(e.target.value)}>
+                  <select
+                    className={inputCls}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  >
                     {REASONS.map((r) => (
                       <option key={r}>{r}</option>
                     ))}
@@ -145,16 +154,36 @@ function Contact() {
           <Panel>
             <div className="label-mono mb-3">Follow &amp; distribution channels</div>
             <div className="flex flex-wrap gap-3 text-sm">
-              <a href={org.social.whatsapp} target="_blank" rel="noreferrer" className="text-accent-soft hover:text-fg">
+              <a
+                href={org.social.whatsapp}
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent-soft hover:text-fg"
+              >
                 WhatsApp channel
               </a>
-              <a href={org.social.facebook} target="_blank" rel="noreferrer" className="text-accent-soft hover:text-fg">
+              <a
+                href={org.social.facebook}
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent-soft hover:text-fg"
+              >
                 Facebook
               </a>
-              <a href={org.social.linkedin} target="_blank" rel="noreferrer" className="text-accent-soft hover:text-fg">
+              <a
+                href={org.social.linkedin}
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent-soft hover:text-fg"
+              >
                 LinkedIn
               </a>
-              <a href={org.social.tiktok} target="_blank" rel="noreferrer" className="text-accent-soft hover:text-fg">
+              <a
+                href={org.social.tiktok}
+                target="_blank"
+                rel="noreferrer"
+                className="text-accent-soft hover:text-fg"
+              >
                 TikTok
               </a>
             </div>

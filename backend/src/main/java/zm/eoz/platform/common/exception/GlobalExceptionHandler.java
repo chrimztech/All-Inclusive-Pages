@@ -14,6 +14,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /** Translates domain and framework exceptions into RFC 7807 Problem Details. */
 @RestControllerAdvice
@@ -52,8 +53,13 @@ public class GlobalExceptionHandler {
         return problem(HttpStatus.UNAUTHORIZED, "invalid-credentials", "Invalid email or password.");
     }
 
+    /** 401 when nobody is signed in (sign in and try again); 403 when a signed-in person lacks the permission. */
     @ExceptionHandler(AccessDeniedException.class)
     public ProblemDetail handleAccessDenied(AccessDeniedException ex) {
+        var auth = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth instanceof org.springframework.security.authentication.AnonymousAuthenticationToken) {
+            return problem(HttpStatus.UNAUTHORIZED, "unauthenticated", "Sign in to continue.");
+        }
         return problem(HttpStatus.FORBIDDEN, "access-denied", "You do not have permission to do this.");
     }
 
@@ -68,6 +74,24 @@ public class GlobalExceptionHandler {
         return pd;
     }
 
+    /** A client asked to sort by a field that doesn't exist (e.g. ?sort=foo). */
+    @ExceptionHandler(org.springframework.data.mapping.PropertyReferenceException.class)
+    public ProblemDetail handleBadSort(org.springframework.data.mapping.PropertyReferenceException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "invalid-sort", "You can't sort by '" + ex.getPropertyName() + "'.");
+    }
+
+    /** Two saves of the same record raced; the later one lost. */
+    @ExceptionHandler(org.springframework.orm.ObjectOptimisticLockingFailureException.class)
+    public ProblemDetail handleOptimisticLock(org.springframework.orm.ObjectOptimisticLockingFailureException ex) {
+        return problem(HttpStatus.CONFLICT, "conflict",
+                "Someone else saved this record at the same moment. Reload to see their changes, then try again.");
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ProblemDetail handleNoResource(NoResourceFoundException ex) {
+        return problem(HttpStatus.NOT_FOUND, "not-found", "No such endpoint: /" + ex.getResourcePath());
+    }
+
     @ExceptionHandler(Exception.class)
     public ProblemDetail handleUnexpected(Exception ex, HttpServletRequest request) {
         log.error("Unhandled exception on {} {}", request.getMethod(), request.getRequestURI(), ex);
@@ -77,6 +101,8 @@ public class GlobalExceptionHandler {
     private ProblemDetail problem(HttpStatus status, String slug, String detail) {
         ProblemDetail pd = ProblemDetail.forStatusAndDetail(status, detail);
         pd.setType(URI.create(TYPE_BASE + slug));
+        String requestId = zm.eoz.platform.common.CorrelationIdFilter.current();
+        if (requestId != null) pd.setProperty("requestId", requestId);
         return pd;
     }
 }

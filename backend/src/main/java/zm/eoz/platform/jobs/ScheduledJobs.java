@@ -26,6 +26,7 @@ public class ScheduledJobs {
     private final zm.eoz.platform.notification.EmailDeliveryService emailDeliveryService;
     private final zm.eoz.platform.export.ExportService exportService;
     private final zm.eoz.platform.privacy.RetentionService retentionService;
+    private final zm.eoz.platform.security.SecurityAlertService securityAlertService;
 
     public ScheduledJobs(
             OpportunityService opportunityService,
@@ -34,11 +35,13 @@ public class ScheduledJobs {
             AlertDispatchService alertDispatchService,
             zm.eoz.platform.notification.EmailDeliveryService emailDeliveryService,
             zm.eoz.platform.export.ExportService exportService,
-            zm.eoz.platform.privacy.RetentionService retentionService) {
+            zm.eoz.platform.privacy.RetentionService retentionService,
+            zm.eoz.platform.security.SecurityAlertService securityAlertService) {
         this.alertDispatchService = alertDispatchService;
         this.emailDeliveryService = emailDeliveryService;
         this.exportService = exportService;
         this.retentionService = retentionService;
+        this.securityAlertService = securityAlertService;
         this.opportunityService = opportunityService;
         this.contentService = contentService;
         this.backupService = backupService;
@@ -114,7 +117,7 @@ public class ScheduledJobs {
         retentionService.run();
     }
 
-    /** Full database backup via pg_dump. Runs once every 24 hours; retention is enforced by BackupService. */
+    /** Full database backup via pg_dump every 24 hours; BackupService then removes backups beyond eoz.backup.keep. */
     @Scheduled(fixedRate = 24 * 60 * 60 * 1000, initialDelay = 60 * 1000)
     public void runScheduledBackup() {
         var result = backupService.trigger(null);
@@ -122,6 +125,9 @@ public class ScheduledJobs {
             log.info("Scheduled backup completed: {} ({} bytes)", result.fileName(), result.sizeBytes());
         } else {
             log.error("Scheduled backup failed: {}", result.errorMessage());
+            securityAlertService.alertAdministrators("Nightly database backup failed",
+                    "The scheduled backup did not complete: " + result.errorMessage()
+                            + " Until this is fixed there is no fresh backup to restore from. See System health.");
         }
     }
 }

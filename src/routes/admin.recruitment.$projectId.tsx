@@ -5,6 +5,7 @@ import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
 import { API_BASE_URL, api, ApiError, isUnauthenticated } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
+import { ScorecardEditor, useScorecard } from "@/components/eoz/ScorecardEditor";
 
 type ProjectDetail = {
   id: string;
@@ -50,7 +51,18 @@ type Feedback = {
   rating: number;
   comments: string | null;
   createdAt: string;
+  recommendation: Recommendation | null;
+  scores: { criterionId: string; name: string; weight: number; score: number }[];
+  weightedScore: number | null;
 };
+
+type Recommendation = "STRONG_YES" | "YES" | "NO" | "STRONG_NO";
+const RECOMMENDATIONS: { value: Recommendation; label: string; tone: string }[] = [
+  { value: "STRONG_YES", label: "Strong hire", tone: "text-emerald-400" },
+  { value: "YES", label: "Hire", tone: "text-emerald-400" },
+  { value: "NO", label: "No hire", tone: "text-rose" },
+  { value: "STRONG_NO", label: "Strong no hire", tone: "text-rose" },
+];
 
 type ScreeningQuestion = {
   id: string;
@@ -105,7 +117,11 @@ function ProjectDetailRoute() {
           title="Sign in required."
           lead="Sign in with a recruitment, manager or admin account to view this project."
         />
-        <Link to="/auth" search={{ mode: "signin" }} className="mb-14 inline-block text-sm text-accent-soft">
+        <Link
+          to="/auth"
+          search={{ mode: "signin" }}
+          className="mb-14 inline-block text-sm text-accent-soft"
+        >
           Sign in →
         </Link>
       </SiteShell>
@@ -115,7 +131,11 @@ function ProjectDetailRoute() {
   if (projectQuery.isError || !projectQuery.data) {
     return (
       <SiteShell>
-        <PageIntro eyebrow="( 06.7 ) — Recruitment" title="Project not found." lead="It may have been removed." />
+        <PageIntro
+          eyebrow="( 06.7 ) — Recruitment"
+          title="Project not found."
+          lead="It may have been removed."
+        />
         <Link to="/admin/recruitment" className="mb-14 inline-block text-sm text-accent-soft">
           ← Back to recruitment
         </Link>
@@ -154,6 +174,10 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
   const [activeInterviewId, setActiveInterviewId] = useState<string | null>(null);
   const [feedbackRating, setFeedbackRating] = useState(5);
   const [feedbackComments, setFeedbackComments] = useState("");
+  const [feedbackScores, setFeedbackScores] = useState<Record<string, number>>({});
+  const [feedbackRecommendation, setFeedbackRecommendation] = useState<Recommendation | "">("");
+  const scorecard = useScorecard(project.id);
+  const criteria = scorecard.data ?? [];
 
   const candidatesQuery = useQuery({
     queryKey: ["admin", "recruitment", project.id, "candidates"],
@@ -183,7 +207,8 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
   });
 
   const changeStage = useMutation({
-    mutationFn: ({ id, stage }: { id: string; stage: string }) => api.post(`/recruitment/candidates/${id}/stage`, { stage }),
+    mutationFn: ({ id, stage }: { id: string; stage: string }) =>
+      api.post(`/recruitment/candidates/${id}/stage`, { stage }),
     onSuccess: () => {
       invalidateCandidates();
       toast("Stage updated.");
@@ -214,10 +239,15 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
 
   const addNote = useMutation({
     mutationFn: () =>
-      api.post(`/recruitment/candidates/${activeCandidateId}/notes`, { note: noteText, classification: noteClassification }),
+      api.post(`/recruitment/candidates/${activeCandidateId}/notes`, {
+        note: noteText,
+        classification: noteClassification,
+      }),
     onSuccess: () => {
       setNoteText("");
-      queryClient.invalidateQueries({ queryKey: ["admin", "recruitment-candidate-notes", activeCandidateId] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "recruitment-candidate-notes", activeCandidateId],
+      });
       toast("Note added.");
     },
     onError: (error) => toast(errorMessage(error, "Could not add note."), "error"),
@@ -230,7 +260,9 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
   });
 
   const invalidateInterviews = () =>
-    queryClient.invalidateQueries({ queryKey: ["admin", "recruitment-candidate-interviews", activeCandidateId] });
+    queryClient.invalidateQueries({
+      queryKey: ["admin", "recruitment-candidate-interviews", activeCandidateId],
+    });
 
   const scheduleInterview = useMutation({
     mutationFn: () =>
@@ -260,10 +292,16 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
       api.post(`/recruitment/interviews/${activeInterviewId}/feedback`, {
         rating: feedbackRating,
         comments: feedbackComments || undefined,
+        recommendation: feedbackRecommendation || undefined,
+        scores: criteria.map((c) => ({ criterionId: c.id, score: feedbackScores[c.id] })),
       }),
     onSuccess: () => {
       setFeedbackComments("");
-      queryClient.invalidateQueries({ queryKey: ["admin", "recruitment-interview-feedback", activeInterviewId] });
+      setFeedbackScores({});
+      setFeedbackRecommendation("");
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "recruitment-interview-feedback", activeInterviewId],
+      });
       toast("Feedback recorded.");
     },
     onError: (error) => toast(errorMessage(error, "Could not record feedback."), "error"),
@@ -286,7 +324,9 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
       setQuestionText("");
       setKnockoutAnswer("");
       setAddingQuestion(false);
-      queryClient.invalidateQueries({ queryKey: ["admin", "recruitment", project.id, "questions"] });
+      queryClient.invalidateQueries({
+        queryKey: ["admin", "recruitment", project.id, "questions"],
+      });
       toast("Question added.");
     },
     onError: (error) => toast(errorMessage(error, "Could not add question."), "error"),
@@ -294,14 +334,19 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
 
   const submitAnswers = useMutation({
     mutationFn: () =>
-      api.post<{ anyKnockedOut: boolean; candidateStage: string }>(`/recruitment/candidates/${activeCandidateId}/answers`, {
-        answers: questions.map((q) => ({ questionId: q.id, answer: answerDrafts[q.id] ?? "" })),
-      }),
+      api.post<{ anyKnockedOut: boolean; candidateStage: string }>(
+        `/recruitment/candidates/${activeCandidateId}/answers`,
+        {
+          answers: questions.map((q) => ({ questionId: q.id, answer: answerDrafts[q.id] ?? "" })),
+        },
+      ),
     onSuccess: (result) => {
       setAnswerDrafts({});
       invalidateCandidates();
       toast(
-        result.anyKnockedOut ? "A knockout answer was recorded — candidate moved to Rejected." : "Answers recorded.",
+        result.anyKnockedOut
+          ? "A knockout answer was recorded — candidate moved to Rejected."
+          : "Answers recorded.",
         result.anyKnockedOut ? "error" : "success",
       );
     },
@@ -329,7 +374,9 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
           <Panel>
             <Chip tone={project.status === "OPEN" ? "emerald" : "muted"}>{project.status}</Chip>
             <p className="mt-3 text-xs text-muted">
-              {project.confidentiality === "CONFIDENTIAL" ? "Confidential engagement" : "Standard engagement"}
+              {project.confidentiality === "CONFIDENTIAL"
+                ? "Confidential engagement"
+                : "Standard engagement"}
             </p>
             <a
               href={`${API_BASE_URL}/recruitment/projects/${project.id}/shortlist/export`}
@@ -369,7 +416,12 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
               >
                 <label>
                   <span className="label-mono">Name</span>
-                  <input required value={candidateName} onChange={(e) => setCandidateName(e.target.value)} className={field} />
+                  <input
+                    required
+                    value={candidateName}
+                    onChange={(e) => setCandidateName(e.target.value)}
+                    className={field}
+                  />
                 </label>
                 <label>
                   <span className="label-mono">Email (optional)</span>
@@ -382,7 +434,11 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
                 </label>
                 <label>
                   <span className="label-mono">Source (optional)</span>
-                  <input value={candidateSource} onChange={(e) => setCandidateSource(e.target.value)} className={field} />
+                  <input
+                    value={candidateSource}
+                    onChange={(e) => setCandidateSource(e.target.value)}
+                    className={field}
+                  />
                 </label>
                 <button
                   type="submit"
@@ -397,7 +453,11 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
             {selected.size > 0 ? (
               <div className="mt-4 flex flex-wrap items-center gap-2 rounded-md bg-surface-2 p-3 text-sm">
                 <span className="text-xs text-muted">{selected.size} selected</span>
-                <select value={bulkStage} onChange={(e) => setBulkStage(e.target.value)} className="rounded-md bg-ink px-2 py-1 text-xs ring-1 ring-line">
+                <select
+                  value={bulkStage}
+                  onChange={(e) => setBulkStage(e.target.value)}
+                  className="rounded-md bg-ink px-2 py-1 text-xs ring-1 ring-line"
+                >
                   {STAGES.map((s) => (
                     <option key={s} value={s}>
                       {s.replace(/_/g, " ")}
@@ -446,7 +506,9 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
                         >
                           {c.candidateName}
                         </button>
-                        {c.candidateEmail ? <div className="text-xs text-muted">{c.candidateEmail}</div> : null}
+                        {c.candidateEmail ? (
+                          <div className="text-xs text-muted">{c.candidateEmail}</div>
+                        ) : null}
                       </td>
                       <td className="py-3">
                         <select
@@ -476,6 +538,7 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
               </table>
             </div>
           </Panel>
+          <ScorecardEditor projectId={project.id} />
         </div>
 
         <aside className="lg:col-span-4">
@@ -483,7 +546,9 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
             {!activeCandidate ? (
               <>
                 <div className="label-mono">Candidate detail</div>
-                <p className="mt-3 text-sm text-muted">Select a candidate to view notes and interviews.</p>
+                <p className="mt-3 text-sm text-muted">
+                  Select a candidate to view notes and interviews.
+                </p>
               </>
             ) : (
               <>
@@ -520,7 +585,9 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
                         <div key={n.id} className="rounded-md bg-surface-2 p-2 text-xs">
                           <div className="flex items-center justify-between">
                             <span className="text-muted">{n.authorName}</span>
-                            <Chip tone={n.classification === "CLIENT_VISIBLE" ? "emerald" : "muted"}>
+                            <Chip
+                              tone={n.classification === "CLIENT_VISIBLE" ? "emerald" : "muted"}
+                            >
                               {n.classification === "CLIENT_VISIBLE" ? "Client-visible" : "Private"}
                             </Chip>
                           </div>
@@ -566,19 +633,25 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
                 ) : activeTab === "interviews" ? (
                   <>
                     <div className="mt-3 max-h-64 space-y-3 overflow-y-auto">
-                      {interviewsQuery.isLoading ? <p className="text-xs text-muted">Loading…</p> : null}
+                      {interviewsQuery.isLoading ? (
+                        <p className="text-xs text-muted">Loading…</p>
+                      ) : null}
                       {(interviewsQuery.data ?? []).map((iv) => (
                         <button
                           type="button"
                           key={iv.id}
-                          onClick={() => setActiveInterviewId(iv.id === activeInterviewId ? null : iv.id)}
+                          onClick={() =>
+                            setActiveInterviewId(iv.id === activeInterviewId ? null : iv.id)
+                          }
                           className={`block w-full rounded-md p-2 text-left text-xs ring-1 ${activeInterviewId === iv.id ? "bg-accent/10 ring-accent/35" : "bg-surface-2 ring-transparent hover:ring-line"}`}
                         >
                           <div className="flex items-center justify-between">
                             <span>{new Date(iv.scheduledAt).toLocaleString()}</span>
                             <Chip tone="muted">{iv.mode}</Chip>
                           </div>
-                          {iv.location ? <div className="mt-1 text-muted">{iv.location}</div> : null}
+                          {iv.location ? (
+                            <div className="mt-1 text-muted">{iv.location}</div>
+                          ) : null}
                         </button>
                       ))}
                       {interviewsQuery.isSuccess && (interviewsQuery.data ?? []).length === 0 ? (
@@ -592,10 +665,16 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
                         <div className="mt-2 max-h-40 space-y-2 overflow-y-auto">
                           {(feedbackQuery.data ?? []).map((f) => (
                             <div key={f.id} className="rounded-md bg-surface-2 p-2 text-xs">
-                              <div className="flex items-center justify-between">
+                              <div className="flex items-center justify-between gap-2">
                                 <span className="text-muted">{f.authorName}</span>
-                                <span className="text-amber">{"★".repeat(f.rating)}</span>
+                                <span
+                                  className="text-amber"
+                                  aria-label={`Overall ${f.rating} of 5`}
+                                >
+                                  {"★".repeat(f.rating)}
+                                </span>
                               </div>
+                              <FeedbackSummary feedback={f} />
                               {f.comments ? <p className="mt-1">{f.comments}</p> : null}
                             </div>
                           ))}
@@ -610,17 +689,67 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
                             addFeedback.mutate();
                           }}
                         >
-                          <select
-                            value={feedbackRating}
-                            onChange={(e) => setFeedbackRating(Number(e.target.value))}
-                            className={field}
-                          >
-                            {[5, 4, 3, 2, 1].map((r) => (
-                              <option key={r} value={r}>
-                                {"★".repeat(r)} ({r}/5)
-                              </option>
-                            ))}
-                          </select>
+                          {criteria.map((c) => (
+                            <fieldset key={c.id} className="min-w-0">
+                              <legend className="text-xs text-muted">
+                                {c.name}
+                                {c.guidance ? (
+                                  <span className="block text-[11px]">{c.guidance}</span>
+                                ) : null}
+                              </legend>
+                              <div className="mt-1 flex gap-1">
+                                {[1, 2, 3, 4, 5].map((n) => (
+                                  <label key={n} className="flex-1">
+                                    <input
+                                      type="radio"
+                                      required
+                                      name={`score-${c.id}`}
+                                      value={n}
+                                      checked={feedbackScores[c.id] === n}
+                                      onChange={() =>
+                                        setFeedbackScores((prev) => ({ ...prev, [c.id]: n }))
+                                      }
+                                      className="peer sr-only"
+                                    />
+                                    <span className="block cursor-pointer rounded-md py-1 text-center font-mono text-xs ring-1 ring-line peer-checked:bg-accent/20 peer-checked:text-fg peer-checked:ring-accent/60 peer-focus-visible:ring-2 peer-focus-visible:ring-accent">
+                                      {n}
+                                    </span>
+                                  </label>
+                                ))}
+                              </div>
+                            </fieldset>
+                          ))}
+                          <label>
+                            <span className="text-xs text-muted">Recommendation</span>
+                            <select
+                              value={feedbackRecommendation}
+                              onChange={(e) =>
+                                setFeedbackRecommendation(e.target.value as Recommendation | "")
+                              }
+                              className={field}
+                            >
+                              <option value="">No recommendation</option>
+                              {RECOMMENDATIONS.map((r) => (
+                                <option key={r.value} value={r.value}>
+                                  {r.label}
+                                </option>
+                              ))}
+                            </select>
+                          </label>
+                          <label>
+                            <span className="text-xs text-muted">Overall rating</span>
+                            <select
+                              value={feedbackRating}
+                              onChange={(e) => setFeedbackRating(Number(e.target.value))}
+                              className={field}
+                            >
+                              {[5, 4, 3, 2, 1].map((r) => (
+                                <option key={r} value={r}>
+                                  {"★".repeat(r)} ({r}/5)
+                                </option>
+                              ))}
+                            </select>
+                          </label>
                           <textarea
                             rows={2}
                             value={feedbackComments}
@@ -658,7 +787,11 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
                               className={field}
                             />
                           </label>
-                          <select value={interviewMode} onChange={(e) => setInterviewMode(e.target.value)} className={field}>
+                          <select
+                            value={interviewMode}
+                            onChange={(e) => setInterviewMode(e.target.value)}
+                            className={field}
+                          >
                             <option value="ONLINE">Online</option>
                             <option value="IN_PERSON">In person</option>
                             <option value="PHONE">Phone</option>
@@ -691,20 +824,28 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
                 ) : (
                   <>
                     <div className="mt-3 max-h-72 space-y-3 overflow-y-auto">
-                      {questionsQuery.isLoading ? <p className="text-xs text-muted">Loading…</p> : null}
+                      {questionsQuery.isLoading ? (
+                        <p className="text-xs text-muted">Loading…</p>
+                      ) : null}
                       {questions.length === 0 && questionsQuery.isSuccess ? (
-                        <p className="text-xs text-muted">No screening questions set up for this project yet.</p>
+                        <p className="text-xs text-muted">
+                          No screening questions set up for this project yet.
+                        </p>
                       ) : null}
                       {questions.map((q) => (
                         <div key={q.id} className="rounded-md bg-surface-2 p-2 text-xs">
                           <div className="flex items-center justify-between gap-2">
                             <span>{q.question}</span>
-                            {q.knockoutAnswer ? <Chip tone="rose">Knockout: {q.knockoutAnswer}</Chip> : null}
+                            {q.knockoutAnswer ? (
+                              <Chip tone="rose">Knockout: {q.knockoutAnswer}</Chip>
+                            ) : null}
                           </div>
                           {q.questionType === "YES_NO" ? (
                             <select
                               value={answerDrafts[q.id] ?? ""}
-                              onChange={(e) => setAnswerDrafts((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                              onChange={(e) =>
+                                setAnswerDrafts((prev) => ({ ...prev, [q.id]: e.target.value }))
+                              }
                               className="mt-2 w-full rounded-md bg-ink px-2 py-1 text-xs ring-1 ring-line"
                             >
                               <option value="">Not answered</option>
@@ -714,7 +855,9 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
                           ) : (
                             <input
                               value={answerDrafts[q.id] ?? ""}
-                              onChange={(e) => setAnswerDrafts((prev) => ({ ...prev, [q.id]: e.target.value }))}
+                              onChange={(e) =>
+                                setAnswerDrafts((prev) => ({ ...prev, [q.id]: e.target.value }))
+                              }
                               placeholder="Candidate's answer"
                               className="mt-2 w-full rounded-md bg-ink px-2 py-1 text-xs ring-1 ring-line"
                             />
@@ -751,7 +894,11 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
                             placeholder="Question"
                             className={field}
                           />
-                          <select value={questionType} onChange={(e) => setQuestionType(e.target.value)} className={field}>
+                          <select
+                            value={questionType}
+                            onChange={(e) => setQuestionType(e.target.value)}
+                            className={field}
+                          >
                             <option value="TEXT">Free text</option>
                             <option value="YES_NO">Yes / No</option>
                           </select>
@@ -787,5 +934,32 @@ function ProjectDetailPage({ project }: { project: ProjectDetail }) {
         </aside>
       </section>
     </SiteShell>
+  );
+}
+
+function FeedbackSummary({ feedback: f }: { feedback: Feedback }) {
+  const rec = RECOMMENDATIONS.find((r) => r.value === f.recommendation);
+  if (!rec && f.weightedScore == null) return null;
+  return (
+    <>
+      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5">
+        {rec ? <span className={rec.tone}>{rec.label}</span> : null}
+        {f.weightedScore != null ? (
+          <span>
+            Scorecard <strong className="font-mono">{f.weightedScore.toFixed(1)}</strong>/5
+          </span>
+        ) : null}
+      </div>
+      {f.scores.length > 0 ? (
+        <dl className="mt-1 grid grid-cols-[1fr_auto] gap-x-3 text-muted">
+          {f.scores.map((sc) => (
+            <div key={sc.criterionId} className="contents">
+              <dt className="truncate">{sc.name}</dt>
+              <dd className="font-mono text-fg">{sc.score}</dd>
+            </div>
+          ))}
+        </dl>
+      ) : null}
+    </>
   );
 }

@@ -35,7 +35,8 @@ const TONE: Record<Job["status"], "muted" | "accent" | "emerald" | "rose" | "amb
   EXPIRED: "amber",
 };
 
-const lusaka = (iso: string) => new Date(iso).toLocaleString("en-ZM", { timeZone: "Africa/Lusaka" });
+const lusaka = (iso: string) =>
+  new Date(iso).toLocaleString("en-ZM", { timeZone: "Africa/Lusaka" });
 
 function Exports() {
   const queryClient = useQueryClient();
@@ -51,7 +52,9 @@ function Exports() {
     retry: false,
     // Poll while anything is still being generated.
     refetchInterval: (query) =>
-      (query.state.data ?? []).some((j) => j.status === "QUEUED" || j.status === "RUNNING") ? 3000 : false,
+      (query.state.data ?? []).some((j) => j.status === "QUEUED" || j.status === "RUNNING")
+        ? 3000
+        : false,
   });
   const request = useMutation({
     mutationFn: (type: string) => api.post<Job>("/admin/exports", { type }),
@@ -59,7 +62,8 @@ function Exports() {
       queryClient.invalidateQueries({ queryKey: ["admin", "exports", "jobs"] });
       toast(`${job.label} export queued. It will be ready here in a moment.`);
     },
-    onError: (e) => toast(e instanceof ApiError ? e.message : "Could not start the export.", "error"),
+    onError: (e) =>
+      toast(e instanceof ApiError ? e.message : "Could not start the export.", "error"),
   });
 
   const types = typesQuery.data ?? [];
@@ -106,7 +110,8 @@ function Exports() {
             </ul>
             <p className="mt-4 flex gap-2 text-xs leading-5 text-muted">
               <ShieldCheck aria-hidden="true" className="mt-0.5 size-4 shrink-0 text-accent-soft" />
-              Every export and download is recorded in the audit log. Unusually many exports alert administrators.
+              Every export and download is recorded in the audit log. Unusually many exports alert
+              administrators.
             </p>
           </Panel>
         </div>
@@ -125,12 +130,18 @@ function Exports() {
                     <div className="flex flex-wrap items-center gap-2 text-sm">
                       <Chip tone={TONE[j.status]}>{j.status}</Chip>
                       {j.label}
-                      {j.rowCount != null ? <span className="text-xs text-muted">{j.rowCount} rows</span> : null}
+                      {j.rowCount != null ? (
+                        <span className="text-xs text-muted">
+                          {j.rowCount} {j.rowCount === 1 ? "row" : "rows"}
+                        </span>
+                      ) : null}
                     </div>
                     <div className="mt-1 text-xs text-muted">
                       Requested {lusaka(j.createdAt)}
                       {j.requestedByName ? ` by ${j.requestedByName}` : ""}
-                      {j.status === "READY" && j.expiresAt ? ` · available until ${lusaka(j.expiresAt)}` : ""}
+                      {j.status === "READY" && j.expiresAt
+                        ? ` · available until ${lusaka(j.expiresAt)}`
+                        : ""}
                       {j.error ? ` · ${j.error}` : ""}
                     </div>
                   </div>

@@ -4,12 +4,30 @@ import { ORG } from "@/lib/eoz-data";
 import { useOrgSettings } from "@/lib/use-org-settings";
 
 const CHECKS = [
-  { t: "Source of record", d: "Every listing must trace back to an official notice: the organisation's website, portal, letterhead or gazetted advert." },
-  { t: "Organisation identity", d: "We confirm the organisation exists, is contactable and that the person submitting represents it." },
-  { t: "Application channel", d: "The stated way to apply must be the employer's own. Listings that route applications through EOZ are rejected." },
-  { t: "No payment to apply", d: "Any listing demanding a fee from applicants is removed and the organisation is flagged." },
-  { t: "Deadline and scope", d: "Closing dates, location and eligibility are checked against the original notice." },
-  { t: "Re-checks", d: "Listings are re-checked when edited and archived automatically once the deadline passes." },
+  {
+    t: "Source of record",
+    d: "Every listing must trace back to an official notice: the organisation's website, portal, letterhead or gazetted advert.",
+  },
+  {
+    t: "Organisation identity",
+    d: "We confirm the organisation exists, is contactable and that the person submitting represents it.",
+  },
+  {
+    t: "Application channel",
+    d: "The stated way to apply must be the employer's own. Listings that route applications through EOZ are rejected.",
+  },
+  {
+    t: "No payment to apply",
+    d: "Any listing demanding a fee from applicants is removed and the organisation is flagged.",
+  },
+  {
+    t: "Deadline and scope",
+    d: "Closing dates, location and eligibility are checked against the original notice.",
+  },
+  {
+    t: "Re-checks",
+    d: "Listings are re-checked when edited and archived automatically once the deadline passes.",
+  },
 ];
 
 const FLAGS = [
@@ -31,7 +49,8 @@ export const Route = createFileRoute("/verification")({
       { property: "og:title", content: "Verification & Trust — Echo Opportunities Zambia" },
       {
         property: "og:description",
-        content: "The checks behind the verified badge, and the warning signs of a fraudulent listing.",
+        content:
+          "The checks behind the verified badge, and the warning signs of a fraudulent listing.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -80,14 +99,20 @@ function Verification() {
         <Panel>
           <div className="eyebrow mb-3">Seen something wrong?</div>
           <p className="text-sm text-muted">
-            Report the listing and we will take it down while we re-check the source. You can also reach the team
-            on {org.phone} or {org.email}.
+            Report the listing and we will take it down while we re-check the source. You can also
+            reach the team on {org.phone} or {org.email}.
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
-            <Link to="/report" className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink">
+            <Link
+              to="/report"
+              className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink"
+            >
               Report a listing
             </Link>
-            <Link to="/faq" className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg">
+            <Link
+              to="/faq"
+              className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg"
+            >
               Read the FAQ
             </Link>
           </div>

@@ -4,7 +4,12 @@ import { SiteShell, Panel, PageIntro } from "@/components/eoz/SiteShell";
 import { CANDIDATE_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
 import { OpportunityCard } from "@/components/eoz/OpportunityCard";
 import { ORG } from "@/lib/eoz-data";
-import { api, type ApiApplication, type ApiOpportunitySummary, type PageResponse } from "@/lib/api-client";
+import {
+  api,
+  type ApiApplication,
+  type ApiOpportunitySummary,
+  type PageResponse,
+} from "@/lib/api-client";
 
 export const Route = createFileRoute("/candidate/")({
   head: () => ({
@@ -29,7 +34,10 @@ function CandidateHome() {
   const opportunitiesQuery = useQuery({
     queryKey: ["opportunities", "closing-soon"],
     queryFn: () =>
-      api.get<PageResponse<ApiOpportunitySummary>>("/opportunities", { deadlineWithinDays: 30, size: 3 }),
+      api.get<PageResponse<ApiOpportunitySummary>>("/opportunities", {
+        deadlineWithinDays: 30,
+        size: 3,
+      }),
   });
   const applicationsQuery = useQuery({
     queryKey: ["candidate", "applications"],
@@ -68,7 +76,8 @@ function CandidateHome() {
             <div className="label-mono mb-3">Recent activity</div>
             {applications.length === 0 ? (
               <p className="text-sm text-muted">
-                No EOZ-hosted applications yet — most opportunities are applied for directly with the employer.
+                No EOZ-hosted applications yet — most opportunities are applied for directly with
+                the employer.
               </p>
             ) : (
               <ul className="space-y-3 text-sm">

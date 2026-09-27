@@ -1,105 +1,118 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
+import { useQuery } from "@tanstack/react-query";
 import { DashNav, EMPLOYER_NAV } from "@/components/eoz/DashNav";
-
-const PLANS = [
-  {
-    name: "Public interest",
-    price: "Free",
-    note: "Government, NGO and scholarship notices",
-    includes: ["Unlimited standard listings", "Staff verification", "Standard board placement", "Auto-archive at deadline"],
-    featured: false,
-  },
-  {
-    name: "Standard",
-    price: "K450",
-    note: "per listing, 30 days",
-    includes: ["Verified badge", "Board + channel distribution", "Applicant funnel view", "Edit until the closing date"],
-    featured: true,
-  },
-  {
-    name: "Featured",
-    price: "K1,200",
-    note: "per listing, 30 days",
-    includes: ["Top-of-board placement", "Highlighted card", "Shared on all EOZ channels", "Weekly performance summary"],
-    featured: false,
-  },
-];
+import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
+import { api, type ApiServicePackage } from "@/lib/api-client";
+import { isEmployer } from "@/lib/access";
+import { useCurrentUser } from "@/lib/use-current-user";
 
 export const Route = createFileRoute("/employers/pricing")({
   head: () => ({
     meta: [
-      { title: "Employer Pricing — Echo Opportunities Zambia" },
+      { title: "Employer Service Pricing - Echo Opportunities Zambia" },
       {
         name: "description",
-        content:
-          "EOZ listing plans for Zambian employers: free public-interest notices, standard verified listings and featured placement with channel distribution.",
+        content: "Current EOZ employer-service prices and custom-quote services.",
       },
-      { property: "og:title", content: "Employer Pricing — Echo Opportunities Zambia" },
+      { property: "og:title", content: "Employer Service Pricing - Echo Opportunities Zambia" },
       {
         property: "og:description",
-        content: "Simple per-listing pricing for organisations posting on Echo Opportunities Zambia.",
+        content: "Configured prices for EOZ recruitment, training and business support.",
       },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
   component: EmployerPricing,
 });
 
 function EmployerPricing() {
+  const { user } = useCurrentUser();
+  const packagesQuery = useQuery({
+    queryKey: ["services"],
+    queryFn: () => api.get<ApiServicePackage[]>("/services"),
+  });
+  const packages = (packagesQuery.data ?? []).filter(
+    (service) =>
+      [
+        "business-profile",
+        "recruitment-support",
+        "marketing-promotion",
+        "skills-training",
+      ].includes(service.slug) ||
+      /employer|organisation|business|recruit|training|promotion/i.test(
+        `${service.name} ${service.description}`,
+      ),
+  );
+
   return (
     <SiteShell>
       <PageIntro
-        eyebrow="( 05 ) — Employer portal"
-        title="Pricing"
-        lead="Pay per listing. No subscriptions, no charge to candidates, ever."
+        eyebrow="( 05 ) - Employer portal"
+        title="Employer service pricing"
+        lead="Current catalogue prices and custom-quote services, maintained by EOZ staff from the service administration screen."
         aside={
           <Panel>
-            <Chip tone="amber">Note</Chip>
+            <Chip tone="amber">Configured live</Chip>
             <p className="mt-3 text-sm text-muted">
-              Prices shown are examples for this preview. Send us your real rate card and we will put it in.
+              Final recruitment and campaign fees depend on the approved scope. A tracked quote is
+              issued before any payment is due.
             </p>
           </Panel>
         }
       />
-      <DashNav items={EMPLOYER_NAV} />
+      {isEmployer(user) ? <DashNav items={EMPLOYER_NAV} /> : null}
 
       <section className="grid gap-4 pb-10 lg:grid-cols-3">
-        {PLANS.map((p) => (
-          <Panel key={p.name} className={p.featured ? "ring-2 ring-amber/40" : ""}>
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl tracking-tight">{p.name}</h2>
-              {p.featured ? <Chip tone="amber">Popular</Chip> : null}
+        {packagesQuery.isLoading ? (
+          <Panel className="py-10 text-center text-sm text-muted lg:col-span-3">
+            Loading current prices...
+          </Panel>
+        ) : null}
+        {packagesQuery.isSuccess && packages.length === 0 ? (
+          <Panel className="py-10 text-center text-sm text-muted lg:col-span-3">
+            No employer service prices are currently published.
+          </Panel>
+        ) : null}
+        {packages.map((service) => (
+          <Panel key={service.slug}>
+            <div className="flex items-center justify-between gap-3">
+              <h2 className="font-display text-xl tracking-tight">{service.name}</h2>
+              <Chip tone={service.price > 0 ? "amber" : "accent"}>
+                {service.price > 0 ? "Fixed price" : "Custom quote"}
+              </Chip>
             </div>
-            <div className="mt-3 font-display text-3xl text-amber">{p.price}</div>
-            <div className="text-xs text-muted">{p.note}</div>
+            <div className="mt-3 font-display text-3xl text-amber">
+              {service.price > 0
+                ? `${service.currency} ${service.price.toLocaleString()}`
+                : "Scope first"}
+            </div>
+            <div className="text-xs text-muted">{service.turnaround}</div>
+            <p className="mt-4 text-sm text-muted">{service.description}</p>
             <ul className="mt-4 space-y-2 text-sm text-muted">
-              {p.includes.map((i) => (
-                <li key={i} className="flex gap-2">
+              {service.includes.map((item) => (
+                <li key={item} className="flex gap-2">
                   <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />
-                  <span>{i}</span>
+                  <span>{item}</span>
                 </li>
               ))}
             </ul>
             <Link
-              to="/employers/post"
-              className={`mt-5 block rounded-md px-4 py-2 text-center text-sm ${
-                p.featured ? "accent-gradient font-medium text-ink" : "text-muted ring-1 ring-line hover:text-fg"
-              }`}
+              to="/services/$serviceSlug"
+              params={{ serviceSlug: service.slug }}
+              className="accent-gradient mt-5 block rounded-md px-4 py-2 text-center text-sm font-medium text-ink"
             >
-              Post a listing
+              View and request
             </Link>
           </Panel>
         ))}
       </section>
 
       <Panel className="mb-14">
-        <div className="eyebrow mb-2">Bulk and annual</div>
+        <div className="eyebrow mb-2">Opportunity publishing</div>
         <p className="text-sm text-muted">
-          Posting more than ten roles a year? We arrange an invoiced package with a named account contact.{" "}
-          <Link to="/contact" className="text-amber hover:underline">
-            Talk to the team →
+          Ready to publish a vacancy instead? Create the listing first; EOZ will review its official
+          application route before publication.{" "}
+          <Link to="/employers/post" className="text-amber hover:underline">
+            Post an opportunity -&gt;
           </Link>
         </p>
       </Panel>

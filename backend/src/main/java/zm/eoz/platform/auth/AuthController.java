@@ -190,17 +190,7 @@ public class AuthController {
     }
 
     private UserResponse toResponse(User user) {
-        return new UserResponse(
-                user.getId(),
-                user.getFullName(),
-                user.getEmail(),
-                user.getPhone(),
-                user.isEmailVerified(),
-                user.getRoles().stream().map(zm.eoz.platform.identity.Role::getName).toList(),
-                user.isOpportunityAlertsEnabled(),
-                user.isServiceCommsEnabled(),
-                user.isMustChangePassword(),
-                user.isMfaEnabled());
+        return authService.toResponse(user);
     }
 
     private java.util.Optional<String> readCookie(HttpServletRequest request, String name) {

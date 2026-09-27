@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { PASSWORD, registerViaApi, signIn, signOut, uniqueEmail } from "./helpers";
+import { PASSWORD, registerViaApi, signIn, signOut, uniqueEmail, gotoReady } from "./helpers";
 
 /**
  * The core journey, in order: an employer submits an EOZ-hosted listing, staff approve and publish it, a visitor
@@ -16,7 +16,7 @@ test.describe.serial("listing lifecycle", () => {
   test("employer submits a listing without an online portal", async ({ page, request }) => {
     await registerViaApi(request, "EMPLOYER", "E2E Employer", employerEmail);
     await signIn(page, employerEmail);
-    await page.goto("/employers/post");
+    await gotoReady(page, "/employers/post");
 
     await page.getByLabel(/opportunity title/i).fill(title);
     const category = page.getByLabel(/^category/i);
@@ -35,20 +35,32 @@ test.describe.serial("listing lifecycle", () => {
   test("staff approve and publish it from the moderation queue", async ({ page }) => {
     test.skip(!adminEmail, "Set E2E_ADMIN_EMAIL and E2E_ADMIN_PASSWORD to run the staff step.");
     await signIn(page, adminEmail!, adminPassword);
-    await page.goto("/admin/moderation");
-    const card = page.locator("div", { has: page.getByRole("heading", { name: title }) }).last();
-    await card.getByRole("button", { name: /^approve$/i }).click();
-    await expect(card.getByRole("button", { name: /^publish$/i })).toBeVisible();
-    await card.getByRole("button", { name: /^publish$/i }).click();
+    await gotoReady(page, "/admin/moderation");
+    // The smallest block holding both this listing's title and an action button is its card.
+    const cardWith = (action: RegExp) =>
+      page
+        .locator("div")
+        .filter({ has: page.getByRole("heading", { name: title }) })
+        .filter({ has: page.getByRole("button", { name: action }) })
+        .last();
+    await cardWith(/^approve$/i)
+      .getByRole("button", { name: /^approve$/i })
+      .click();
+    await cardWith(/^publish$/i)
+      .getByRole("button", { name: /^publish$/i })
+      .click();
     await expect(page.getByRole("heading", { name: title })).toHaveCount(0);
   });
 
   test("a visitor finds it on the board with the employer's route", async ({ page }) => {
     test.skip(!adminEmail, "Needs the staff step to publish the listing.");
     await signOut(page);
-    await page.goto("/opportunities");
+    await gotoReady(page, "/opportunities");
     await page.getByPlaceholder(/title, organisation or reference/i).fill(title);
-    await page.getByRole("link", { name: new RegExp(title) }).first().click();
+    await page
+      .getByRole("link", { name: new RegExp(title) })
+      .first()
+      .click();
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
     await expect(page.getByText(/published by eoz on behalf of/i)).toBeVisible();
     await expect(page.getByText("Share this opportunity")).toBeVisible();
@@ -58,14 +70,19 @@ test.describe.serial("listing lifecycle", () => {
     test.skip(!adminEmail, "Needs the staff step to publish the listing.");
     await registerViaApi(request, "CANDIDATE", "E2E Candidate", candidateEmail);
     await signIn(page, candidateEmail);
-    await page.goto("/opportunities");
+    await gotoReady(page, "/opportunities");
     await page.getByPlaceholder(/title, organisation or reference/i).fill(title);
-    await page.getByRole("link", { name: new RegExp(title) }).first().click();
-    await page.getByPlaceholder(/optional note to the hiring team/i).fill("I have five years of field experience.");
+    await page
+      .getByRole("link", { name: new RegExp(title) })
+      .first()
+      .click();
+    await page
+      .getByPlaceholder(/optional note to the hiring team/i)
+      .fill("I have five years of field experience.");
     await page.getByRole("button", { name: /apply through eoz/i }).click();
     await expect(page.getByText(/application submitted/i)).toBeVisible();
 
-    await page.goto("/candidate/applications");
+    await gotoReady(page, "/candidate/applications");
     await expect(page.getByText(title).first()).toBeVisible();
   });
 });

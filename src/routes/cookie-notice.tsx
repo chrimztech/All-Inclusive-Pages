@@ -103,7 +103,9 @@ function CookieNotice() {
           >
             Save preferences
           </button>
-          {saved ? <p className="mt-3 text-xs text-emerald-400">Preferences saved on this device.</p> : null}
+          {saved ? (
+            <p className="mt-3 text-xs text-emerald-400">Preferences saved on this device.</p>
+          ) : null}
         </Panel>
       </section>
     </SiteShell>

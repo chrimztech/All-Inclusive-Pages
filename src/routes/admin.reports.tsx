@@ -4,6 +4,7 @@ import { Download } from "lucide-react";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
 import { API_BASE_URL, api, isUnauthenticated } from "@/lib/api-client";
+import { MetricsPanel } from "@/components/eoz/MetricsPanel";
 
 export const Route = createFileRoute("/admin/reports")({
   head: () => ({
@@ -11,7 +12,8 @@ export const Route = createFileRoute("/admin/reports")({
       { title: "Reports — EOZ Staff Console" },
       {
         name: "description",
-        content: "Distribution reporting for EOZ: listings by category, region reach and moderation throughput.",
+        content:
+          "Distribution reporting for EOZ: listings by category, region reach and moderation throughput.",
       },
       { property: "og:title", content: "Reports — EOZ Staff Console" },
       {
@@ -47,7 +49,10 @@ function Bars({ data }: { data: NameCount[] }) {
             <span className="font-mono text-muted">{d.count}</span>
           </div>
           <div className="h-1.5 rounded-full bg-line">
-            <div className="accent-gradient h-1.5 rounded-full" style={{ width: `${(d.count / total) * 100}%` }} />
+            <div
+              className="accent-gradient h-1.5 rounded-full"
+              style={{ width: `${(d.count / total) * 100}%` }}
+            />
           </div>
         </li>
       ))}
@@ -83,25 +88,46 @@ function Reports() {
 
       {isUnauthenticated(overviewQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with a manager, admin or auditor account to view reports.</p>
+          <p className="text-sm text-muted">
+            Sign in with a manager, admin or auditor account to view reports.
+          </p>
         </Panel>
       ) : null}
 
       <div className="grid gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Published" value={String(data?.publishedOpportunities ?? "—")} />
-        <StatTile label="Pending review" value={String(data?.pendingReview ?? "—")} tone="text-amber" />
-        <StatTile label="Rejected / archived" value={String(data?.archivedOrRejected ?? "—")} tone="text-rose" />
+        <StatTile
+          label="Pending review"
+          value={String(data?.pendingReview ?? "—")}
+          tone="text-amber"
+        />
+        <StatTile
+          label="Rejected / archived"
+          value={String(data?.archivedOrRejected ?? "—")}
+          tone="text-rose"
+        />
         <StatTile label="Paid invoices" value={String(data?.paidInvoices ?? "—")} />
       </div>
 
+      {isUnauthenticated(overviewQuery.error) ? null : <MetricsPanel />}
+
+      <h2 className="mb-4 font-display text-2xl">Snapshot</h2>
       <section className="grid gap-6 pb-14 lg:grid-cols-2">
         <Panel>
           <div className="label-mono mb-4">Listings by category</div>
-          {data && data.categoryMix.length > 0 ? <Bars data={data.categoryMix} /> : <p className="text-sm text-muted">No published listings yet.</p>}
+          {data && data.categoryMix.length > 0 ? (
+            <Bars data={data.categoryMix} />
+          ) : (
+            <p className="text-sm text-muted">No published listings yet.</p>
+          )}
         </Panel>
         <Panel>
           <div className="label-mono mb-4">Reach by region</div>
-          {data && data.regionMix.length > 0 ? <Bars data={data.regionMix} /> : <p className="text-sm text-muted">No regional data yet.</p>}
+          {data && data.regionMix.length > 0 ? (
+            <Bars data={data.regionMix} />
+          ) : (
+            <p className="text-sm text-muted">No regional data yet.</p>
+          )}
         </Panel>
         <Panel>
           <div className="label-mono mb-4">Applications by status</div>

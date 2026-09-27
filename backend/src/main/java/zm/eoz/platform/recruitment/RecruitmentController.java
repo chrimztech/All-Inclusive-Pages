@@ -25,6 +25,7 @@ import zm.eoz.platform.recruitment.dto.BulkStageChangeRequest;
 import zm.eoz.platform.recruitment.dto.BulkStageChangeResult;
 import zm.eoz.platform.recruitment.dto.FeedbackRequest;
 import zm.eoz.platform.recruitment.dto.FeedbackResponse;
+import zm.eoz.platform.recruitment.dto.ScorecardCriterionRequest;
 import zm.eoz.platform.recruitment.dto.InterviewRequest;
 import zm.eoz.platform.recruitment.dto.InterviewResponse;
 import zm.eoz.platform.recruitment.dto.NoteRequest;
@@ -118,6 +119,23 @@ public class RecruitmentController {
     @GetMapping("/interviews/{id}/feedback")
     public ApiResponse<List<FeedbackResponse>> listFeedback(@PathVariable UUID id) {
         return ApiResponse.of(recruitmentService.listFeedback(id));
+    }
+
+    @GetMapping("/projects/{id}/scorecard")
+    public ApiResponse<List<ScorecardService.Criterion>> listScorecard(@PathVariable UUID id) {
+        return ApiResponse.of(recruitmentService.listScorecard(id));
+    }
+
+    @PostMapping("/projects/{id}/scorecard")
+    public ApiResponse<ScorecardService.Criterion> addScorecardCriterion(
+            @PathVariable UUID id, @Valid @RequestBody ScorecardCriterionRequest request) {
+        return ApiResponse.of(recruitmentService.addScorecardCriterion(id, request, currentUser()));
+    }
+
+    @org.springframework.web.bind.annotation.DeleteMapping("/projects/{id}/scorecard/{criterionId}")
+    public ApiResponse<Void> removeScorecardCriterion(@PathVariable UUID id, @PathVariable UUID criterionId) {
+        recruitmentService.removeScorecardCriterion(id, criterionId, currentUser());
+        return ApiResponse.of(null);
     }
 
     @PostMapping("/candidates/{id}/tags")

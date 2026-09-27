@@ -19,14 +19,17 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final NotificationTemplateService templateService;
     private final EmailDeliveryService deliveryService;
+    private final UnsubscribeService unsubscribeService;
 
     public NotificationService(
             NotificationRepository notificationRepository,
             NotificationTemplateService templateService,
-            EmailDeliveryService deliveryService) {
+            EmailDeliveryService deliveryService,
+            UnsubscribeService unsubscribeService) {
         this.notificationRepository = notificationRepository;
         this.templateService = templateService;
         this.deliveryService = deliveryService;
+        this.unsubscribeService = unsubscribeService;
     }
 
     /**
@@ -49,11 +52,24 @@ public class NotificationService {
         if (NotificationTemplateService.SERVICE_TYPES.contains(type) && !user.isServiceCommsEnabled()) {
             return;
         }
+        String emailBody = NotificationTemplateService.render(template.bodyTemplate(), user.getFullName(), title, body);
+        String oneClickUrl = null;
+        // Optional email carries a sign-in-free unsubscribe link and a one-click List-Unsubscribe header.
+        UnsubscribeService.Scope scope = UnsubscribeService.scopeFor(type);
+        if (scope != null) {
+            emailBody += "\n\n--\n"
+                    + (scope == UnsubscribeService.Scope.ALERTS
+                            ? "You receive job alerts because you turned them on."
+                            : "You receive service updates because you use EOZ professional services.")
+                    + " Unsubscribe: " + unsubscribeService.pageUrl(user.getId(), scope);
+            oneClickUrl = unsubscribeService.oneClickUrl(user.getId(), scope);
+        }
         deliveryService.enqueue(
                 notification.getId(),
                 type,
                 user.getEmail(),
                 NotificationTemplateService.render(template.subjectTemplate(), user.getFullName(), title, body),
-                NotificationTemplateService.render(template.bodyTemplate(), user.getFullName(), title, body));
+                emailBody,
+                oneClickUrl);
     }
 }

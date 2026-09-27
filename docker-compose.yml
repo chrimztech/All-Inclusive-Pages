@@ -1,20 +1,30 @@
+# Local/staging stack: PostgreSQL 18, the EOZ API, and Mailpit to catch outgoing email.
+# Run: docker compose up --build   then open http://localhost:8081/api/v1/docs and http://localhost:8025 (mail).
+# The frontend runs separately (npm run dev) and talks to the API on port 8081.
 services:
   postgres:
-    image: postgres:16
+    image: postgres:18
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${DB_USER:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-11111111}
       POSTGRES_DB: ${DB_NAME:-eoz_db}
     ports:
-      - "5432:5432"
+      # 5433 on the host so it does not clash with a locally installed PostgreSQL.
+      - "${DB_HOST_PORT:-5433}:5432"
     volumes:
-      - eoz_postgres_data:/var/lib/postgresql/data
+      - eoz_postgres_data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    restart: unless-stopped
+    ports:
+      - "${MAIL_UI_PORT:-8025}:8025"
 
   backend:
     build:
@@ -23,15 +33,34 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      mailpit:
+        condition: service_started
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-eoz_db}
       DB_USER: ${DB_USER:-postgres}
       DB_PASSWORD: ${DB_PASSWORD:-11111111}
       JWT_SECRET: ${JWT_SECRET:-dev-only-change-me-eoz-platform-secret-key-please-rotate-in-prod}
+      EOZ_DATA_KEY: ${EOZ_DATA_KEY:-}
+      PAYMENT_WEBHOOK_SECRET: ${PAYMENT_WEBHOOK_SECRET:-dev-only-webhook-secret-change-me}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:5173,http://localhost:8082}
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:-false}
+      MAIL_SMTP_STARTTLS: ${MAIL_SMTP_STARTTLS:-false}
+      API_DOCS_ENABLED: ${API_DOCS_ENABLED:-true}
+      PUBLIC_WEB_URL: ${PUBLIC_WEB_URL:-http://localhost:8082}
+      BACKUP_KEEP: ${BACKUP_KEEP:-14}
+      BREACHED_PASSWORD_CHECK: ${BREACHED_PASSWORD_CHECK:-local}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8081/api/v1}
       SERVER_PORT: 8081
     ports:
-      - "8081:8081"
+      - "${BACKEND_HOST_PORT:-8081}:8081"
+    volumes:
+      - eoz_app_data:/app/data
 
 volumes:
   eoz_postgres_data:
+  eoz_app_data:

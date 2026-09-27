@@ -5,8 +5,12 @@ import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
+import { useCan } from "@/lib/use-current-user";
 
-export const Route = createFileRoute("/admin/services")({ head: () => ({ meta: [{ title: "Service Operations — EOZ Staff" }] }), component: Services });
+export const Route = createFileRoute("/admin/services")({
+  head: () => ({ meta: [{ title: "Service Operations — EOZ Staff" }] }),
+  component: Services,
+});
 
 type ServiceOrderRow = {
   id: string;
@@ -89,6 +93,7 @@ const field =
   "mt-1 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/50";
 
 function Services() {
+  const can = useCan();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [expanded, setExpanded] = useState<string | null>(null);
@@ -107,7 +112,8 @@ function Services() {
     retry: false,
   });
   const packages = packagesQuery.data ?? [];
-  const invalidatePackages = () => queryClient.invalidateQueries({ queryKey: ["admin", "service-packages"] });
+  const invalidatePackages = () =>
+    queryClient.invalidateQueries({ queryKey: ["admin", "service-packages"] });
 
   function toPackageBody(form: PackageFormState) {
     return {
@@ -133,17 +139,20 @@ function Services() {
       invalidatePackages();
       toast("Service added to the catalogue.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not add the service.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not add the service.", "error"),
   });
 
   const updatePackageMutation = useMutation({
-    mutationFn: (id: string) => api.patch(`/admin/services/packages/${id}`, toPackageBody(editPackage)),
+    mutationFn: (id: string) =>
+      api.patch(`/admin/services/packages/${id}`, toPackageBody(editPackage)),
     onSuccess: () => {
       setEditingPackageId(null);
       invalidatePackages();
       toast("Service updated.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update the service.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not update the service.", "error"),
   });
 
   const removePackage = useMutation({
@@ -152,7 +161,8 @@ function Services() {
       invalidatePackages();
       toast("Service removed from the catalogue.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not remove the service.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not remove the service.", "error"),
   });
 
   const ordersQuery = useQuery({
@@ -177,7 +187,8 @@ function Services() {
   }
 
   const issueQuote = useMutation({
-    mutationFn: (orderId: string) => api.post(`/admin/services/orders/${orderId}/quote`, { amount: Number(quoteAmount) }),
+    mutationFn: (orderId: string) =>
+      api.post(`/admin/services/orders/${orderId}/quote`, { amount: Number(quoteAmount) }),
     onSuccess: () => {
       setQuoteAmount("");
       invalidate();
@@ -198,7 +209,8 @@ function Services() {
   });
 
   const changeStatus = useMutation({
-    mutationFn: (orderId: string) => api.post(`/admin/services/orders/${orderId}/status`, { status: statusTarget }),
+    mutationFn: (orderId: string) =>
+      api.post(`/admin/services/orders/${orderId}/status`, { status: statusTarget }),
     onSuccess: () => {
       invalidate();
       toast("Status updated.");
@@ -216,7 +228,9 @@ function Services() {
       <DashNav items={ADMIN_NAV} />
       {isUnauthenticated(ordersQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with a service, manager or admin account to view orders.</p>
+          <p className="text-sm text-muted">
+            Sign in with a service, manager or admin account to view orders.
+          </p>
         </Panel>
       ) : null}
       <Panel className="mb-6">
@@ -225,7 +239,7 @@ function Services() {
             <div className="label-mono">Catalogue</div>
             <h2 className="mt-1 font-display text-2xl">Services on offer</h2>
           </div>
-          {!addingPackage ? (
+          {!addingPackage && can("SERVICE_MANAGE") ? (
             <button
               type="button"
               onClick={() => {
@@ -368,7 +382,9 @@ function Services() {
                       <textarea
                         rows={2}
                         value={editPackage.description}
-                        onChange={(e) => setEditPackage((f) => ({ ...f, description: e.target.value }))}
+                        onChange={(e) =>
+                          setEditPackage((f) => ({ ...f, description: e.target.value }))
+                        }
                         className={field}
                       />
                     </label>
@@ -388,7 +404,9 @@ function Services() {
                       <span className="label-mono">Turnaround</span>
                       <input
                         value={editPackage.turnaround}
-                        onChange={(e) => setEditPackage((f) => ({ ...f, turnaround: e.target.value }))}
+                        onChange={(e) =>
+                          setEditPackage((f) => ({ ...f, turnaround: e.target.value }))
+                        }
                         className={field}
                       />
                     </label>
@@ -397,7 +415,9 @@ function Services() {
                       <textarea
                         rows={3}
                         value={editPackage.includes}
-                        onChange={(e) => setEditPackage((f) => ({ ...f, includes: e.target.value }))}
+                        onChange={(e) =>
+                          setEditPackage((f) => ({ ...f, includes: e.target.value }))
+                        }
                         className={field}
                       />
                     </label>
@@ -405,7 +425,9 @@ function Services() {
                       <input
                         type="checkbox"
                         checked={editPackage.active}
-                        onChange={(e) => setEditPackage((f) => ({ ...f, active: e.target.checked }))}
+                        onChange={(e) =>
+                          setEditPackage((f) => ({ ...f, active: e.target.checked }))
+                        }
                         className="size-3.5"
                       />
                       Listed in the public catalogue
@@ -435,36 +457,43 @@ function Services() {
                         {!p.active ? <Chip tone="muted">Removed</Chip> : null}
                       </div>
                       <div className="mt-1 text-xs text-muted">
-                        {p.currency} {p.price.toLocaleString()} · {p.turnaround ?? "No turnaround set"} · /{p.slug}
+                        {p.currency} {p.price.toLocaleString()} ·{" "}
+                        {p.turnaround ?? "No turnaround set"} · /{p.slug}
                       </div>
                     </div>
-                    <div className="flex shrink-0 gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingPackageId(p.id);
-                          setEditPackage(packageFormFromRow(p));
-                          setAddingPackage(false);
-                        }}
-                        className="rounded-md px-3 py-1.5 text-xs text-muted ring-1 ring-line hover:text-fg"
-                      >
-                        Edit
-                      </button>
-                      {p.active ? (
+                    {can("SERVICE_MANAGE") ? (
+                      <div className="flex shrink-0 gap-2">
                         <button
                           type="button"
-                          disabled={removePackage.isPending}
                           onClick={() => {
-                            if (window.confirm(`Remove "${p.name}" from the catalogue? Existing orders are unaffected.`)) {
-                              removePackage.mutate(p.id);
-                            }
+                            setEditingPackageId(p.id);
+                            setEditPackage(packageFormFromRow(p));
+                            setAddingPackage(false);
                           }}
-                          className="rounded-md px-3 py-1.5 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
+                          className="rounded-md px-3 py-1.5 text-xs text-muted ring-1 ring-line hover:text-fg"
                         >
-                          Remove
+                          Edit
                         </button>
-                      ) : null}
-                    </div>
+                        {p.active ? (
+                          <button
+                            type="button"
+                            disabled={removePackage.isPending}
+                            onClick={() => {
+                              if (
+                                window.confirm(
+                                  `Remove "${p.name}" from the catalogue? Existing orders are unaffected.`,
+                                )
+                              ) {
+                                removePackage.mutate(p.id);
+                              }
+                            }}
+                            className="rounded-md px-3 py-1.5 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
+                          >
+                            Remove
+                          </button>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                 )}
               </div>
@@ -489,7 +518,15 @@ function Services() {
             <Panel key={o.id}>
               <div className="flex justify-between gap-3">
                 <span className="font-mono text-xs text-accent-soft">{o.reference}</span>
-                <Chip tone={o.status === "PAYMENT_PENDING" ? "amber" : o.status === "COMPLETED" ? "emerald" : "muted"}>
+                <Chip
+                  tone={
+                    o.status === "PAYMENT_PENDING"
+                      ? "amber"
+                      : o.status === "COMPLETED"
+                        ? "emerald"
+                        : "muted"
+                  }
+                >
                   {o.status.replace(/_/g, " ")}
                 </Chip>
               </div>
@@ -504,16 +541,20 @@ function Services() {
               ) : null}
               <div className="mt-5 flex items-center justify-between border-t border-line pt-3 text-xs text-muted">
                 <span>Assigned: {o.assignedOfficerName ?? "Unassigned"}</span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setExpanded(isOpen ? null : o.id);
-                    setStatusTarget(o.status);
-                  }}
-                  className="text-accent-soft hover:text-fg"
-                >
-                  {isOpen ? "Close" : "Manage →"}
-                </button>
+                {can("SERVICE_MANAGE") ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setExpanded(isOpen ? null : o.id);
+                      setStatusTarget(o.status);
+                    }}
+                    className="text-accent-soft hover:text-fg"
+                  >
+                    {isOpen ? "Close" : "Manage →"}
+                  </button>
+                ) : (
+                  <span>View only</span>
+                )}
               </div>
 
               {isOpen ? (
@@ -584,7 +625,11 @@ function Services() {
                         changeStatus.mutate(o.id);
                       }}
                     >
-                      <select value={statusTarget} onChange={(e) => setStatusTarget(e.target.value)} className={field}>
+                      <select
+                        value={statusTarget}
+                        onChange={(e) => setStatusTarget(e.target.value)}
+                        className={field}
+                      >
                         {STATUSES.map((s) => (
                           <option key={s} value={s}>
                             {s.replace(/_/g, " ")}

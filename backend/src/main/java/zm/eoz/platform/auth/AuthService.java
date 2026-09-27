@@ -45,6 +45,7 @@ public class AuthService {
     private final CandidateProfileRepository candidateProfileRepository;
     private final OrganisationService organisationService;
     private final PasswordEncoder passwordEncoder;
+    private final zm.eoz.platform.security.PasswordPolicy passwordPolicy;
     private final JwtService jwtService;
     private final NotificationService notificationService;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -63,6 +64,7 @@ public class AuthService {
             CandidateProfileRepository candidateProfileRepository,
             OrganisationService organisationService,
             PasswordEncoder passwordEncoder,
+            zm.eoz.platform.security.PasswordPolicy passwordPolicy,
             JwtService jwtService,
             NotificationService notificationService,
             zm.eoz.platform.audit.AuditService auditService,
@@ -82,6 +84,7 @@ public class AuthService {
         this.candidateProfileRepository = candidateProfileRepository;
         this.organisationService = organisationService;
         this.passwordEncoder = passwordEncoder;
+        this.passwordPolicy = passwordPolicy;
         this.jwtService = jwtService;
         this.notificationService = notificationService;
     }
@@ -95,6 +98,7 @@ public class AuthService {
                 .findByName(request.accountType())
                 .orElseThrow(() -> new IllegalStateException("Role not seeded: " + request.accountType()));
 
+        passwordPolicy.validate(request.password(), request.email(), request.fullName());
         User user = new User();
         user.setFullName(request.fullName());
         user.setEmail(request.email().toLowerCase());
@@ -191,6 +195,7 @@ public class AuthService {
                 .orElseThrow(() -> new BadRequestException("This reset link is invalid or has expired."));
         vt.setUsedAt(Instant.now());
         User user = vt.getUser();
+        passwordPolicy.validate(newPassword, user.getEmail(), user.getFullName());
         user.setPasswordHash(passwordEncoder.encode(newPassword));
         user.setMustChangePassword(false);
         // Revoke all existing sessions so a compromised account can't stay logged in after reset.
@@ -439,18 +444,9 @@ public class AuthService {
         }
     }
 
-    private UserResponse toResponse(User user) {
-        return new UserResponse(
-                user.getId(),
-                user.getFullName(),
-                user.getEmail(),
-                user.getPhone(),
-                user.isEmailVerified(),
-                user.getRoles().stream().map(Role::getName).toList(),
-                user.isOpportunityAlertsEnabled(),
-                user.isServiceCommsEnabled(),
-                user.isMustChangePassword(),
-                user.isMfaEnabled());
+    /** The signed-in person as the web app sees them, including organisation membership. */
+    public UserResponse toResponse(User user) {
+        return UserResponse.from(user, organisationService.isMemberOfAny(user.getId()));
     }
 
     @Transactional
@@ -462,6 +458,7 @@ public class AuthService {
         if (passwordEncoder.matches(newPassword, managed.getPasswordHash())) {
             throw new BadRequestException("Choose a new password that is different from your current one.");
         }
+        passwordPolicy.validate(newPassword, managed.getEmail(), managed.getFullName());
         managed.setPasswordHash(passwordEncoder.encode(newPassword));
         managed.setMustChangePassword(false);
         userRepository.save(managed);

@@ -38,6 +38,9 @@ public class InterviewFeedback {
 
     private String comments;
 
+    /** STRONG_NO, NO, YES or STRONG_YES; null for feedback recorded before scorecards. */
+    private String recommendation;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
 }

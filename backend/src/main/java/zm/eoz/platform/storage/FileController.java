@@ -42,7 +42,7 @@ public class FileController {
             @RequestParam("file") MultipartFile file,
             @RequestParam("ownerType") String ownerType,
             @RequestParam("ownerId") String ownerId) {
-        FileAsset asset = fileStorageService.store(file, ownerType, ownerId, currentUser());
+        FileAsset asset = fileStorageService.storeGeneric(file, ownerType, ownerId, currentUser());
         return ApiResponse.of(FileAssetResponse.from(asset));
     }
 
@@ -64,7 +64,9 @@ public class FileController {
         Resource resource = fileStorageService.load(asset);
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(asset.getContentType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + asset.getFileName() + "\"")
+                // RFC 6266 encoding: a crafted file name cannot break out of the header.
+                .header(HttpHeaders.CONTENT_DISPOSITION, org.springframework.http.ContentDisposition.attachment()
+                        .filename(asset.getFileName(), java.nio.charset.StandardCharsets.UTF_8).build().toString())
                 .body(resource);
     }
 

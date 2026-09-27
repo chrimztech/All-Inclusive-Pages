@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { ReceiptText } from "lucide-react";
 import { DashNav, EMPLOYER_NAV, StatTile } from "@/components/eoz/DashNav";
@@ -27,6 +27,7 @@ type Invoice = {
   currency: string;
   status: string;
   issuedAt: string;
+  paidAt: string | null;
 };
 
 const STATUS_TONE: Record<string, "emerald" | "amber" | "rose" | "muted"> = {
@@ -48,7 +49,9 @@ function EmployerFinance() {
     .filter((i) => i.status === "UNPAID")
     .reduce((sum, i) => sum + i.amount, 0);
   const paidThisYear = invoices
-    .filter((i) => i.status === "PAID" && new Date(i.issuedAt).getFullYear() === new Date().getFullYear())
+    .filter(
+      (i) => i.status === "PAID" && new Date(i.issuedAt).getFullYear() === new Date().getFullYear(),
+    )
     .reduce((sum, i) => sum + i.amount, 0);
   const receipts = invoices.filter((i) => i.status === "PAID").length;
   const currency = invoices[0]?.currency ?? "ZMW";
@@ -69,7 +72,11 @@ function EmployerFinance() {
       ) : null}
 
       <div className="grid gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Amount due" value={`${currency} ${amountDue.toLocaleString()}`} tone="text-rose" />
+        <StatTile
+          label="Amount due"
+          value={`${currency} ${amountDue.toLocaleString()}`}
+          tone="text-rose"
+        />
         <StatTile label="Paid this year" value={`${currency} ${paidThisYear.toLocaleString()}`} />
         <StatTile label="Receipts" value={String(receipts)} />
         <StatTile label="Total invoices" value={String(invoices.length)} />
@@ -95,6 +102,9 @@ function EmployerFinance() {
                 <th className="pb-3">Issued</th>
                 <th className="pb-3">Amount</th>
                 <th className="pb-3">Status</th>
+                <th className="pb-3">
+                  <span className="sr-only">Receipt</span>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -107,7 +117,20 @@ function EmployerFinance() {
                     {i.currency} {i.amount.toLocaleString()}
                   </td>
                   <td className="py-4">
-                    <Chip tone={STATUS_TONE[i.status] ?? "muted"}>{i.status.replace(/_/g, " ")}</Chip>
+                    <Chip tone={STATUS_TONE[i.status] ?? "muted"}>
+                      {i.status.replace(/_/g, " ")}
+                    </Chip>
+                  </td>
+                  <td className="py-4 text-right">
+                    {i.paidAt ? (
+                      <Link
+                        to="/receipt/$invoiceId"
+                        params={{ invoiceId: i.id }}
+                        className="text-xs text-accent-soft hover:text-fg"
+                      >
+                        Receipt →
+                      </Link>
+                    ) : null}
                   </td>
                 </tr>
               ))}

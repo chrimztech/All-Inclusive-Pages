@@ -30,6 +30,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as ScamWarningRouteImport } from './routes/scam-warning'
 import { Route as SitemapDotxmlRouteImport } from './routes/sitemap[.]xml'
 import { Route as TermsRouteImport } from './routes/terms'
+import { Route as UnsubscribeRouteImport } from './routes/unsubscribe'
 import { Route as VerificationRouteImport } from './routes/verification'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
@@ -79,6 +80,7 @@ import { Route as OpportunitiesIndexRouteImport } from './routes/opportunities.i
 import { Route as OpportunitiesOpportunityIdRouteImport } from './routes/opportunities.$opportunityId'
 import { Route as OrganisationsIndexRouteImport } from './routes/organisations.index'
 import { Route as OrganisationsOrganisationIdRouteImport } from './routes/organisations.$organisationId'
+import { Route as ReceiptInvoiceIdRouteImport } from './routes/receipt.$invoiceId'
 import { Route as ServicesIndexRouteImport } from './routes/services.index'
 import { Route as ServicesServiceSlugRouteImport } from './routes/services.$serviceSlug'
 import { Route as AdminRecruitmentIndexRouteImport } from './routes/admin.recruitment.index'
@@ -188,6 +190,11 @@ const SitemapDotxmlRoute = SitemapDotxmlRouteImport.update({
 const TermsRoute = TermsRouteImport.update({
   id: '/terms',
   path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const UnsubscribeRoute = UnsubscribeRouteImport.update({
+  id: '/unsubscribe',
+  path: '/unsubscribe',
   getParentRoute: () => rootRouteImport,
 } as any)
 const VerificationRoute = VerificationRouteImport.update({
@@ -438,6 +445,11 @@ const OrganisationsOrganisationIdRoute =
     path: '/organisations/$organisationId',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ReceiptInvoiceIdRoute = ReceiptInvoiceIdRouteImport.update({
+  id: '/receipt/$invoiceId',
+  path: '/receipt/$invoiceId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ServicesIndexRoute = ServicesIndexRouteImport.update({
   id: '/services/',
   path: '/services/',
@@ -488,6 +500,7 @@ export interface FileRoutesByFullPath {
   '/scam-warning': typeof ScamWarningRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/verification': typeof VerificationRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/applications': typeof AdminApplicationsRoute
@@ -532,6 +545,7 @@ export interface FileRoutesByFullPath {
   '/employers/team': typeof EmployersTeamRoute
   '/opportunities/$opportunityId': typeof OpportunitiesOpportunityIdRoute
   '/organisations/$organisationId': typeof OrganisationsOrganisationIdRoute
+  '/receipt/$invoiceId': typeof ReceiptInvoiceIdRoute
   '/services/$serviceSlug': typeof ServicesServiceSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/candidate/': typeof CandidateIndexRoute
@@ -565,6 +579,7 @@ export interface FileRoutesByTo {
   '/scam-warning': typeof ScamWarningRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/verification': typeof VerificationRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/applications': typeof AdminApplicationsRoute
@@ -609,6 +624,7 @@ export interface FileRoutesByTo {
   '/employers/team': typeof EmployersTeamRoute
   '/opportunities/$opportunityId': typeof OpportunitiesOpportunityIdRoute
   '/organisations/$organisationId': typeof OrganisationsOrganisationIdRoute
+  '/receipt/$invoiceId': typeof ReceiptInvoiceIdRoute
   '/services/$serviceSlug': typeof ServicesServiceSlugRoute
   '/admin': typeof AdminIndexRoute
   '/candidate': typeof CandidateIndexRoute
@@ -643,6 +659,7 @@ export interface FileRoutesById {
   '/scam-warning': typeof ScamWarningRoute
   '/sitemap.xml': typeof SitemapDotxmlRoute
   '/terms': typeof TermsRoute
+  '/unsubscribe': typeof UnsubscribeRoute
   '/verification': typeof VerificationRoute
   '/verify-email': typeof VerifyEmailRoute
   '/admin/applications': typeof AdminApplicationsRoute
@@ -687,6 +704,7 @@ export interface FileRoutesById {
   '/employers/team': typeof EmployersTeamRoute
   '/opportunities/$opportunityId': typeof OpportunitiesOpportunityIdRoute
   '/organisations/$organisationId': typeof OrganisationsOrganisationIdRoute
+  '/receipt/$invoiceId': typeof ReceiptInvoiceIdRoute
   '/services/$serviceSlug': typeof ServicesServiceSlugRoute
   '/admin/': typeof AdminIndexRoute
   '/candidate/': typeof CandidateIndexRoute
@@ -722,6 +740,7 @@ export interface FileRouteTypes {
     | '/scam-warning'
     | '/sitemap.xml'
     | '/terms'
+    | '/unsubscribe'
     | '/verification'
     | '/verify-email'
     | '/admin/applications'
@@ -766,6 +785,7 @@ export interface FileRouteTypes {
     | '/employers/team'
     | '/opportunities/$opportunityId'
     | '/organisations/$organisationId'
+    | '/receipt/$invoiceId'
     | '/services/$serviceSlug'
     | '/admin/'
     | '/candidate/'
@@ -799,6 +819,7 @@ export interface FileRouteTypes {
     | '/scam-warning'
     | '/sitemap.xml'
     | '/terms'
+    | '/unsubscribe'
     | '/verification'
     | '/verify-email'
     | '/admin/applications'
@@ -843,6 +864,7 @@ export interface FileRouteTypes {
     | '/employers/team'
     | '/opportunities/$opportunityId'
     | '/organisations/$organisationId'
+    | '/receipt/$invoiceId'
     | '/services/$serviceSlug'
     | '/admin'
     | '/candidate'
@@ -876,6 +898,7 @@ export interface FileRouteTypes {
     | '/scam-warning'
     | '/sitemap.xml'
     | '/terms'
+    | '/unsubscribe'
     | '/verification'
     | '/verify-email'
     | '/admin/applications'
@@ -920,6 +943,7 @@ export interface FileRouteTypes {
     | '/employers/team'
     | '/opportunities/$opportunityId'
     | '/organisations/$organisationId'
+    | '/receipt/$invoiceId'
     | '/services/$serviceSlug'
     | '/admin/'
     | '/candidate/'
@@ -954,6 +978,7 @@ export interface RootRouteChildren {
   ScamWarningRoute: typeof ScamWarningRoute
   SitemapDotxmlRoute: typeof SitemapDotxmlRoute
   TermsRoute: typeof TermsRoute
+  UnsubscribeRoute: typeof UnsubscribeRoute
   VerificationRoute: typeof VerificationRoute
   VerifyEmailRoute: typeof VerifyEmailRoute
   AdminApplicationsRoute: typeof AdminApplicationsRoute
@@ -998,6 +1023,7 @@ export interface RootRouteChildren {
   EmployersTeamRoute: typeof EmployersTeamRoute
   OpportunitiesOpportunityIdRoute: typeof OpportunitiesOpportunityIdRoute
   OrganisationsOrganisationIdRoute: typeof OrganisationsOrganisationIdRoute
+  ReceiptInvoiceIdRoute: typeof ReceiptInvoiceIdRoute
   ServicesServiceSlugRoute: typeof ServicesServiceSlugRoute
   AdminIndexRoute: typeof AdminIndexRoute
   CandidateIndexRoute: typeof CandidateIndexRoute
@@ -1157,6 +1183,13 @@ declare module '@tanstack/react-router' {
       path: '/terms'
       fullPath: '/terms'
       preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/unsubscribe': {
+      id: '/unsubscribe'
+      path: '/unsubscribe'
+      fullPath: '/unsubscribe'
+      preLoaderRoute: typeof UnsubscribeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/verification': {
@@ -1502,6 +1535,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof OrganisationsOrganisationIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/receipt/$invoiceId': {
+      id: '/receipt/$invoiceId'
+      path: '/receipt/$invoiceId'
+      fullPath: '/receipt/$invoiceId'
+      preLoaderRoute: typeof ReceiptInvoiceIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/services/': {
       id: '/services/'
       path: '/services'
@@ -1562,6 +1602,7 @@ const rootRouteChildren: RootRouteChildren = {
   ScamWarningRoute: ScamWarningRoute,
   SitemapDotxmlRoute: SitemapDotxmlRoute,
   TermsRoute: TermsRoute,
+  UnsubscribeRoute: UnsubscribeRoute,
   VerificationRoute: VerificationRoute,
   VerifyEmailRoute: VerifyEmailRoute,
   AdminApplicationsRoute: AdminApplicationsRoute,
@@ -1606,6 +1647,7 @@ const rootRouteChildren: RootRouteChildren = {
   EmployersTeamRoute: EmployersTeamRoute,
   OpportunitiesOpportunityIdRoute: OpportunitiesOpportunityIdRoute,
   OrganisationsOrganisationIdRoute: OrganisationsOrganisationIdRoute,
+  ReceiptInvoiceIdRoute: ReceiptInvoiceIdRoute,
   ServicesServiceSlugRoute: ServicesServiceSlugRoute,
   AdminIndexRoute: AdminIndexRoute,
   CandidateIndexRoute: CandidateIndexRoute,

@@ -7,13 +7,25 @@ import { api, ApiError, isUnauthenticated } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
 
 export const Route = createFileRoute("/admin/categories")({
-  head: () => ({ meta: [{ title: "Categories — EOZ Staff Console" }, { name: "robots", content: "noindex,nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "Categories — EOZ Staff Console" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
   component: Categories,
 });
 
-type Category = { id: string; code: string; name: string; description: string | null; listingCount: number };
+type Category = {
+  id: string;
+  code: string;
+  name: string;
+  description: string | null;
+  listingCount: number;
+};
 
-const inputCls = "w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/40";
+const inputCls =
+  "w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/40";
 
 function Categories() {
   const queryClient = useQueryClient();
@@ -49,7 +61,8 @@ function Categories() {
     onError: fail("Could not add the category."),
   });
   const update = useMutation({
-    mutationFn: (id: string) => api.patch(`/admin/categories/${id}`, { name: editName, description: editDescription }),
+    mutationFn: (id: string) =>
+      api.patch(`/admin/categories/${id}`, { name: editName, description: editDescription }),
     onSuccess: () => {
       refresh();
       setEditingId(null);
@@ -88,7 +101,9 @@ function Categories() {
 
       {isUnauthenticated(listQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with an administrator account to manage categories.</p>
+          <p className="text-sm text-muted">
+            Sign in with an administrator account to manage categories.
+          </p>
         </Panel>
       ) : null}
 
@@ -103,11 +118,20 @@ function Categories() {
           >
             <label className="text-xs text-muted">
               Name
-              <input required value={name} onChange={(e) => setName(e.target.value)} className={`${inputCls} mt-1`} />
+              <input
+                required
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className={`${inputCls} mt-1`}
+              />
             </label>
             <label className="text-xs text-muted">
               Description
-              <input value={description} onChange={(e) => setDescription(e.target.value)} className={`${inputCls} mt-1`} />
+              <input
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className={`${inputCls} mt-1`}
+              />
             </label>
             <button
               type="submit"
@@ -123,7 +147,10 @@ function Categories() {
       <Panel className="mb-14">
         <div className="divide-y divide-line">
           {categories.map((c) => (
-            <div key={c.id} className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0">
+            <div
+              key={c.id}
+              className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0 last:pb-0"
+            >
               {editingId === c.id ? (
                 <form
                   className="flex flex-1 flex-wrap items-center gap-2"
@@ -187,7 +214,9 @@ function Categories() {
                     <button
                       type="button"
                       disabled={c.listingCount > 0 || remove.isPending}
-                      title={c.listingCount > 0 ? "Used by listings — cannot be deleted" : undefined}
+                      title={
+                        c.listingCount > 0 ? "Used by listings — cannot be deleted" : undefined
+                      }
                       onClick={() => {
                         if (window.confirm(`Delete the category "${c.name}"?`)) remove.mutate(c.id);
                       }}

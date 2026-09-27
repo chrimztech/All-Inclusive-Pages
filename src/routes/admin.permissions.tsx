@@ -88,7 +88,9 @@ function AdminPermissions() {
 
       {isUnauthenticated(rolesQuery.error) ? (
         <Panel className="mb-4">
-          <p className="text-sm text-muted">Sign in with an admin account to manage roles and permissions.</p>
+          <p className="text-sm text-muted">
+            Sign in with an admin account to manage roles and permissions.
+          </p>
         </Panel>
       ) : null}
 
@@ -100,9 +102,12 @@ function AdminPermissions() {
         <section className="grid gap-4 pb-14 lg:grid-cols-2">
           {roles.map((role) => {
             const isAdmin = role.name === "ADMIN";
+            // Everyone who signs up gets one of these; a staff permission here would make the public staff.
+            const isSignUpRole = role.name === "CANDIDATE" || role.name === "EMPLOYER";
+            const locked = isAdmin || isSignUpRole;
             const draft = draftFor(role);
             const dirty =
-              !isAdmin &&
+              !locked &&
               (draft.length !== role.permissionCodes.length ||
                 draft.some((c) => !role.permissionCodes.includes(c)));
 
@@ -111,17 +116,24 @@ function AdminPermissions() {
                 <div className="mb-1 flex items-center justify-between gap-2">
                   <div className="eyebrow">{role.name.replaceAll("_", " ")}</div>
                   {isAdmin ? <Chip tone="muted">Fixed — always full access</Chip> : null}
+                  {isSignUpRole ? (
+                    <Chip tone="muted">Fixed — sign-up role, no staff access</Chip>
+                  ) : null}
                 </div>
                 <p className="mb-4 text-xs text-muted">{role.description}</p>
 
                 <div className="space-y-2">
                   {permissions.map((perm) => {
-                    const checked = isAdmin ? true : draft.includes(perm.code);
+                    const checked = isAdmin
+                      ? true
+                      : isSignUpRole
+                        ? false
+                        : draft.includes(perm.code);
                     return (
                       <label
                         key={perm.code}
                         className={`flex items-start justify-between gap-3 border-b border-line pb-2 text-sm last:border-0 last:pb-0 ${
-                          isAdmin ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+                          locked ? "cursor-not-allowed opacity-60" : "cursor-pointer"
                         }`}
                       >
                         <span>
@@ -131,7 +143,7 @@ function AdminPermissions() {
                         <input
                           type="checkbox"
                           checked={checked}
-                          disabled={isAdmin}
+                          disabled={locked}
                           onChange={() => toggle(role, perm.code)}
                           className="mt-1 size-4 shrink-0 accent-current"
                         />
@@ -140,7 +152,7 @@ function AdminPermissions() {
                   })}
                 </div>
 
-                {!isAdmin ? (
+                {!locked ? (
                   <div className="mt-4 flex items-center gap-2">
                     <Button
                       size="sm"

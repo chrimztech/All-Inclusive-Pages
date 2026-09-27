@@ -24,7 +24,15 @@ export const Route = createFileRoute("/candidate/applications")({
   component: Applications,
 });
 
-const STATUS_ORDER = ["SUBMITTED", "SCREENING", "LONGLISTED", "SHORTLISTED", "INTERVIEW", "OFFER", "HIRED"];
+const STATUS_ORDER = [
+  "SUBMITTED",
+  "SCREENING",
+  "LONGLISTED",
+  "SHORTLISTED",
+  "INTERVIEW",
+  "OFFER",
+  "HIRED",
+];
 
 const STATUS_TONE: Record<string, "emerald" | "amber" | "rose" | "accent" | "muted"> = {
   HIRED: "emerald",
@@ -42,7 +50,11 @@ function Applications() {
       queryClient.invalidateQueries({ queryKey: ["candidate", "applications"] });
       toast("Application withdrawn.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not withdraw the application.", "error"),
+    onError: (error) =>
+      toast(
+        error instanceof ApiError ? error.message : "Could not withdraw the application.",
+        "error",
+      ),
   });
   const applicationsQuery = useQuery({
     queryKey: ["candidate", "applications"],
@@ -69,7 +81,8 @@ function Applications() {
         {applicationsQuery.isSuccess && applications.length === 0 ? (
           <Panel>
             <p className="text-sm text-muted">
-              No EOZ-hosted applications yet. Most opportunities are applied for directly with the employer.
+              No EOZ-hosted applications yet. Most opportunities are applied for directly with the
+              employer.
             </p>
           </Panel>
         ) : null}
@@ -88,15 +101,21 @@ function Applications() {
                 </div>
                 <div className="text-right">
                   <Chip tone={STATUS_TONE[a.status] ?? "accent"}>{a.status}</Chip>
-                  <div className="label-mono mt-1">Updated {new Date(a.updatedAt).toLocaleDateString()}</div>
+                  <div className="label-mono mt-1">
+                    Updated {new Date(a.updatedAt).toLocaleDateString()}
+                  </div>
                 </div>
               </div>
               {!terminal ? (
                 <ol className="mt-5 grid gap-2 sm:grid-cols-7">
                   {STATUS_ORDER.map((stage, i) => (
                     <li key={stage}>
-                      <div className={`h-1 rounded-full ${i <= stageIndex ? "accent-gradient" : "bg-line"}`} />
-                      <div className={`mt-2 font-mono text-[9px] ${i <= stageIndex ? "text-fg" : "text-muted"}`}>
+                      <div
+                        className={`h-1 rounded-full ${i <= stageIndex ? "accent-gradient" : "bg-line"}`}
+                      />
+                      <div
+                        className={`mt-2 font-mono text-[9px] ${i <= stageIndex ? "text-fg" : "text-muted"}`}
+                      >
                         {stage}
                       </div>
                     </li>
@@ -109,7 +128,8 @@ function Applications() {
                     type="button"
                     disabled={withdraw.isPending}
                     onClick={() => {
-                      if (window.confirm(`Withdraw your application for "${a.opportunityTitle}"?`)) withdraw.mutate(a.id);
+                      if (window.confirm(`Withdraw your application for "${a.opportunityTitle}"?`))
+                        withdraw.mutate(a.id);
                     }}
                     className="rounded-md px-3 py-1.5 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
                   >

@@ -57,10 +57,13 @@ function ServiceOrders() {
       queryClient.invalidateQueries({ queryKey: ["candidate", "service-orders"] });
       toast("Quote accepted — an invoice has been raised. We'll be in touch about payment.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not accept this quote.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not accept this quote.", "error"),
   });
   const active = orders.filter((o) => !["COMPLETED", "CANCELLED"].includes(o.status)).length;
-  const awaiting = orders.filter((o) => o.status === "QUOTED" || o.status === "PAYMENT_PENDING").length;
+  const awaiting = orders.filter(
+    (o) => o.status === "QUOTED" || o.status === "PAYMENT_PENDING",
+  ).length;
   const completed = orders.filter((o) => o.status === "COMPLETED").length;
 
   return (
@@ -107,7 +110,9 @@ function ServiceOrders() {
                   <div className="font-mono text-xs text-accent-soft">{o.reference}</div>
                   <h2 className="mt-1 font-display text-lg tracking-tight">{o.packageName}</h2>
                   <div className="mt-1 text-xs text-muted">
-                    {o.assignedOfficerName ? `Assigned to ${o.assignedOfficerName}` : "Not yet assigned"}
+                    {o.assignedOfficerName
+                      ? `Assigned to ${o.assignedOfficerName}`
+                      : "Not yet assigned"}
                     {o.revisionCount > 0 ? ` · ${o.revisionCount} revision(s) used` : ""}
                   </div>
                 </div>
@@ -145,9 +150,59 @@ function ServiceOrders() {
               </p>
             </div>
           </Panel>
+          <InvoicesPanel />
         </aside>
       </section>
     </SiteShell>
+  );
+}
+
+type Invoice = {
+  id: string;
+  reference: string;
+  packageName: string;
+  amount: number;
+  currency: string;
+  status: string;
+  paidAt: string | null;
+};
+
+/** The candidate's invoices, with receipts for paid ones. */
+function InvoicesPanel() {
+  const invoicesQuery = useQuery({
+    queryKey: ["candidate", "invoices"],
+    queryFn: () => api.get<Invoice[]>("/services/invoices/mine"),
+    retry: false,
+  });
+  const invoices = invoicesQuery.data ?? [];
+  if (invoicesQuery.isError || invoices.length === 0) return null;
+  return (
+    <Panel>
+      <div className="label-mono mb-3">Invoices & receipts</div>
+      <ul className="divide-y divide-line text-sm">
+        {invoices.map((i) => (
+          <li key={i.id} className="flex items-center justify-between gap-2 py-2">
+            <div className="min-w-0">
+              <div className="truncate">{i.packageName}</div>
+              <div className="font-mono text-xs text-muted">
+                {i.reference} · {i.currency} {i.amount.toLocaleString()}
+              </div>
+            </div>
+            {i.paidAt ? (
+              <Link
+                to="/receipt/$invoiceId"
+                params={{ invoiceId: i.id }}
+                className="shrink-0 text-xs text-accent-soft hover:text-fg"
+              >
+                Receipt →
+              </Link>
+            ) : (
+              <Chip tone="amber">{i.status.replace(/_/g, " ")}</Chip>
+            )}
+          </li>
+        ))}
+      </ul>
+    </Panel>
   );
 }
 
@@ -164,7 +219,8 @@ function RateOrder({ order }: { order: Order }) {
       queryClient.invalidateQueries({ queryKey: ["candidate", "service-orders"] });
       toast("Thank you for your feedback.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not send your rating.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not send your rating.", "error"),
   });
 
   if (order.rating != null) {
@@ -189,7 +245,12 @@ function RateOrder({ order }: { order: Order }) {
       }}
     >
       <div className="text-sm">How did we do?</div>
-      <div role="radiogroup" aria-label="Rating" className="flex gap-1" onMouseLeave={() => setHover(0)}>
+      <div
+        role="radiogroup"
+        aria-label="Rating"
+        className="flex gap-1"
+        onMouseLeave={() => setHover(0)}
+      >
         {[1, 2, 3, 4, 5].map((n) => (
           <button
             key={n}

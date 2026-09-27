@@ -1,12 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef, useState } from "react";
+import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { CANDIDATE_NAV, DashNav } from "@/components/eoz/DashNav";
 import { API_BASE_URL, api, ApiError, isUnauthenticated, uploadFile } from "@/lib/api-client";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { useToast } from "@/lib/toast";
 import { CertificationsSection, LanguagesSection } from "@/components/eoz/CandidateCredentials";
+import { FormErrorSummary } from "@/components/eoz/FormErrorSummary";
 
 export const Route = createFileRoute("/candidate/profile")({
   head: () => ({
@@ -147,21 +149,47 @@ function Profile() {
   const [linkedinUrl, setLinkedinUrl] = useState("");
   const [portfolioUrl, setPortfolioUrl] = useState("");
 
+  const { resetTo, prompt: unsavedPrompt } = useUnsavedChanges({
+    headline,
+    bio,
+    location,
+    skills,
+    availability,
+    salaryMin,
+    salaryMax,
+    salaryCurrency,
+    linkedinUrl,
+    portfolioUrl,
+  });
+
   useEffect(() => {
     if (profileQuery.data) {
       const p = profileQuery.data;
-      setHeadline(p.headline ?? "");
-      setBio(p.bio ?? "");
-      setLocation(p.location ?? "");
-      setSkills(p.skills ?? "");
-      setAvailability(p.availability ?? "");
-      setSalaryMin(p.salaryExpectationMin != null ? String(p.salaryExpectationMin) : "");
-      setSalaryMax(p.salaryExpectationMax != null ? String(p.salaryExpectationMax) : "");
-      setSalaryCurrency(p.salaryCurrency ?? "ZMW");
-      setLinkedinUrl(p.linkedinUrl ?? "");
-      setPortfolioUrl(p.portfolioUrl ?? "");
+      const saved = {
+        headline: p.headline ?? "",
+        bio: p.bio ?? "",
+        location: p.location ?? "",
+        skills: p.skills ?? "",
+        availability: (p.availability ?? "") as Availability | "",
+        salaryMin: p.salaryExpectationMin != null ? String(p.salaryExpectationMin) : "",
+        salaryMax: p.salaryExpectationMax != null ? String(p.salaryExpectationMax) : "",
+        salaryCurrency: p.salaryCurrency ?? "ZMW",
+        linkedinUrl: p.linkedinUrl ?? "",
+        portfolioUrl: p.portfolioUrl ?? "",
+      };
+      setHeadline(saved.headline);
+      setBio(saved.bio);
+      setLocation(saved.location);
+      setSkills(saved.skills);
+      setAvailability(saved.availability);
+      setSalaryMin(saved.salaryMin);
+      setSalaryMax(saved.salaryMax);
+      setSalaryCurrency(saved.salaryCurrency);
+      setLinkedinUrl(saved.linkedinUrl);
+      setPortfolioUrl(saved.portfolioUrl);
+      resetTo(saved);
     }
-  }, [profileQuery.data]);
+  }, [profileQuery.data, resetTo]);
 
   const saveDetails = useMutation({
     mutationFn: () =>
@@ -230,6 +258,7 @@ function Profile() {
         lead="Your CV, work history, education and preferences are what employers see when you apply — keep them current."
       />
       <DashNav items={CANDIDATE_NAV} />
+      {unsavedPrompt}
 
       {isUnauthenticated(profileQuery.error) ? (
         <Panel className="mb-6">
@@ -301,161 +330,170 @@ function Profile() {
                 saveDetails.mutate();
               }}
             >
-              <div>
-                <div className="label-mono">Profile photo</div>
-                <div className="mt-2 flex items-center gap-4">
-                  {profile?.photoFileId ? (
-                    <PhotoPreview fileId={profile.photoFileId} />
-                  ) : (
-                    <div className="flex size-16 items-center justify-center rounded-full bg-surface-2 text-[10px] text-muted ring-1 ring-line">
-                      No photo
-                    </div>
-                  )}
-                  <input
-                    ref={photoInput}
-                    type="file"
-                    accept="image/png,image/jpeg"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) uploadPhoto.mutate(file);
-                      e.target.value = "";
-                    }}
-                  />
-                  <button
-                    type="button"
-                    disabled={uploadPhoto.isPending}
-                    onClick={() => photoInput.current?.click()}
-                    className={ghostButtonCls}
-                  >
-                    {uploadPhoto.isPending ? "Uploading…" : "Change photo"}
-                  </button>
-                </div>
-                {uploadPhoto.isError ? (
-                  <p className="mt-2 text-xs text-rose-400">
-                    {uploadPhoto.error instanceof ApiError
-                      ? uploadPhoto.error.message
-                      : "Upload failed."}
-                  </p>
-                ) : null}
-              </div>
-
-              <label>
-                <span className="label-mono">Headline</span>
-                <input
-                  value={headline}
-                  onChange={(e) => setHeadline(e.target.value)}
-                  className={inputCls}
-                  placeholder="e.g. Data Analyst"
-                />
-              </label>
-              <label>
-                <span className="label-mono">Location</span>
-                <input
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className={inputCls}
-                  placeholder="e.g. Lusaka"
-                />
-              </label>
-              <label>
-                <span className="label-mono">Bio</span>
-                <textarea
-                  rows={3}
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  className={inputCls}
-                />
-              </label>
-              <label>
-                <span className="label-mono">Skills (comma-separated)</span>
-                <input
-                  value={skills}
-                  onChange={(e) => setSkills(e.target.value)}
-                  className={inputCls}
-                  placeholder="SQL, Excel, Power BI"
-                />
-              </label>
-
-              <div className="grid gap-4 sm:grid-cols-2">
-                <label>
-                  <span className="label-mono">Availability</span>
-                  <select
-                    value={availability}
-                    onChange={(e) => setAvailability(e.target.value as Availability | "")}
-                    className={inputCls}
-                  >
-                    <option value="">Not specified</option>
-                    {Object.entries(AVAILABILITY_LABELS).map(([value, label]) => (
-                      <option key={value} value={value}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  <span className="label-mono">Currency</span>
-                  <input
-                    value={salaryCurrency}
-                    onChange={(e) => setSalaryCurrency(e.target.value)}
-                    className={inputCls}
-                    placeholder="ZMW"
-                  />
-                </label>
-                <label>
-                  <span className="label-mono">Min salary expectation</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={salaryMin}
-                    onChange={(e) => setSalaryMin(e.target.value)}
-                    className={inputCls}
-                  />
-                </label>
-                <label>
-                  <span className="label-mono">Max salary expectation</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={salaryMax}
-                    onChange={(e) => setSalaryMax(e.target.value)}
-                    className={inputCls}
-                  />
-                </label>
-                <label>
-                  <span className="label-mono">LinkedIn URL</span>
-                  <input
-                    value={linkedinUrl}
-                    onChange={(e) => setLinkedinUrl(e.target.value)}
-                    className={inputCls}
-                    placeholder="https://linkedin.com/in/…"
-                  />
-                </label>
-                <label>
-                  <span className="label-mono">Portfolio URL</span>
-                  <input
-                    value={portfolioUrl}
-                    onChange={(e) => setPortfolioUrl(e.target.value)}
-                    className={inputCls}
-                    placeholder="https://…"
-                  />
-                </label>
-              </div>
-
-              {saveDetails.isError ? (
-                <p className="text-xs text-rose-400">
-                  {saveDetails.error instanceof ApiError
-                    ? saveDetails.error.message
-                    : "Could not save your profile."}
-                </p>
-              ) : null}
-              <button
-                type="submit"
-                disabled={saveDetails.isPending}
-                className="accent-gradient w-fit rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
+              {/* Locked until the saved profile arrives, so it can't overwrite what someone has started typing. */}
+              <fieldset
+                disabled={profileQuery.isLoading}
+                aria-busy={profileQuery.isLoading}
+                className="contents disabled:opacity-60"
               >
-                {saveDetails.isPending ? "Saving…" : "Save profile"}
-              </button>
+                <div>
+                  <div className="label-mono">Profile photo</div>
+                  <div className="mt-2 flex items-center gap-4">
+                    {profile?.photoFileId ? (
+                      <PhotoPreview fileId={profile.photoFileId} />
+                    ) : (
+                      <div className="flex size-16 items-center justify-center rounded-full bg-surface-2 text-[10px] text-muted ring-1 ring-line">
+                        No photo
+                      </div>
+                    )}
+                    <input
+                      ref={photoInput}
+                      type="file"
+                      accept="image/png,image/jpeg"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) uploadPhoto.mutate(file);
+                        e.target.value = "";
+                      }}
+                    />
+                    <button
+                      type="button"
+                      disabled={uploadPhoto.isPending}
+                      onClick={() => photoInput.current?.click()}
+                      className={ghostButtonCls}
+                    >
+                      {uploadPhoto.isPending ? "Uploading…" : "Change photo"}
+                    </button>
+                  </div>
+                  {uploadPhoto.isError ? (
+                    <p className="mt-2 text-xs text-rose-400">
+                      {uploadPhoto.error instanceof ApiError
+                        ? uploadPhoto.error.message
+                        : "Upload failed."}
+                    </p>
+                  ) : null}
+                </div>
+
+                <label>
+                  <span className="label-mono">Headline</span>
+                  <input
+                    value={headline}
+                    onChange={(e) => setHeadline(e.target.value)}
+                    className={inputCls}
+                    placeholder="e.g. Data Analyst"
+                  />
+                </label>
+                <label>
+                  <span className="label-mono">Location</span>
+                  <input
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className={inputCls}
+                    placeholder="e.g. Lusaka"
+                  />
+                </label>
+                <label>
+                  <span className="label-mono">Bio</span>
+                  <textarea
+                    rows={3}
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    className={inputCls}
+                  />
+                </label>
+                <label>
+                  <span className="label-mono">Skills (comma-separated)</span>
+                  <input
+                    value={skills}
+                    onChange={(e) => setSkills(e.target.value)}
+                    className={inputCls}
+                    placeholder="SQL, Excel, Power BI"
+                  />
+                </label>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <label>
+                    <span className="label-mono">Availability</span>
+                    <select
+                      value={availability}
+                      onChange={(e) => setAvailability(e.target.value as Availability | "")}
+                      className={inputCls}
+                    >
+                      <option value="">Not specified</option>
+                      {Object.entries(AVAILABILITY_LABELS).map(([value, label]) => (
+                        <option key={value} value={value}>
+                          {label}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    <span className="label-mono">Currency</span>
+                    <input
+                      value={salaryCurrency}
+                      onChange={(e) => setSalaryCurrency(e.target.value)}
+                      className={inputCls}
+                      placeholder="ZMW"
+                    />
+                  </label>
+                  <label>
+                    <span className="label-mono">Min salary expectation</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={salaryMin}
+                      onChange={(e) => setSalaryMin(e.target.value)}
+                      className={inputCls}
+                    />
+                  </label>
+                  <label>
+                    <span className="label-mono">Max salary expectation</span>
+                    <input
+                      type="number"
+                      min="0"
+                      value={salaryMax}
+                      onChange={(e) => setSalaryMax(e.target.value)}
+                      className={inputCls}
+                    />
+                  </label>
+                  <label>
+                    <span className="label-mono">LinkedIn URL</span>
+                    <input
+                      value={linkedinUrl}
+                      onChange={(e) => setLinkedinUrl(e.target.value)}
+                      className={inputCls}
+                      placeholder="https://linkedin.com/in/…"
+                    />
+                  </label>
+                  <label>
+                    <span className="label-mono">Portfolio URL</span>
+                    <input
+                      value={portfolioUrl}
+                      onChange={(e) => setPortfolioUrl(e.target.value)}
+                      className={inputCls}
+                      placeholder="https://…"
+                    />
+                  </label>
+                </div>
+
+                <FormErrorSummary
+                  error={saveDetails.error}
+                  labels={{
+                    salaryExpectationMin: "Minimum salary",
+                    salaryExpectationMax: "Maximum salary",
+                    linkedinUrl: "LinkedIn profile",
+                    portfolioUrl: "Portfolio",
+                  }}
+                />
+                <button
+                  type="submit"
+                  disabled={saveDetails.isPending}
+                  className="accent-gradient w-fit rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
+                >
+                  {saveDetails.isPending ? "Saving…" : "Save profile"}
+                </button>
+              </fieldset>
             </form>
           </Panel>
 

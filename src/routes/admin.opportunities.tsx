@@ -7,6 +7,7 @@ import { Chip, PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
 import { VersionHistory } from "@/components/eoz/VersionHistory";
+import { useCan } from "@/lib/use-current-user";
 
 export const Route = createFileRoute("/admin/opportunities")({
   head: () => ({
@@ -55,9 +56,20 @@ const STATUS_TONE: Record<string, "muted" | "amber" | "accent" | "emerald" | "ro
   ARCHIVED: "rose",
 };
 
-const STATUS_FILTERS = ["", "DRAFT", "PENDING_REVIEW", "APPROVED", "SCHEDULED", "PUBLISHED", "CLOSED", "EXPIRED", "ARCHIVED"];
+const STATUS_FILTERS = [
+  "",
+  "DRAFT",
+  "PENDING_REVIEW",
+  "APPROVED",
+  "SCHEDULED",
+  "PUBLISHED",
+  "CLOSED",
+  "EXPIRED",
+  "ARCHIVED",
+];
 
 function OpportunityWorkspace() {
+  const can = useCan();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [status, setStatus] = useState("");
@@ -70,7 +82,11 @@ function OpportunityWorkspace() {
 
   const listQuery = useQuery({
     queryKey: ["admin", "opportunities", status],
-    queryFn: () => api.get<PageResponse<Row>>("/opportunities/admin/all", { status: status || undefined, size: 50 }),
+    queryFn: () =>
+      api.get<PageResponse<Row>>("/opportunities/admin/all", {
+        status: status || undefined,
+        size: 50,
+      }),
     retry: false,
   });
 
@@ -81,7 +97,8 @@ function OpportunityWorkspace() {
       invalidate();
       toast("Listing published.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not publish listing.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not publish listing.", "error"),
   });
   const close = useMutation({
     mutationFn: (id: string) => api.patch(`/opportunities/${id}/close`),
@@ -89,7 +106,8 @@ function OpportunityWorkspace() {
       invalidate();
       toast("Listing closed.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not close listing.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not close listing.", "error"),
   });
   const reopen = useMutation({
     mutationFn: (id: string) => api.patch(`/opportunities/${id}/reopen`),
@@ -97,7 +115,8 @@ function OpportunityWorkspace() {
       invalidate();
       toast("Listing reopened and sent back to review.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not reopen listing.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not reopen listing.", "error"),
   });
   const permanentDelete = useMutation({
     mutationFn: ({ id, confirm }: { id: string; confirm: string }) =>
@@ -106,7 +125,8 @@ function OpportunityWorkspace() {
       invalidate();
       toast("Listing permanently deleted.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not delete the listing.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not delete the listing.", "error"),
   });
   const archive = useMutation({
     mutationFn: (id: string) => api.patch(`/opportunities/${id}/archive`),
@@ -114,7 +134,8 @@ function OpportunityWorkspace() {
       invalidate();
       toast("Listing archived.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not archive listing.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not archive listing.", "error"),
   });
 
   const feature = useMutation({
@@ -125,7 +146,11 @@ function OpportunityWorkspace() {
       queryClient.invalidateQueries({ queryKey: ["opportunities"] });
       toast(featured ? "Featured on the home page." : "Removed from featured.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update featured status.", "error"),
+    onError: (error) =>
+      toast(
+        error instanceof ApiError ? error.message : "Could not update featured status.",
+        "error",
+      ),
   });
   const extend = useMutation({
     mutationFn: ({ id }: { id: string }) =>
@@ -139,11 +164,14 @@ function OpportunityWorkspace() {
       setExtendReason("");
       toast("Deadline extended. The reason was recorded in the audit log.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not extend the deadline.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not extend the deadline.", "error"),
   });
 
   const rows = (listQuery.data?.items ?? []).filter((r) =>
-    `${r.title} ${r.reference} ${r.organisationName} ${r.status}`.toLowerCase().includes(query.toLowerCase()),
+    `${r.title} ${r.reference} ${r.organisationName} ${r.status}`
+      .toLowerCase()
+      .includes(query.toLowerCase()),
   );
   const counts = {
     draft: rows.filter((r) => r.status === "DRAFT").length,
@@ -159,21 +187,25 @@ function OpportunityWorkspace() {
         title="The complete publication lifecycle."
         lead="Draft and maintain canonical opportunity records, verify employer-approved routes, schedule publication and close expired listings with an audit trail."
         aside={
-          <Panel>
-            <Link
-              to="/employers/post"
-              className="accent-gradient inline-flex rounded-md px-4 py-2 text-sm font-medium text-ink"
-            >
-              Create opportunity
-            </Link>
-          </Panel>
+          can("OPPORTUNITY_CREATE") ? (
+            <Panel>
+              <Link
+                to="/employers/post"
+                className="accent-gradient inline-flex rounded-md px-4 py-2 text-sm font-medium text-ink"
+              >
+                Create opportunity
+              </Link>
+            </Panel>
+          ) : undefined
         }
       />
       <DashNav items={ADMIN_NAV} />
 
       {isUnauthenticated(listQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with a content, manager or admin account to view the workspace.</p>
+          <p className="text-sm text-muted">
+            Sign in with a content, manager or admin account to view the workspace.
+          </p>
         </Panel>
       ) : null}
 
@@ -252,7 +284,7 @@ function OpportunityWorkspace() {
                     Open in moderation
                   </Link>
                 ) : null}
-                {r.status === "SCHEDULED" ? (
+                {r.status === "SCHEDULED" && can("OPPORTUNITY_PUBLISH") ? (
                   <button
                     onClick={() => publish.mutate(r.id)}
                     disabled={publish.isPending}
@@ -287,13 +319,16 @@ function OpportunityWorkspace() {
                     Reopen
                   </button>
                 ) : null}
-                {["PUBLISHED", "SCHEDULED", "APPROVED"].includes(r.status) ? (
+                {["PUBLISHED", "SCHEDULED", "APPROVED"].includes(r.status) &&
+                can("OPPORTUNITY_PUBLISH") ? (
                   <button
                     onClick={() => feature.mutate({ id: r.id, featured: !r.featured })}
                     disabled={feature.isPending}
                     aria-pressed={r.featured}
                     className={`rounded-md px-3 py-2 text-xs ring-1 disabled:opacity-60 ${
-                      r.featured ? "bg-amber/10 text-amber ring-amber/40" : "text-fg ring-line hover:bg-surface-2"
+                      r.featured
+                        ? "bg-amber/10 text-amber ring-amber/40"
+                        : "text-fg ring-line hover:bg-surface-2"
                     }`}
                   >
                     {r.featured ? "★ Unfeature" : "☆ Feature"}
@@ -321,7 +356,11 @@ function OpportunityWorkspace() {
                 {r.status !== "ARCHIVED" ? (
                   <button
                     onClick={() => {
-                      if (window.confirm(`Archive "${r.title}"? It will be pulled down from the public board.`)) {
+                      if (
+                        window.confirm(
+                          `Archive "${r.title}"? It will be pulled down from the public board.`,
+                        )
+                      ) {
                         archive.mutate(r.id);
                       }
                     }}
@@ -331,20 +370,22 @@ function OpportunityWorkspace() {
                     Archive
                   </button>
                 ) : null}
-                <button
-                  onClick={() => {
-                    const typed = window.prompt(
-                      `PERMANENT DELETE. This erases "${r.title}" and every application to it. It cannot be undone.
+                {can("SYSTEM_MANAGE") ? (
+                  <button
+                    onClick={() => {
+                      const typed = window.prompt(
+                        `PERMANENT DELETE. This erases "${r.title}" and every application to it. It cannot be undone.
 
 Type the reference (${r.reference}) to confirm:`,
-                    );
-                    if (typed) permanentDelete.mutate({ id: r.id, confirm: typed });
-                  }}
-                  disabled={permanentDelete.isPending}
-                  className="rounded-md px-3 py-2 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
-                >
-                  Delete
-                </button>
+                      );
+                      if (typed) permanentDelete.mutate({ id: r.id, confirm: typed });
+                    }}
+                    disabled={permanentDelete.isPending}
+                    className="rounded-md px-3 py-2 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
+                  >
+                    Delete
+                  </button>
+                ) : null}
               </div>
             </div>
             {historyId === r.id ? <VersionHistory opportunityId={r.id} /> : null}
@@ -382,7 +423,11 @@ Type the reference (${r.reference}) to confirm:`,
                   disabled={extend.isPending || extendReason.trim().length < 5}
                   className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
                 >
-                  {extend.isPending ? "Saving…" : ["CLOSED", "EXPIRED"].includes(r.status) ? "Extend & re-publish" : "Extend"}
+                  {extend.isPending
+                    ? "Saving…"
+                    : ["CLOSED", "EXPIRED"].includes(r.status)
+                      ? "Extend & re-publish"
+                      : "Extend"}
                 </button>
               </form>
             ) : null}
@@ -390,7 +435,10 @@ Type the reference (${r.reference}) to confirm:`,
               <ListingEditor
                 opportunityId={r.id}
                 isStaff
-                invalidateKeys={[["admin", "opportunities"], ["admin", "moderation-queue"]]}
+                invalidateKeys={[
+                  ["admin", "opportunities"],
+                  ["admin", "moderation-queue"],
+                ]}
                 onClose={() => setEditingId(null)}
               />
             ) : null}

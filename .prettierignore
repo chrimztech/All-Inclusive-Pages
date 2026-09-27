@@ -6,3 +6,8 @@ pnpm-lock.yaml
 package-lock.json
 bun.lock
 routeTree.gen.ts
+.kilo
+backend
+test-results
+playwright-report
+coverage

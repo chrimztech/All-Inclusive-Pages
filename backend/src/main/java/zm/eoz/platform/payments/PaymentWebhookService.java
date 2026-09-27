@@ -32,21 +32,32 @@ public class PaymentWebhookService {
     private final ServiceCatalogService serviceCatalogService;
     private final ObjectMapper objectMapper;
     private final String webhookSecret;
+    private final zm.eoz.platform.security.SecurityAlertService securityAlertService;
+
+    /** Rejected deliveries per provider in the current window, and when administrators were last alerted. */
+    private final java.util.Map<String, java.util.Deque<java.time.Instant>> failures = new java.util.concurrent.ConcurrentHashMap<>();
+    private final java.util.Map<String, java.time.Instant> lastAlert = new java.util.concurrent.ConcurrentHashMap<>();
+    static final int ALERT_THRESHOLD = 5;
+    private static final java.time.Duration WINDOW = java.time.Duration.ofMinutes(10);
+    private static final java.time.Duration ALERT_COOLDOWN = java.time.Duration.ofMinutes(30);
 
     public PaymentWebhookService(
             PaymentWebhookEventRepository eventRepository,
             ServiceCatalogService serviceCatalogService,
             ObjectMapper objectMapper,
-            @Value("${eoz.payments.webhook-secret}") String webhookSecret) {
+            @Value("${eoz.payments.webhook-secret}") String webhookSecret,
+            zm.eoz.platform.security.SecurityAlertService securityAlertService) {
         this.eventRepository = eventRepository;
         this.serviceCatalogService = serviceCatalogService;
         this.objectMapper = objectMapper;
         this.webhookSecret = webhookSecret;
+        this.securityAlertService = securityAlertService;
     }
 
     @Transactional
     public void handle(String provider, String signature, String rawBody) {
         if (!isValidSignature(signature, rawBody)) {
+            recordRejected(provider);
             throw new ForbiddenException("Invalid webhook signature.");
         }
 
@@ -82,6 +93,28 @@ public class PaymentWebhookService {
             throw new BadRequestException("Webhook payload missing required field: " + field);
         }
         return node.get(field).asText();
+    }
+
+    /**
+     * Repeated signature failures mean either a misconfigured secret (payments silently stop being applied) or
+     * someone probing the endpoint; either way administrators are told, at most once per cool-down.
+     */
+    private void recordRejected(String provider) {
+        java.time.Instant now = java.time.Instant.now();
+        java.util.Deque<java.time.Instant> recent =
+                failures.computeIfAbsent(provider, k -> new java.util.concurrent.ConcurrentLinkedDeque<>());
+        recent.addLast(now);
+        while (!recent.isEmpty() && recent.peekFirst().isBefore(now.minus(WINDOW))) recent.pollFirst();
+        log.warn("Rejected {} webhook with an invalid signature ({} in the last {} min)", provider, recent.size(), WINDOW.toMinutes());
+        java.time.Instant previous = lastAlert.get(provider);
+        if (recent.size() >= ALERT_THRESHOLD && (previous == null || previous.isBefore(now.minus(ALERT_COOLDOWN)))) {
+            lastAlert.put(provider, now);
+            securityAlertService.alertAdministratorsIndependently(
+                    "Payment webhooks are being rejected",
+                    recent.size() + " deliveries from '" + provider + "' in the last " + WINDOW.toMinutes()
+                            + " minutes had an invalid signature. Check PAYMENT_WEBHOOK_SECRET matches the gateway's"
+                            + " setting; if it does, someone may be sending forged payment notifications.");
+        }
     }
 
     private boolean isValidSignature(String signature, String rawBody) {

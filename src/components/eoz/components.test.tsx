@@ -8,13 +8,21 @@ const get = vi.fn();
 
 vi.mock("@/lib/api-client", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@/lib/api-client")>();
-  return { ...actual, api: { ...actual.api, post: (...a: unknown[]) => post(...a), get: (...a: unknown[]) => get(...a) } };
+  return {
+    ...actual,
+    api: {
+      ...actual.api,
+      post: (...a: unknown[]) => post(...a),
+      get: (...a: unknown[]) => get(...a),
+    },
+  };
 });
 
 import { ApiError } from "@/lib/api-client";
 import { MfaChallengeForm } from "./MfaChallengeForm";
 import { Monogram } from "./Monogram";
 import { VersionHistory } from "./VersionHistory";
+import { FormErrorSummary } from "./FormErrorSummary";
 
 beforeEach(() => {
   post.mockReset();
@@ -26,7 +34,9 @@ describe("MfaChallengeForm", () => {
     const user = { id: "u1", fullName: "Chipo Banda", roles: ["CANDIDATE"] };
     post.mockResolvedValue(user);
     const onSuccess = vi.fn();
-    renderWithProviders(<MfaChallengeForm challengeId="c-1" onSuccess={onSuccess} onCancel={() => {}} />);
+    renderWithProviders(
+      <MfaChallengeForm challengeId="c-1" onSuccess={onSuccess} onCancel={() => {}} />,
+    );
 
     const input = screen.getByLabelText(/authentication code/i);
     expect(input).toHaveFocus();
@@ -39,7 +49,9 @@ describe("MfaChallengeForm", () => {
 
   it("shows the server's message when the code is wrong", async () => {
     post.mockRejectedValue(new ApiError(400, "That code isn't right."));
-    renderWithProviders(<MfaChallengeForm challengeId="c-1" onSuccess={() => {}} onCancel={() => {}} />);
+    renderWithProviders(
+      <MfaChallengeForm challengeId="c-1" onSuccess={() => {}} onCancel={() => {}} />,
+    );
     await userEvent.type(screen.getByLabelText(/authentication code/i), "000000");
     await userEvent.click(screen.getByRole("button", { name: /verify and sign in/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent("That code isn't right.");
@@ -47,7 +59,9 @@ describe("MfaChallengeForm", () => {
 
   it("switches to recovery codes and back", async () => {
     const onCancel = vi.fn();
-    renderWithProviders(<MfaChallengeForm challengeId="c-1" onSuccess={() => {}} onCancel={onCancel} />);
+    renderWithProviders(
+      <MfaChallengeForm challengeId="c-1" onSuccess={() => {}} onCancel={onCancel} />,
+    );
     await userEvent.click(screen.getByRole("button", { name: /use a recovery code/i }));
     expect(screen.getByLabelText(/recovery code/i)).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /back to sign in/i }));
@@ -89,5 +103,35 @@ describe("VersionHistory", () => {
     expect(screen.getByText("Senior Data Analyst")).toHaveClass("line-through");
     expect(screen.getByText("First recorded version.")).toBeInTheDocument();
     expect(get).toHaveBeenCalledWith("/opportunities/manage/o-1/versions");
+  });
+});
+
+describe("FormErrorSummary", () => {
+  it("lists each field problem with friendly labels and takes focus", () => {
+    renderWithProviders(
+      <FormErrorSummary
+        error={
+          new ApiError(400, "Validation failed", {
+            title: "must not be blank",
+            foundedYear: "must be a year",
+          })
+        }
+        labels={{ title: "Opportunity title" }}
+      />,
+    );
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("There are 2 problems to fix");
+    expect(alert).toHaveTextContent("Opportunity title: must not be blank");
+    expect(alert).toHaveTextContent("Founded Year: must be a year");
+    expect(alert).toHaveFocus();
+  });
+
+  it("shows the server's message when there are no field errors, and nothing without an error", () => {
+    const { rerender } = renderWithProviders(
+      <FormErrorSummary error={new ApiError(409, "Someone else changed it")} />,
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent("Someone else changed it");
+    rerender(<FormErrorSummary error={null} />);
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 });

@@ -176,7 +176,9 @@ function Board() {
                 placeholder="e.g. 8000"
                 className="w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line"
               />
-              <span className="mt-1 block text-[11px] text-muted">Only listings that publish their pay.</span>
+              <span className="mt-1 block text-[11px] text-muted">
+                Only listings that publish their pay.
+              </span>
             </label>
             <div className="label-mono mb-2">Work arrangement</div>
             <select

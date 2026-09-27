@@ -67,17 +67,22 @@ function EmployerListings() {
       queryClient.invalidateQueries({ queryKey: ["employer", "opportunities"] });
       toast("Listing updated.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update the listing.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not update the listing.", "error"),
   });
   // Copies a listing into a new submission, then opens the editor on the copy so the new deadline can be set.
   const renewListing = useMutation({
-    mutationFn: (id: string) => api.post<{ id: string; reference: string }>(`/opportunities/manage/${id}/renew`),
+    mutationFn: (id: string) =>
+      api.post<{ id: string; reference: string }>(`/opportunities/manage/${id}/renew`),
     onSuccess: (copy) => {
       queryClient.invalidateQueries({ queryKey: ["employer", "opportunities"] });
       setEditingId(copy.id);
-      toast(`Renewed as ${copy.reference}. Set the new closing date, then save to send it for review.`);
+      toast(
+        `Renewed as ${copy.reference}. Set the new closing date, then save to send it for review.`,
+      );
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not renew the listing.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not renew the listing.", "error"),
   });
   const listingsQuery = useQuery({
     queryKey: ["employer", "opportunities", "mine"],
@@ -160,7 +165,9 @@ function EmployerListings() {
                       <span>{o.applyClicks} apply clicks</span>
                       <span>{o.shareCount} shares</span>
                       {o.viewsCount > 0 ? (
-                        <span>{Math.round((o.applyClicks / o.viewsCount) * 100)}% click-through</span>
+                        <span>
+                          {Math.round((o.applyClicks / o.viewsCount) * 100)}% click-through
+                        </span>
                       ) : null}
                       {o.featured ? <span className="text-amber">★ Featured by EOZ</span> : null}
                     </div>
@@ -175,22 +182,36 @@ function EmployerListings() {
                         View listing
                       </Link>
                     ) : null}
-                    {["PUBLISHED", "DRAFT", "PENDING_REVIEW", "APPROVED", "SCHEDULED"].includes(o.status) ? (
+                    {["PUBLISHED", "DRAFT", "PENDING_REVIEW", "APPROVED", "SCHEDULED"].includes(
+                      o.status,
+                    ) ? (
                       <button
                         type="button"
                         onClick={() => setEditingId(editingId === o.id ? null : o.id)}
                         className="rounded-md px-3 py-2 text-xs text-fg ring-1 ring-line transition-colors hover:bg-surface-2 hover:text-accent-soft"
                       >
-                        {editingId === o.id ? "Close editor" : o.status === "DRAFT" ? "Edit & resubmit" : "Edit"}
+                        {editingId === o.id
+                          ? "Close editor"
+                          : o.status === "DRAFT"
+                            ? "Edit & resubmit"
+                            : "Edit"}
                       </button>
                     ) : null}
-                    {["PUBLISHED", "DRAFT", "PENDING_REVIEW", "APPROVED", "SCHEDULED"].includes(o.status) ? (
+                    {["PUBLISHED", "DRAFT", "PENDING_REVIEW", "APPROVED", "SCHEDULED"].includes(
+                      o.status,
+                    ) ? (
                       <button
                         type="button"
                         disabled={closeListing.isPending}
                         onClick={() => {
                           const live = o.status === "PUBLISHED";
-                          if (window.confirm(live ? `Close "${o.title}"? It will leave the public board.` : `Withdraw "${o.title}"?`)) {
+                          if (
+                            window.confirm(
+                              live
+                                ? `Close "${o.title}"? It will leave the public board.`
+                                : `Withdraw "${o.title}"?`,
+                            )
+                          ) {
                             closeListing.mutate(o.id);
                           }
                         }}
@@ -214,7 +235,9 @@ function EmployerListings() {
                         onClick={() => renewListing.mutate(o.id)}
                         className="accent-gradient rounded-md px-3 py-2 text-xs font-medium text-ink disabled:opacity-60"
                       >
-                        {renewListing.isPending && renewListing.variables === o.id ? "Renewing…" : "Renew listing"}
+                        {renewListing.isPending && renewListing.variables === o.id
+                          ? "Renewing…"
+                          : "Renew listing"}
                       </button>
                     ) : null}
                   </div>

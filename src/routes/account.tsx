@@ -11,7 +11,9 @@ import { ConsentHistoryPanel, SessionsPanel } from "@/components/eoz/AccountSecu
 import { TwoStepPanel } from "@/components/eoz/TwoStepPanel";
 
 export const Route = createFileRoute("/account")({
-  head: () => ({ meta: [{ title: "Account & Security — EOZ" }, { name: "robots", content: "noindex,nofollow" }] }),
+  head: () => ({
+    meta: [{ title: "Account & Security — EOZ" }, { name: "robots", content: "noindex,nofollow" }],
+  }),
   component: AccountPage,
 });
 
@@ -43,7 +45,8 @@ function AccountPage() {
       queryClient.setQueryData(["me"], updated);
       toast("Profile updated.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update your profile.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not update your profile.", "error"),
   });
 
   const savePreferences = useMutation({
@@ -53,7 +56,8 @@ function AccountPage() {
       queryClient.setQueryData(["me"], updated);
       toast("Preferences saved.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not save preferences.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not save preferences.", "error"),
   });
 
   const changePassword = useMutation({
@@ -63,7 +67,8 @@ function AccountPage() {
       toast("Password changed. Please sign in with your new password.");
       navigate({ to: "/auth", search: { mode: "signin" } });
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not change password.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not change password.", "error"),
   });
 
   const mismatch = confirmPassword.length > 0 && newPassword !== confirmPassword;
@@ -95,8 +100,9 @@ function AccountPage() {
             <div>
               <div className="font-medium">Choose your own password to continue</div>
               <p className="mt-1 text-sm text-muted">
-                An administrator created your account with a one-time password. Enter it below as your current
-                password, then choose a new one. You can use the rest of the platform once you have done this.
+                An administrator created your account with a one-time password. Enter it below as
+                your current password, then choose a new one. You can use the rest of the platform
+                once you have done this.
               </p>
             </div>
           </div>
@@ -115,7 +121,9 @@ function AccountPage() {
             }}
           >
             <label>
-              <span className="label-mono">{forced ? "One-time password" : "Current password"}</span>
+              <span className="label-mono">
+                {forced ? "One-time password" : "Current password"}
+              </span>
               <PasswordInput
                 required
                 autoComplete="current-password"
@@ -147,10 +155,14 @@ function AccountPage() {
               />
             </label>
             {mismatch ? <p className="text-xs text-rose">The two passwords do not match.</p> : null}
-            <p className="text-xs text-muted">At least 8 characters, and different from your current password.</p>
+            <p className="text-xs text-muted">
+              At least 8 characters, and different from your current password.
+            </p>
             <button
               type="submit"
-              disabled={changePassword.isPending || mismatch || !currentPassword || newPassword.length < 8}
+              disabled={
+                changePassword.isPending || mismatch || !currentPassword || newPassword.length < 8
+              }
               className="press accent-gradient w-fit rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
             >
               {changePassword.isPending ? "Changing…" : "Change password"}
@@ -171,7 +183,12 @@ function AccountPage() {
               >
                 <label>
                   <span className="label-mono">Full name</span>
-                  <input required value={fullName} onChange={(e) => setFullName(e.target.value)} className={inputCls} />
+                  <input
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    className={inputCls}
+                  />
                 </label>
                 <label>
                   <span className="label-mono">Email</span>
@@ -179,7 +196,11 @@ function AccountPage() {
                 </label>
                 <label>
                   <span className="label-mono">Phone</span>
-                  <input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} />
+                  <input
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    className={inputCls}
+                  />
                 </label>
                 <button
                   type="submit"
@@ -211,7 +232,9 @@ function AccountPage() {
                   <span>
                     <strong>Opportunity alerts</strong>
                     <br />
-                    <span className="text-xs text-muted">Send relevant opportunity notifications.</span>
+                    <span className="text-xs text-muted">
+                      Send relevant opportunity notifications.
+                    </span>
                   </span>
                 </label>
                 <label className="flex items-start gap-3">

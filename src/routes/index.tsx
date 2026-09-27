@@ -44,6 +44,8 @@ import {
 } from "@/lib/api-client";
 import { useOrgSettings } from "@/lib/use-org-settings";
 import { useCountdown, formatCountdown, countdownTone } from "@/lib/use-countdown";
+import { isCandidate } from "@/lib/access";
+import { useCurrentUser } from "@/lib/use-current-user";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -113,6 +115,7 @@ function scrollToListings() {
 }
 
 function Home() {
+  const { user: portalUser } = useCurrentUser();
   const org = useOrgSettings();
   const [category, setCategory] = useState<string>("All");
   const [query, setQuery] = useState("");
@@ -567,10 +570,12 @@ function Home() {
                     </div>
                   ))}
                 </div>
-                <Link to="/candidate" className="btn-secondary mt-9 px-5 py-3 text-sm">
-                  Open candidate portal
-                  <ArrowRight aria-hidden className="size-4" />
-                </Link>
+                {!portalUser || isCandidate(portalUser) ? (
+                  <Link to="/candidate" className="btn-secondary mt-9 px-5 py-3 text-sm">
+                    Open candidate portal
+                    <ArrowRight aria-hidden className="size-4" />
+                  </Link>
+                ) : null}
               </div>
 
               <div className="lg:col-span-7">
@@ -966,7 +971,9 @@ function TrustedOrganisations() {
                   ) : (
                     <Monogram name={name} className="size-8 rounded-full text-[11px]" />
                   )}
-                  <span className="text-sm text-muted transition-colors group-hover:text-fg">{name}</span>
+                  <span className="text-sm text-muted transition-colors group-hover:text-fg">
+                    {name}
+                  </span>
                   <BadgeCheck aria-label="Verified" className="size-3.5 text-emerald" />
                 </Link>
               </li>
@@ -1034,7 +1041,10 @@ function FeaturedCard({ item }: { item: ApiOpportunitySummary }) {
         </span>
         <span className="inline-flex items-center gap-1 font-medium text-accent-soft">
           View details
-          <ArrowRight aria-hidden className="size-3.5 transition-transform group-hover:translate-x-1" />
+          <ArrowRight
+            aria-hidden
+            className="size-3.5 transition-transform group-hover:translate-x-1"
+          />
         </span>
       </div>
     </Link>
@@ -1053,7 +1063,10 @@ function Testimonials() {
     <section aria-labelledby="testimonials-heading" className="py-16">
       <Reveal className="mx-auto mb-10 max-w-2xl text-center">
         <div className="eyebrow mb-4">In their words</div>
-        <h2 id="testimonials-heading" className="font-display text-4xl leading-[1.05] tracking-tight lg:text-5xl">
+        <h2
+          id="testimonials-heading"
+          className="font-display text-4xl leading-[1.05] tracking-tight lg:text-5xl"
+        >
           People we have connected.
         </h2>
       </Reveal>
@@ -1064,12 +1077,16 @@ function Testimonials() {
               <span aria-hidden className="font-display text-5xl leading-none text-accent-soft/60">
                 “
               </span>
-              <blockquote className="mt-2 flex-1 text-[15px] leading-7 text-fg/90">{t.quote}</blockquote>
+              <blockquote className="mt-2 flex-1 text-[15px] leading-7 text-fg/90">
+                {t.quote}
+              </blockquote>
               <figcaption className="mt-6 flex items-center gap-3 border-t border-line pt-4">
                 <Monogram name={t.authorName} className="size-9 rounded-full text-xs" />
                 <span>
                   <span className="block text-sm font-medium">{t.authorName}</span>
-                  {t.authorRole ? <span className="block text-xs text-muted">{t.authorRole}</span> : null}
+                  {t.authorRole ? (
+                    <span className="block text-xs text-muted">{t.authorRole}</span>
+                  ) : null}
                 </span>
               </figcaption>
             </figure>

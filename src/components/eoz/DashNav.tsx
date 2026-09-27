@@ -1,16 +1,22 @@
 import { Link } from "@tanstack/react-router";
 import type { ComponentType } from "react";
+import { ADMIN_SECTIONS, allows, type Rule } from "@/lib/access";
+import { useCurrentUser } from "@/lib/use-current-user";
 
-type Item = { to: string; label: string };
+/** A section link. Items with a `rule` are shown only to people it allows (see src/lib/access.ts). */
+type Item = { to: string; label: string; rule?: Rule };
 
 export function DashNav({ items }: { items: readonly Item[] }) {
+  const { user } = useCurrentUser();
+  const visible = items.filter((item) => !item.rule || allows(item.rule, user));
+
   return (
     <nav
       aria-label="Section"
       className="-mx-5 mb-8 overflow-x-auto px-5 pt-2 [scrollbar-width:none] lg:mx-0 lg:px-0 [&::-webkit-scrollbar]:hidden"
     >
       <div className="inline-flex min-w-full gap-1 rounded-2xl bg-white/[0.025] p-1.5 ring-1 ring-line backdrop-blur-md lg:flex lg:flex-wrap">
-        {items.map((item) => (
+        {visible.map((item) => (
           <Link
             key={item.to}
             to={item.to}
@@ -48,34 +54,12 @@ export const EMPLOYER_NAV = [
   { to: "/employers/analytics", label: "Analytics" },
   { to: "/employers/recruitment", label: "Recruitment" },
   { to: "/employers/services", label: "Services" },
+  { to: "/employers/pricing", label: "Pricing" },
   { to: "/employers/finance", label: "Invoices & payments" },
   { to: "/employers/team", label: "Team access" },
 ] as const;
 
-export const ADMIN_NAV = [
-  { to: "/admin", label: "Overview" },
-  { to: "/admin/opportunities", label: "Opportunities" },
-  { to: "/admin/moderation", label: "Moderation" },
-  { to: "/admin/organisations", label: "Organisations" },
-  { to: "/admin/recruitment", label: "Recruitment" },
-  { to: "/admin/services", label: "Services" },
-  { to: "/admin/content", label: "Content" },
-  { to: "/admin/finance", label: "Finance" },
-  { to: "/admin/applications", label: "Applications" },
-  { to: "/admin/inbox", label: "Inbox" },
-  { to: "/admin/notifications", label: "Notifications" },
-  { to: "/admin/notification-templates", label: "Email templates" },
-  { to: "/admin/categories", label: "Categories" },
-  { to: "/admin/testimonials", label: "Testimonials" },
-  { to: "/admin/reports", label: "Reports" },
-  { to: "/admin/exports", label: "Exports" },
-  { to: "/admin/users", label: "Users & RBAC" },
-  { to: "/admin/permissions", label: "Permissions" },
-  { to: "/admin/settings", label: "Settings" },
-  { to: "/admin/audit", label: "Audit log" },
-  { to: "/admin/privacy", label: "Privacy requests" },
-  { to: "/admin/health", label: "System health" },
-] as const;
+export const ADMIN_NAV: readonly Item[] = ADMIN_SECTIONS;
 
 export function StatTile({
   label,

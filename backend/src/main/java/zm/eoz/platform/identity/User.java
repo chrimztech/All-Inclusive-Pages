@@ -68,6 +68,7 @@ public class User {
     private java.time.Instant lockedUntil;
 
     @com.fasterxml.jackson.annotation.JsonIgnore
+    @jakarta.persistence.Convert(converter = zm.eoz.platform.security.EncryptedStringConverter.class)
     @Column(name = "mfa_secret")
     private String mfaSecret;
 

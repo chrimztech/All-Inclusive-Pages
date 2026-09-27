@@ -29,6 +29,16 @@ public class SecurityAlertService {
         this.notificationService = notificationService;
     }
 
+    /**
+     * Like {@link #alertAdministrators} but committed on its own, for callers whose transaction is about to roll
+     * back (e.g. a rejected request) — the alert must survive the failure it reports.
+     */
+    @org.springframework.transaction.annotation.Transactional(
+            propagation = org.springframework.transaction.annotation.Propagation.REQUIRES_NEW)
+    public void alertAdministratorsIndependently(String title, String body) {
+        alertAdministrators(title, body);
+    }
+
     public void alertAdministrators(String title, String body) {
         log.warn("SECURITY ALERT: {} — {}", title, body);
         List<UUID> adminIds = jdbc.queryForList(

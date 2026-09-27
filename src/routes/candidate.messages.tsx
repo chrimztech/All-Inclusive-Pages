@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Send, ShieldCheck } from "lucide-react";
 import { CANDIDATE_NAV, DashNav } from "@/components/eoz/DashNav";
 import { PageIntro, Panel, SiteShell } from "@/components/eoz/SiteShell";
@@ -42,7 +42,7 @@ function CandidateMessages() {
     queryFn: () => api.get<Order[]>("/services/orders/mine"),
     retry: false,
   });
-  const orders = ordersQuery.data ?? [];
+  const orders = useMemo(() => ordersQuery.data ?? [], [ordersQuery.data]);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -62,7 +62,8 @@ function CandidateMessages() {
   });
 
   const sendMutation = useMutation({
-    mutationFn: () => api.post<Message>(`/services/orders/${selectedId}/messages`, { message: draft }),
+    mutationFn: () =>
+      api.post<Message>(`/services/orders/${selectedId}/messages`, { message: draft }),
     onSuccess: () => {
       setDraft("");
       queryClient.invalidateQueries({ queryKey: ["service-order-messages", selectedId] });
@@ -122,7 +123,10 @@ function CandidateMessages() {
                   <h2 className="font-display text-2xl">{selected.packageName}</h2>
                   <div className="font-mono text-[10px] text-muted">{selected.reference}</div>
                 </div>
-                <ShieldCheck aria-label="Private conversation" className="size-5 text-accent-soft" />
+                <ShieldCheck
+                  aria-label="Private conversation"
+                  className="size-5 text-accent-soft"
+                />
               </div>
               <div className="flex-1 space-y-4 overflow-y-auto py-5">
                 {messagesQuery.isLoading ? (

@@ -4,6 +4,8 @@ import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { DashNav, EMPLOYER_NAV, StatTile } from "@/components/eoz/DashNav";
 import { ORG } from "@/lib/eoz-data";
 import { api, type ApiCategory } from "@/lib/api-client";
+import { isEmployer } from "@/lib/access";
+import { useCurrentUser } from "@/lib/use-current-user";
 
 type PublicStats = {
   verifiedOrganisations: number;
@@ -24,7 +26,8 @@ export const Route = createFileRoute("/employers/")({
       { property: "og:title", content: "For Employers — Echo Opportunities Zambia" },
       {
         property: "og:description",
-        content: "Reach verified candidates across Zambia while keeping applications on your own channel.",
+        content:
+          "Reach verified candidates across Zambia while keeping applications on your own channel.",
       },
     ],
   }),
@@ -32,6 +35,7 @@ export const Route = createFileRoute("/employers/")({
 });
 
 function Employers() {
+  const { user } = useCurrentUser();
   const statsQuery = useQuery({
     queryKey: ["stats", "public"],
     queryFn: () => api.get<PublicStats>("/stats/public"),
@@ -70,11 +74,17 @@ function Employers() {
           </Panel>
         }
       />
-      <DashNav items={EMPLOYER_NAV} />
+      {isEmployer(user) ? <DashNav items={EMPLOYER_NAV} /> : null}
 
       <div className="grid gap-3 pb-8 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Published listings" value={String(statsQuery.data?.publishedListings ?? "—")} />
-        <StatTile label="Verified employers" value={String(statsQuery.data?.verifiedOrganisations ?? "—")} />
+        <StatTile
+          label="Published listings"
+          value={String(statsQuery.data?.publishedListings ?? "—")}
+        />
+        <StatTile
+          label="Verified employers"
+          value={String(statsQuery.data?.verifiedOrganisations ?? "—")}
+        />
         <StatTile label="Average review time" value={reviewTime} />
         <StatTile label="Categories" value={String(categoriesQuery.data?.length ?? "—")} />
       </div>

@@ -31,7 +31,8 @@ function Documents() {
       invalidate();
       toast("Document uploaded.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Upload failed.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Upload failed.", "error"),
   });
   const remove = useMutation({
     mutationFn: (id: string) => api.del(`/files/${id}`),
@@ -39,7 +40,8 @@ function Documents() {
       invalidate();
       toast("Document deleted.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not delete the document.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not delete the document.", "error"),
   });
 
   const documents = documentsQuery.data ?? [];
@@ -82,13 +84,20 @@ function Documents() {
           </div>
 
           {isUnauthenticated(documentsQuery.error) ? (
-            <p className="mt-4 text-sm text-muted">Sign in as a candidate to manage your documents.</p>
+            <p className="mt-4 text-sm text-muted">
+              Sign in as a candidate to manage your documents.
+            </p>
           ) : null}
 
           <div className="mt-5 divide-y divide-line">
-            {documents.length === 0 ? <p className="py-4 text-sm text-muted">No documents uploaded yet.</p> : null}
+            {documents.length === 0 ? (
+              <p className="py-4 text-sm text-muted">No documents uploaded yet.</p>
+            ) : null}
             {documents.map((doc) => (
-              <div key={doc.id} className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0">
+              <div
+                key={doc.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-4 first:pt-0"
+              >
                 <div>
                   <div className="text-sm">{doc.fileName}</div>
                   <div className="text-xs text-muted">

@@ -110,8 +110,10 @@ public class OrganisationController {
     @PatchMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<OrganisationResponse> update(
-            @PathVariable UUID id, @Valid @RequestBody OrganisationUpdateRequest request) {
-        return ApiResponse.of(organisationService.update(id, request, currentUser()));
+            @PathVariable UUID id,
+            @org.springframework.web.bind.annotation.RequestHeader(value = "If-Match", required = false) String ifMatch,
+            @Valid @RequestBody OrganisationUpdateRequest request) {
+        return ApiResponse.of(organisationService.update(id, request, currentUser(), ifMatch));
     }
 
     @PatchMapping("/{id}/logo")

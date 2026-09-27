@@ -5,7 +5,10 @@ export const Route = createFileRoute("/$")({
   head: () => ({
     meta: [
       { title: "Page not found — Echo Opportunities Zambia" },
-      { name: "description", content: "This page does not exist on the Echo Opportunities Zambia platform." },
+      {
+        name: "description",
+        content: "This page does not exist on the Echo Opportunities Zambia platform.",
+      },
       { name: "robots", content: "noindex" },
       { property: "og:title", content: "Page not found — Echo Opportunities Zambia" },
       { property: "og:description", content: "This page does not exist on the EOZ platform." },
@@ -26,10 +29,16 @@ function NotFoundPage() {
         <Link to="/" className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink">
           Back to discovery
         </Link>
-        <Link to="/opportunities" className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg">
+        <Link
+          to="/opportunities"
+          className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg"
+        >
           Browse opportunities
         </Link>
-        <Link to="/faq" className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg">
+        <Link
+          to="/faq"
+          className="rounded-md px-4 py-2 text-sm text-muted ring-1 ring-line hover:text-fg"
+        >
           Read the FAQ
         </Link>
       </Panel>

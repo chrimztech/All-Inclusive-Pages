@@ -1,5 +1,7 @@
 package zm.eoz.platform.notification;
 
+import jakarta.mail.MessagingException;
+import jakarta.mail.internet.MimeMessage;
 import java.sql.Timestamp;
 import java.time.Duration;
 import java.time.Instant;
@@ -9,8 +11,8 @@ import java.util.UUID;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import zm.eoz.platform.common.exception.BadRequestException;
 import zm.eoz.platform.common.exception.NotFoundException;
@@ -45,10 +47,17 @@ public class EmailDeliveryService {
     }
 
     public void enqueue(UUID notificationId, String type, String recipient, String subject, String body) {
+        enqueue(notificationId, type, recipient, subject, body, null);
+    }
+
+    /** @param listUnsubscribeUrl one-click unsubscribe endpoint for optional email, or null */
+    public void enqueue(
+            UUID notificationId, String type, String recipient, String subject, String body, String listUnsubscribeUrl) {
         jdbc.update(
-                "insert into notification_deliveries (notification_id, notification_type, recipient, subject, body)"
-                        + " values (?, ?, ?, ?, ?)",
-                notificationId, type, recipient, truncate(subject, 255), body);
+                "insert into notification_deliveries"
+                        + " (notification_id, notification_type, recipient, subject, body, list_unsubscribe_url)"
+                        + " values (?, ?, ?, ?, ?, ?)",
+                notificationId, type, recipient, truncate(subject, 255), body, listUnsubscribeUrl);
     }
 
     /** Sends every due email once. @return emails sent successfully */
@@ -59,20 +68,27 @@ public class EmailDeliveryService {
                         + " where id in (select id from notification_deliveries"
                         + "   where status in ('PENDING', 'RETRY', 'SENDING') and next_attempt_at <= now()"
                         + "   order by next_attempt_at limit 25 for update skip locked)"
-                        + " returning id, recipient, subject, body, attempts");
+                        + " returning id, recipient, subject, body, attempts, list_unsubscribe_url");
         int sent = 0;
         for (Map<String, Object> row : claimed) {
             UUID id = (UUID) row.get("id");
             int attempts = ((Number) row.get("attempts")).intValue();
             try {
-                SimpleMailMessage message = new SimpleMailMessage();
-                message.setTo((String) row.get("recipient"));
-                message.setSubject((String) row.get("subject"));
-                message.setText((String) row.get("body"));
+                MimeMessage message = mailSender.createMimeMessage();
+                MimeMessageHelper helper = new MimeMessageHelper(message, false, "UTF-8");
+                helper.setTo((String) row.get("recipient"));
+                helper.setSubject((String) row.get("subject"));
+                helper.setText((String) row.get("body"));
+                String unsubscribe = (String) row.get("list_unsubscribe_url");
+                if (unsubscribe != null) {
+                    // RFC 2369 + RFC 8058: mail apps show an "Unsubscribe" button that POSTs to this URL.
+                    message.setHeader("List-Unsubscribe", "<" + unsubscribe + ">");
+                    message.setHeader("List-Unsubscribe-Post", "List-Unsubscribe=One-Click");
+                }
                 mailSender.send(message);
                 jdbc.update("update notification_deliveries set status = 'SENT', sent_at = now(), last_error = null where id = ?", id);
                 sent++;
-            } catch (RuntimeException e) {
+            } catch (RuntimeException | MessagingException e) {
                 String error = truncate(e.getClass().getSimpleName() + ": " + e.getMessage(), 1000);
                 if (attempts >= MAX_ATTEMPTS) {
                     jdbc.update("update notification_deliveries set status = 'DEAD', last_error = ? where id = ?", error, id);

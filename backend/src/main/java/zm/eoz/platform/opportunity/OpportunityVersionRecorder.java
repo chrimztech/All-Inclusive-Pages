@@ -15,8 +15,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -29,11 +28,10 @@ import zm.eoz.platform.security.UserPrincipal;
  * views do not count, so page views never create versions.
  */
 @Component
-public class OpportunityVersionRecorder implements ApplicationContextAware {
+public class OpportunityVersionRecorder {
 
     public record Version(int versionNo, String status, Map<String, Object> snapshot, String changedByName, Instant createdAt) {}
 
-    private static ApplicationContext context;
 
     private final JdbcTemplate jdbc;
     private final ObjectMapper objectMapper;
@@ -43,19 +41,22 @@ public class OpportunityVersionRecorder implements ApplicationContextAware {
         this.objectMapper = objectMapper;
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext applicationContext) {
-        context = applicationContext;
-    }
-
-    /** JPA listener entry point; JPA instantiates listeners itself, so it reaches the Spring bean statically. */
+    /**
+     * JPA listener entry point. Spring Boot's Hibernate integration creates entity listeners through the
+     * application context that owns the EntityManagerFactory, so the recorder injected here always writes through
+     * that context's own DataSource and transaction.
+     */
     public static class Listener {
+        private final ObjectProvider<OpportunityVersionRecorder> recorder;
+
+        public Listener(ObjectProvider<OpportunityVersionRecorder> recorder) {
+            this.recorder = recorder;
+        }
+
         @PostPersist
         @PostUpdate
         void afterChange(Opportunity opportunity) {
-            if (context != null) {
-                context.getBean(OpportunityVersionRecorder.class).record(opportunity);
-            }
+            recorder.getObject().record(opportunity);
         }
     }
 

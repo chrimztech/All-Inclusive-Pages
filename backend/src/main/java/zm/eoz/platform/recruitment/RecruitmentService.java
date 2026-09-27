@@ -19,6 +19,7 @@ import zm.eoz.platform.recruitment.dto.PipelineCandidateRequest;
 import zm.eoz.platform.recruitment.dto.PipelineCandidateResponse;
 import zm.eoz.platform.recruitment.dto.FeedbackRequest;
 import zm.eoz.platform.recruitment.dto.FeedbackResponse;
+import zm.eoz.platform.recruitment.dto.ScorecardCriterionRequest;
 import zm.eoz.platform.recruitment.dto.AnswerResult;
 import zm.eoz.platform.recruitment.dto.AnswerSubmission;
 import zm.eoz.platform.recruitment.dto.BulkStageChangeResult;
@@ -45,6 +46,7 @@ public class RecruitmentService {
     private final OrganisationRepository organisationRepository;
     private final ReferenceNumberService referenceNumberService;
     private final AuditService auditService;
+    private final ScorecardService scorecardService;
 
     public RecruitmentService(
             RecruitmentProjectRepository projectRepository,
@@ -58,7 +60,8 @@ public class RecruitmentService {
             OpportunityRepository opportunityRepository,
             OrganisationRepository organisationRepository,
             ReferenceNumberService referenceNumberService,
-            AuditService auditService) {
+            AuditService auditService,
+            ScorecardService scorecardService) {
         this.projectRepository = projectRepository;
         this.candidateRepository = candidateRepository;
         this.noteRepository = noteRepository;
@@ -71,6 +74,7 @@ public class RecruitmentService {
         this.organisationRepository = organisationRepository;
         this.referenceNumberService = referenceNumberService;
         this.auditService = auditService;
+        this.scorecardService = scorecardService;
     }
 
     @Transactional
@@ -234,19 +238,42 @@ public class RecruitmentService {
     public FeedbackResponse addFeedback(UUID interviewId, FeedbackRequest request, User actor) {
         Interview interview =
                 interviewRepository.findById(interviewId).orElseThrow(() -> new NotFoundException("Interview not found: " + interviewId));
+        scorecardService.validate(interview.getCandidate().getProject().getId(), request);
         InterviewFeedback feedback = new InterviewFeedback();
         feedback.setInterview(interview);
         feedback.setAuthor(actor);
         feedback.setRating(request.rating());
         feedback.setComments(request.comments());
-        return FeedbackResponse.from(interviewFeedbackRepository.save(feedback));
+        feedback.setRecommendation(request.recommendation());
+        feedback = interviewFeedbackRepository.saveAndFlush(feedback);
+        scorecardService.saveScores(feedback.getId(), request.scores());
+        return FeedbackResponse.from(feedback, scorecardService.scoresFor(List.of(feedback.getId())).get(feedback.getId()));
     }
 
     @Transactional(readOnly = true)
     public List<FeedbackResponse> listFeedback(UUID interviewId) {
-        return interviewFeedbackRepository.findByInterviewIdOrderByCreatedAtDesc(interviewId).stream()
-                .map(FeedbackResponse::from)
-                .toList();
+        List<InterviewFeedback> feedback = interviewFeedbackRepository.findByInterviewIdOrderByCreatedAtDesc(interviewId);
+        var scores = scorecardService.scoresFor(feedback.stream().map(InterviewFeedback::getId).toList());
+        return feedback.stream().map(f -> FeedbackResponse.from(f, scores.get(f.getId()))).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ScorecardService.Criterion> listScorecard(UUID projectId) {
+        return scorecardService.list(requireProject(projectId).getId());
+    }
+
+    @Transactional
+    public ScorecardService.Criterion addScorecardCriterion(UUID projectId, ScorecardCriterionRequest request, User actor) {
+        return scorecardService.add(requireProject(projectId), request.name(), request.guidance(), request.weight(), actor);
+    }
+
+    @Transactional
+    public void removeScorecardCriterion(UUID projectId, UUID criterionId, User actor) {
+        scorecardService.remove(requireProject(projectId), criterionId, actor);
+    }
+
+    private RecruitmentProject requireProject(UUID projectId) {
+        return projectRepository.findById(projectId).orElseThrow(() -> new NotFoundException("Project not found: " + projectId));
     }
 
     @Transactional

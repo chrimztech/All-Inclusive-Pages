@@ -6,7 +6,10 @@ import { ADMIN_NAV, DashNav, StatTile } from "@/components/eoz/DashNav";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
 
-export const Route = createFileRoute("/admin/recruitment/")({ head: () => ({ meta: [{ title: "Recruitment Operations — EOZ Staff" }] }), component: Recruitment });
+export const Route = createFileRoute("/admin/recruitment/")({
+  head: () => ({ meta: [{ title: "Recruitment Operations — EOZ Staff" }] }),
+  component: Recruitment,
+});
 
 type ProjectRow = {
   id: string;
@@ -43,7 +46,8 @@ function Recruitment() {
       queryClient.invalidateQueries({ queryKey: ["admin", "recruitment-projects"] });
       toast("Project created.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not create the project.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not create the project.", "error"),
   });
 
   const changeStatus = useMutation({
@@ -53,7 +57,11 @@ function Recruitment() {
       queryClient.invalidateQueries({ queryKey: ["admin", "recruitment-projects"] });
       toast(variables.status === "CLOSED" ? "Project closed." : "Project reopened.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update project status.", "error"),
+    onError: (error) =>
+      toast(
+        error instanceof ApiError ? error.message : "Could not update project status.",
+        "error",
+      ),
   });
 
   return (
@@ -83,7 +91,9 @@ function Recruitment() {
       <DashNav items={ADMIN_NAV} />
       {isUnauthenticated(projectsQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with a recruitment, manager or admin account to view projects.</p>
+          <p className="text-sm text-muted">
+            Sign in with a recruitment, manager or admin account to view projects.
+          </p>
         </Panel>
       ) : null}
 
@@ -98,11 +108,20 @@ function Recruitment() {
           >
             <label>
               <span className="label-mono">Project title</span>
-              <input required value={title} onChange={(e) => setTitle(e.target.value)} className={field} />
+              <input
+                required
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className={field}
+              />
             </label>
             <label>
               <span className="label-mono">Confidentiality</span>
-              <select value={confidentiality} onChange={(e) => setConfidentiality(e.target.value)} className={field}>
+              <select
+                value={confidentiality}
+                onChange={(e) => setConfidentiality(e.target.value)}
+                className={field}
+              >
                 <option value="STANDARD">Standard</option>
                 <option value="CONFIDENTIAL">Confidential</option>
               </select>
@@ -155,14 +174,23 @@ function Recruitment() {
                   </td>
                   <td className="py-4 text-muted">{p.organisationName ?? "—"}</td>
                   <td className="py-4">
-                    <Chip tone={p.status === "OPEN" ? "emerald" : p.status === "CLOSED" ? "muted" : "amber"}>{p.status}</Chip>
+                    <Chip
+                      tone={
+                        p.status === "OPEN" ? "emerald" : p.status === "CLOSED" ? "muted" : "amber"
+                      }
+                    >
+                      {p.status}
+                    </Chip>
                   </td>
                   <td className="py-4">
                     <button
                       type="button"
                       disabled={changeStatus.isPending}
                       onClick={() =>
-                        changeStatus.mutate({ id: p.id, status: p.status === "CLOSED" ? "OPEN" : "CLOSED" })
+                        changeStatus.mutate({
+                          id: p.id,
+                          status: p.status === "CLOSED" ? "OPEN" : "CLOSED",
+                        })
                       }
                       className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
                     >

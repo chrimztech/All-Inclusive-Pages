@@ -2,11 +2,18 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
-import { api, ApiError, isUnauthenticated, BUSINESS_TYPE_LABELS, type PageResponse } from "@/lib/api-client";
+import {
+  api,
+  ApiError,
+  isUnauthenticated,
+  BUSINESS_TYPE_LABELS,
+  type PageResponse,
+} from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
 import { Fragment, useState } from "react";
 import { VerificationDocuments, VerificationReviews } from "@/components/eoz/VerificationDocuments";
 import type { BusinessType } from "@/lib/api-client";
+import { useCan } from "@/lib/use-current-user";
 
 export const Route = createFileRoute("/admin/organisations")({
   head: () => ({
@@ -14,7 +21,8 @@ export const Route = createFileRoute("/admin/organisations")({
       { title: "Organisations — EOZ Staff Console" },
       {
         name: "description",
-        content: "Verify employers, funders and institutions before their listings reach candidates.",
+        content:
+          "Verify employers, funders and institutions before their listings reach candidates.",
       },
       { property: "og:title", content: "Organisations — EOZ Staff Console" },
       {
@@ -46,6 +54,7 @@ const tone: Record<string, "emerald" | "amber" | "muted" | "rose"> = {
 };
 
 function Organisations() {
+  const can = useCan();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [docsFor, setDocsFor] = useState<string | null>(null);
@@ -56,11 +65,20 @@ function Organisations() {
   });
 
   const decide = useMutation({
-    mutationFn: ({ id, decision, notes }: { id: string; decision: string; notes?: string | undefined }) =>
-      api.patch(`/organisations/${id}/verification`, { decision, notes }),
+    mutationFn: ({
+      id,
+      decision,
+      notes,
+    }: {
+      id: string;
+      decision: string;
+      notes?: string | undefined;
+    }) => api.patch(`/organisations/${id}/verification`, { decision, notes }),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "organisations"] });
-      queryClient.invalidateQueries({ queryKey: ["organisations", variables.id, "verification-reviews"] });
+      queryClient.invalidateQueries({
+        queryKey: ["organisations", variables.id, "verification-reviews"],
+      });
       toast(
         variables.decision === "VERIFIED"
           ? "Organisation verified."
@@ -69,7 +87,11 @@ function Organisations() {
             : "Organisation rejected.",
       );
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update verification status.", "error"),
+    onError: (error) =>
+      toast(
+        error instanceof ApiError ? error.message : "Could not update verification status.",
+        "error",
+      ),
   });
 
   const permanentDelete = useMutation({
@@ -79,7 +101,11 @@ function Organisations() {
       queryClient.invalidateQueries({ queryKey: ["admin", "organisations"] });
       toast("Organisation permanently deleted.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not delete the organisation.", "error"),
+    onError: (error) =>
+      toast(
+        error instanceof ApiError ? error.message : "Could not delete the organisation.",
+        "error",
+      ),
   });
 
   const rows = orgsQuery.data?.items ?? [];
@@ -95,7 +121,9 @@ function Organisations() {
 
       {isUnauthenticated(orgsQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with a manager or admin account to review organisations.</p>
+          <p className="text-sm text-muted">
+            Sign in with a manager or admin account to review organisations.
+          </p>
         </Panel>
       ) : null}
 
@@ -115,100 +143,116 @@ function Organisations() {
           <tbody>
             {rows.map((o) => (
               <Fragment key={o.id}>
-              <tr className="border-t border-line">
-                <td className="py-3 pr-4">{o.tradingName ?? o.legalName}</td>
-                <td className="py-3 pr-4">
-                  <Chip tone={tone[o.verificationStatus] ?? "muted"}>{o.verificationStatus}</Chip>
-                </td>
-                <td className="py-3 pr-4 text-muted">
-                  {o.businessType ? BUSINESS_TYPE_LABELS[o.businessType] : "—"}
-                </td>
-                <td className="py-3 pr-4 text-muted">{o.registrationNumber ?? "—"}</td>
-                <td className="py-3 pr-4 text-muted">{o.sector ?? "—"}</td>
-                <td className="py-3 pr-4 text-muted">{o.website ?? "—"}</td>
-                <td className="py-3">
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      onClick={() => setDocsFor(docsFor === o.id ? null : o.id)}
-                      aria-expanded={docsFor === o.id}
-                      className="rounded-md px-3 py-1 text-xs text-fg ring-1 ring-line hover:bg-surface-2"
-                    >
-                      {docsFor === o.id ? "Hide documents" : "Documents"}
-                    </button>
-                    <button
-                      disabled={decide.isPending}
-                      onClick={() => {
-                        const notes = window.prompt("Verify this organisation. Reviewer notes (optional):", "");
-                        if (notes !== null) decide.mutate({ id: o.id, decision: "VERIFIED", notes: notes.trim() || undefined });
-                      }}
-                      className="rounded-md px-3 py-1 text-xs text-emerald ring-1 ring-emerald/30 disabled:opacity-60"
-                    >
-                      Verify
-                    </button>
-                    <button
-                      disabled={decide.isPending}
-                      onClick={() => {
-                        const notes = window.prompt("Reason for rejecting (the organisation will see this):", "");
-                        if (notes === null) return;
-                        if (!notes.trim()) {
-                          toast("A reason is required so the organisation knows what to fix.", "error");
-                          return;
-                        }
-                        decide.mutate({ id: o.id, decision: "REJECTED", notes: notes.trim() });
-                      }}
-                      className="rounded-md px-3 py-1 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
-                    >
-                      Reject
-                    </button>
-                    {o.verificationStatus !== "SUSPENDED" ? (
+                <tr className="border-t border-line">
+                  <td className="py-3 pr-4">{o.tradingName ?? o.legalName}</td>
+                  <td className="py-3 pr-4">
+                    <Chip tone={tone[o.verificationStatus] ?? "muted"}>{o.verificationStatus}</Chip>
+                  </td>
+                  <td className="py-3 pr-4 text-muted">
+                    {o.businessType ? BUSINESS_TYPE_LABELS[o.businessType] : "—"}
+                  </td>
+                  <td className="py-3 pr-4 text-muted">{o.registrationNumber ?? "—"}</td>
+                  <td className="py-3 pr-4 text-muted">{o.sector ?? "—"}</td>
+                  <td className="py-3 pr-4 text-muted">{o.website ?? "—"}</td>
+                  <td className="py-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        onClick={() => setDocsFor(docsFor === o.id ? null : o.id)}
+                        aria-expanded={docsFor === o.id}
+                        className="rounded-md px-3 py-1 text-xs text-fg ring-1 ring-line hover:bg-surface-2"
+                      >
+                        {docsFor === o.id ? "Hide documents" : "Documents"}
+                      </button>
                       <button
                         disabled={decide.isPending}
                         onClick={() => {
                           const notes = window.prompt(
-                            `Suspend ${o.tradingName ?? o.legalName}? Its listings will no longer be publicly visible.\n\nReason (required):`,
+                            "Verify this organisation. Reviewer notes (optional):",
+                            "",
+                          );
+                          if (notes !== null)
+                            decide.mutate({
+                              id: o.id,
+                              decision: "VERIFIED",
+                              notes: notes.trim() || undefined,
+                            });
+                        }}
+                        className="rounded-md px-3 py-1 text-xs text-emerald ring-1 ring-emerald/30 disabled:opacity-60"
+                      >
+                        Verify
+                      </button>
+                      <button
+                        disabled={decide.isPending}
+                        onClick={() => {
+                          const notes = window.prompt(
+                            "Reason for rejecting (the organisation will see this):",
                             "",
                           );
                           if (notes === null) return;
                           if (!notes.trim()) {
-                            toast("A reason is required to suspend an organisation.", "error");
+                            toast(
+                              "A reason is required so the organisation knows what to fix.",
+                              "error",
+                            );
                             return;
                           }
-                          decide.mutate({ id: o.id, decision: "SUSPENDED", notes: notes.trim() });
+                          decide.mutate({ id: o.id, decision: "REJECTED", notes: notes.trim() });
                         }}
-                        className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
+                        className="rounded-md px-3 py-1 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
                       >
-                        Suspend
+                        Reject
                       </button>
-                    ) : null}
-                    <button
-                      disabled={permanentDelete.isPending}
-                      onClick={() => {
-                        const typed = window.prompt(
-                          `PERMANENT DELETE. This erases ${o.legalName}, all of its listings and their applications. It cannot be undone.
+                      {o.verificationStatus !== "SUSPENDED" ? (
+                        <button
+                          disabled={decide.isPending}
+                          onClick={() => {
+                            const notes = window.prompt(
+                              `Suspend ${o.tradingName ?? o.legalName}? Its listings will no longer be publicly visible.\n\nReason (required):`,
+                              "",
+                            );
+                            if (notes === null) return;
+                            if (!notes.trim()) {
+                              toast("A reason is required to suspend an organisation.", "error");
+                              return;
+                            }
+                            decide.mutate({ id: o.id, decision: "SUSPENDED", notes: notes.trim() });
+                          }}
+                          className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
+                        >
+                          Suspend
+                        </button>
+                      ) : null}
+                      {can("SYSTEM_MANAGE") ? (
+                        <button
+                          disabled={permanentDelete.isPending}
+                          onClick={() => {
+                            const typed = window.prompt(
+                              `PERMANENT DELETE. This erases ${o.legalName}, all of its listings and their applications. It cannot be undone.
 
 Type the legal name (${o.legalName}) to confirm:`,
-                        );
-                        if (typed) permanentDelete.mutate({ id: o.id, confirm: typed });
-                      }}
-                      className="rounded-md px-3 py-1 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
-                    >
-                      Delete
-                    </button>
-                  </div>
-                </td>
-              </tr>
-              {docsFor === o.id ? (
-                <tr>
-                  <td colSpan={7} className="pb-4">
-                    <div className="rounded-xl bg-white/[0.02] p-4 ring-1 ring-line">
-                      <div className="grid gap-6 lg:grid-cols-2">
-                        <VerificationDocuments organisationId={o.id} canUpload={false} />
-                        <VerificationReviews organisationId={o.id} />
-                      </div>
+                            );
+                            if (typed) permanentDelete.mutate({ id: o.id, confirm: typed });
+                          }}
+                          className="rounded-md px-3 py-1 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
+                        >
+                          Delete
+                        </button>
+                      ) : null}
                     </div>
                   </td>
                 </tr>
-              ) : null}
+                {docsFor === o.id ? (
+                  <tr>
+                    <td colSpan={7} className="pb-4">
+                      <div className="rounded-xl bg-white/[0.02] p-4 ring-1 ring-line">
+                        <div className="grid gap-6 lg:grid-cols-2">
+                          <VerificationDocuments organisationId={o.id} canUpload={false} />
+                          <VerificationReviews organisationId={o.id} />
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                ) : null}
               </Fragment>
             ))}
           </tbody>

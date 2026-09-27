@@ -154,8 +154,10 @@ public class OpportunityController {
     @PatchMapping("/manage/{id}")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<OpportunityDetailResponse> update(
-            @PathVariable UUID id, @RequestBody zm.eoz.platform.opportunity.dto.OpportunityUpdateRequest request) {
-        return ApiResponse.of(opportunityService.update(id, request, currentUser()));
+            @PathVariable UUID id,
+            @org.springframework.web.bind.annotation.RequestHeader(value = "If-Match", required = false) String ifMatch,
+            @RequestBody zm.eoz.platform.opportunity.dto.OpportunityUpdateRequest request) {
+        return ApiResponse.of(opportunityService.update(id, request, currentUser(), ifMatch));
     }
 
     @PatchMapping("/mine/{id}/close")

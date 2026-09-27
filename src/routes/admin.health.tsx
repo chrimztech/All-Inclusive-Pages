@@ -25,7 +25,11 @@ export const Route = createFileRoute("/admin/health")({
 
 type ServiceCheck = { name: string; up: boolean; detail: string };
 type ScheduledJobInfo = { name: string; interval: string };
-type HealthResponse = { services: ServiceCheck[]; scheduledJobs: ScheduledJobInfo[]; uptimeSeconds: number };
+type HealthResponse = {
+  services: ServiceCheck[];
+  scheduledJobs: ScheduledJobInfo[];
+  uptimeSeconds: number;
+};
 type BackupRow = {
   id: string;
   fileName: string;
@@ -114,7 +118,8 @@ function SystemHealth() {
         toast(result.errorMessage ?? "Backup failed.", "error");
       }
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not start backup.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not start backup.", "error"),
   });
 
   const restoreBackup = useMutation({
@@ -127,7 +132,8 @@ function SystemHealth() {
       setConfirmText("");
       toast(result.message, result.success ? "success" : "error");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not restore backup.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not restore backup.", "error"),
   });
 
   const services = healthQuery.data?.services ?? [];
@@ -145,8 +151,12 @@ function SystemHealth() {
             <div className="flex items-center gap-3">
               <Activity aria-hidden="true" className="size-5 text-accent-soft" />
               <div>
-                <Chip tone={allUp ? "emerald" : "amber"}>{allUp ? "All systems operational" : "Degradation detected"}</Chip>
-                <p className="mt-2 text-xs text-muted">Core browsing and account services are available.</p>
+                <Chip tone={allUp ? "emerald" : "amber"}>
+                  {allUp ? "All systems operational" : "Degradation detected"}
+                </Chip>
+                <p className="mt-2 text-xs text-muted">
+                  Core browsing and account services are available.
+                </p>
               </div>
             </div>
           </Panel>
@@ -162,10 +172,17 @@ function SystemHealth() {
       ) : null}
 
       <div className="grid gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Uptime" value={healthQuery.data ? formatUptime(healthQuery.data.uptimeSeconds) : "—"} />
+        <StatTile
+          label="Uptime"
+          value={healthQuery.data ? formatUptime(healthQuery.data.uptimeSeconds) : "—"}
+        />
         <StatTile label="Services checked" value={String(services.length)} />
         <StatTile label="Services up" value={String(services.filter((s) => s.up).length)} />
-        <StatTile label="Services down" value={String(services.filter((s) => !s.up).length)} tone="text-rose" />
+        <StatTile
+          label="Services down"
+          value={String(services.filter((s) => !s.up).length)}
+          tone="text-rose"
+        />
       </div>
       <section className="grid gap-6 pb-14 lg:grid-cols-12">
         <Panel className="lg:col-span-8">
@@ -184,7 +201,9 @@ function SystemHealth() {
                   )}
                   {service.name}
                 </span>
-                <Chip tone={service.up ? "emerald" : "amber"}>{service.up ? "Operational" : "Degraded"}</Chip>
+                <Chip tone={service.up ? "emerald" : "amber"}>
+                  {service.up ? "Operational" : "Degraded"}
+                </Chip>
                 <span className="text-xs text-muted">{service.detail}</span>
               </div>
             ))}
@@ -218,9 +237,10 @@ function SystemHealth() {
               </button>
             </div>
             <p className="mt-3 text-xs leading-5 text-muted">
-              Real pg_dump backups, taken automatically every 24 hours and kept for the most recent 14 runs.
-              Restoring runs <code className="font-mono">pg_restore</code> against a stored backup — admin-only,
-              requires typing the exact filename to confirm, and a fresh safety backup is taken first.
+              Real pg_dump backups, taken automatically every 24 hours and kept for the most recent
+              14 runs. Restoring runs <code className="font-mono">pg_restore</code> against a stored
+              backup — admin-only, requires typing the exact filename to confirm, and a fresh safety
+              backup is taken first.
             </p>
             <div className="mt-4 max-h-72 space-y-2 overflow-y-auto">
               {backupsQuery.isLoading ? <p className="text-xs text-muted">Loading…</p> : null}
@@ -228,13 +248,22 @@ function SystemHealth() {
                 <div key={b.id} className="rounded-md bg-surface-2 p-2.5 text-xs">
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-mono">{b.fileName}</span>
-                    <Chip tone={b.status === "SUCCESS" ? "emerald" : b.status === "RUNNING" ? "amber" : "rose"}>
+                    <Chip
+                      tone={
+                        b.status === "SUCCESS"
+                          ? "emerald"
+                          : b.status === "RUNNING"
+                            ? "amber"
+                            : "rose"
+                      }
+                    >
                       {b.status}
                     </Chip>
                   </div>
                   <div className="mt-1 flex items-center justify-between text-muted">
                     <span>
-                      {new Date(b.startedAt).toLocaleString()} · {formatBytes(b.sizeBytes)} · {b.triggeredByName}
+                      {new Date(b.startedAt).toLocaleString()} · {formatBytes(b.sizeBytes)} ·{" "}
+                      {b.triggeredByName}
                     </span>
                     {b.status === "SUCCESS" ? (
                       <div className="flex items-center gap-3">
@@ -264,9 +293,10 @@ function SystemHealth() {
                   {restoringId === b.id ? (
                     <div className="mt-3 space-y-2 rounded-md ring-1 ring-rose/30 bg-rose/5 p-3">
                       <p className="leading-5 text-rose-300">
-                        This overwrites the current database with <span className="font-mono">{b.fileName}</span>.
-                        A fresh safety backup of the current state is taken automatically first. Type the filename
-                        exactly to confirm.
+                        This overwrites the current database with{" "}
+                        <span className="font-mono">{b.fileName}</span>. A fresh safety backup of
+                        the current state is taken automatically first. Type the filename exactly to
+                        confirm.
                       </p>
                       <input
                         value={confirmText}
@@ -278,7 +308,9 @@ function SystemHealth() {
                         <button
                           type="button"
                           disabled={restoreBackup.isPending || confirmText !== b.fileName}
-                          onClick={() => restoreBackup.mutate({ id: b.id, confirmFileName: confirmText })}
+                          onClick={() =>
+                            restoreBackup.mutate({ id: b.id, confirmFileName: confirmText })
+                          }
                           className="rounded-md bg-rose px-3 py-1.5 text-[11px] font-medium text-white disabled:opacity-50"
                         >
                           {restoreBackup.isPending ? "Restoring…" : "Confirm restore"}
@@ -344,10 +376,13 @@ function RestoreFlagsPanel({ placement }: { placement: "top" | "bottom" }) {
   const open = flags.filter((f) => f.resolution === null);
   const resolved = flags.filter((f) => f.resolution !== null);
   const busy = keep.isPending || deleteAgain.isPending;
-  if ((open.length > 0) !== (placement === "top")) return null;
+  if (open.length > 0 !== (placement === "top")) return null;
 
   return (
-    <section className={placement === "top" ? "pb-6" : "pb-14"} aria-labelledby="restore-flags-heading">
+    <section
+      className={placement === "top" ? "pb-6" : "pb-14"}
+      aria-labelledby="restore-flags-heading"
+    >
       <Panel className={open.length ? "ring-amber/40" : ""}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
@@ -357,10 +392,10 @@ function RestoreFlagsPanel({ placement }: { placement: "top" | "bottom" }) {
               {open.length ? <Chip tone="amber">{open.length} to review</Chip> : null}
             </div>
             <p className="mt-1 max-w-[70ch] text-xs leading-5 text-muted">
-              A restore brings back anything that was permanently deleted after the backup was taken. Those
-              items are flagged here: returned listings go back to review and returned accounts are
-              deactivated until you decide. Keep lifts that; Delete again repeats the original permanent
-              delete.
+              A restore brings back anything that was permanently deleted after the backup was
+              taken. Those items are flagged here: returned listings go back to review and returned
+              accounts are deactivated until you decide. Keep lifts that; Delete again repeats the
+              original permanent delete.
             </p>
           </div>
           {resolved.length ? (
@@ -430,7 +465,11 @@ function RestoreFlagsPanel({ placement }: { placement: "top" | "bottom" }) {
                     type="button"
                     disabled={busy}
                     onClick={() => {
-                      if (window.confirm(`Permanently delete "${f.label}" again? This cannot be undone.`)) {
+                      if (
+                        window.confirm(
+                          `Permanently delete "${f.label}" again? This cannot be undone.`,
+                        )
+                      ) {
                         deleteAgain.mutate(f.id);
                       }
                     }}

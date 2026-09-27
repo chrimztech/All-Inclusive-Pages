@@ -10,7 +10,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import zm.eoz.platform.common.exception.BadRequestException;
 import zm.eoz.platform.application.CandidateApplicationRepository;
 import zm.eoz.platform.common.ApiResponse;
 import zm.eoz.platform.opportunity.FraudReport;
@@ -31,18 +33,21 @@ public class AdminReportsController {
     private final ServiceOrderRepository serviceOrderRepository;
     private final InvoiceRepository invoiceRepository;
     private final FraudReportRepository fraudReportRepository;
+    private final MetricsService metricsService;
 
     public AdminReportsController(
             OpportunityRepository opportunityRepository,
             CandidateApplicationRepository applicationRepository,
             ServiceOrderRepository serviceOrderRepository,
             InvoiceRepository invoiceRepository,
-            FraudReportRepository fraudReportRepository) {
+            FraudReportRepository fraudReportRepository,
+            MetricsService metricsService) {
         this.opportunityRepository = opportunityRepository;
         this.applicationRepository = applicationRepository;
         this.serviceOrderRepository = serviceOrderRepository;
         this.invoiceRepository = invoiceRepository;
         this.fraudReportRepository = fraudReportRepository;
+        this.metricsService = metricsService;
     }
 
     @GetMapping("/overview")
@@ -59,6 +64,44 @@ public class AdminReportsController {
                 invoiceRepository.countByStatus(InvoiceStatus.UNPAID),
                 invoiceRepository.countByStatus(InvoiceStatus.PAID),
                 fraudReportRepository.countByStatus(FraudReport.Status.OPEN)));
+    }
+
+    /** Defined metrics for a window of whole Lusaka days; defaults to the last 30 days. */
+    @GetMapping("/metrics")
+    public ApiResponse<MetricsService.Report> metrics(
+            @RequestParam(required = false) java.time.LocalDate from, @RequestParam(required = false) java.time.LocalDate to) {
+        java.time.LocalDate[] range = range(from, to);
+        return ApiResponse.of(metricsService.compute(range[0], range[1]));
+    }
+
+    @GetMapping(value = "/metrics.csv", produces = "text/csv")
+    public ResponseEntity<byte[]> metricsCsv(
+            @RequestParam(required = false) java.time.LocalDate from, @RequestParam(required = false) java.time.LocalDate to) {
+        java.time.LocalDate[] range = range(from, to);
+        MetricsService.Report report = metricsService.compute(range[0], range[1]);
+        StringBuilder csv = new StringBuilder("Family,Metric,Value,Unit,Definition\n");
+        for (MetricsService.Family family : report.families()) {
+            for (MetricsService.Metric m : family.metrics()) {
+                csv.append(csvField(family.label())).append(',').append(csvField(m.label())).append(',')
+                        .append(m.value() == null ? "" : m.value()).append(',').append(m.unit()).append(',')
+                        .append(csvField(m.definition())).append('\n');
+            }
+        }
+        csv.append("\nWindow,").append(report.from()).append(" to ").append(report.to()).append(" (")
+                .append(report.timeZone()).append(")\n");
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("text/csv"))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        "attachment; filename=\"eoz-metrics-" + report.from() + "-to-" + report.to() + ".csv\"")
+                .body(csv.toString().getBytes(StandardCharsets.UTF_8));
+    }
+
+    private static java.time.LocalDate[] range(java.time.LocalDate from, java.time.LocalDate to) {
+        java.time.LocalDate end = to != null ? to : java.time.LocalDate.now(MetricsService.ZONE);
+        java.time.LocalDate start = from != null ? from : end.minusDays(29);
+        if (start.isAfter(end)) throw new BadRequestException("The start date must be on or before the end date.");
+        if (start.plusDays(366).isBefore(end)) throw new BadRequestException("Choose a period of at most one year.");
+        return new java.time.LocalDate[] {start, end};
     }
 
     @GetMapping(value = "/overview.csv", produces = "text/csv")

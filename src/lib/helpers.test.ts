@@ -21,8 +21,16 @@ describe("safeHttpUrl", () => {
 
 describe("filterSaved", () => {
   const items = [
-    { reference: "EOZ-OPP-2026-000027", organisationName: "Zambeef Products Plc", title: "Graduate Trainee Programme" },
-    { reference: "EOZ-OPP-2026-000030", organisationName: "Lusaka Youth Trust", title: "Community Health Volunteer" },
+    {
+      reference: "EOZ-OPP-2026-000027",
+      organisationName: "Zambeef Products Plc",
+      title: "Graduate Trainee Programme",
+    },
+    {
+      reference: "EOZ-OPP-2026-000030",
+      organisationName: "Lusaka Youth Trust",
+      title: "Community Health Volunteer",
+    },
   ];
 
   it("returns everything for an empty query", () => {
@@ -30,8 +38,12 @@ describe("filterSaved", () => {
   });
 
   it("matches a reference however it is typed", () => {
-    expect(filterSaved(items, "eoz opp 2026 000027").map((i) => i.title)).toEqual(["Graduate Trainee Programme"]);
-    expect(filterSaved(items, "OPP-2026-000030").map((i) => i.title)).toEqual(["Community Health Volunteer"]);
+    expect(filterSaved(items, "eoz opp 2026 000027").map((i) => i.title)).toEqual([
+      "Graduate Trainee Programme",
+    ]);
+    expect(filterSaved(items, "OPP-2026-000030").map((i) => i.title)).toEqual([
+      "Community Health Volunteer",
+    ]);
   });
 
   it("requires every word to match organisation, title or reference", () => {

@@ -20,11 +20,23 @@ export async function registerViaApi(
   expect(response.ok(), await response.text()).toBeTruthy();
 }
 
+/**
+ * Opens a page and waits until React has hydrated it (the root sets html[data-hydrated]). Clicks and typing on the
+ * server-rendered HTML before that are silently lost.
+ */
+export async function gotoReady(page: Page, url: string) {
+  await page.goto(url);
+  await page.locator("html[data-hydrated='true']").waitFor({ state: "attached", timeout: 30_000 });
+}
+
 /** Signs in through the real sign-in page and waits to leave it. */
 export async function signIn(page: Page, email: string, password = PASSWORD) {
-  await page.goto("/auth?mode=signin");
+  await gotoReady(page, "/auth?mode=signin");
   await page.getByLabel(/email/i).first().fill(email);
-  await page.getByLabel(/^password/i).first().fill(password);
+  await page
+    .getByLabel(/^password/i)
+    .first()
+    .fill(password);
   await page.getByRole("button", { name: /^sign in$/i }).click();
   await expect(page).not.toHaveURL(/\/auth/);
 }

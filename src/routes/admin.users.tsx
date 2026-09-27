@@ -5,6 +5,7 @@ import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
+import { useCurrentUser } from "@/lib/use-current-user";
 
 export const Route = createFileRoute("/admin/users")({
   head: () => ({
@@ -12,7 +13,8 @@ export const Route = createFileRoute("/admin/users")({
       { title: "Users & Roles — EOZ Staff Console" },
       {
         name: "description",
-        content: "Manage candidate, employer, staff, admin and auditor accounts and their role assignments.",
+        content:
+          "Manage candidate, employer, staff, admin and auditor accounts and their role assignments.",
       },
       { property: "og:title", content: "Users & Roles — EOZ Staff Console" },
       {
@@ -62,15 +64,27 @@ function Users() {
   const [newUser, setNewUser] = useState(EMPTY_NEW_USER);
   const [issued, setIssued] = useState<IssuedCredential | null>(null);
   const [copied, setCopied] = useState(false);
+  const { user: me } = useCurrentUser();
+  const meIsAdmin = me?.roles.includes("ADMIN") ?? false;
+  const canHardDelete = me?.permissions.includes("SYSTEM_MANAGE") ?? false;
+  // Roles this person may grant or remove (the server applies the same rule to every change).
+  const grantableQuery = useQuery({
+    queryKey: ["admin", "users", "grantable-roles"],
+    queryFn: () => api.get<string[]>("/admin/users/grantable-roles"),
+    retry: false,
+  });
+  const grantable = grantableQuery.data ?? [];
   const usersQuery = useQuery({
     queryKey: ["admin", "users", query],
-    queryFn: () => api.get<PageResponse<AdminUser>>("/admin/users", { q: query || undefined, size: 50 }),
+    queryFn: () =>
+      api.get<PageResponse<AdminUser>>("/admin/users", { q: query || undefined, size: 50 }),
     retry: false,
   });
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
   const toggleStatus = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) => api.patch(`/admin/users/${id}/status`, { status }),
+    mutationFn: ({ id, status }: { id: string; status: string }) =>
+      api.patch(`/admin/users/${id}/status`, { status }),
     onSuccess: (_data, variables) => {
       invalidate();
       toast(
@@ -81,7 +95,11 @@ function Users() {
             : "Account suspended.",
       );
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update account status.", "error"),
+    onError: (error) =>
+      toast(
+        error instanceof ApiError ? error.message : "Could not update account status.",
+        "error",
+      ),
   });
   const doResetPassword = useMutation({
     mutationFn: (user: AdminUser) =>
@@ -91,7 +109,8 @@ function Users() {
       setCopied(false);
       toast("One-time password generated. The user was signed out everywhere.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not reset password.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not reset password.", "error"),
   });
   const saveDetails = useMutation({
     mutationFn: ({ id, fullName, phone }: { id: string; fullName: string; phone: string }) =>
@@ -101,7 +120,8 @@ function Users() {
       setEditingDetailsFor(null);
       toast("User details updated.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update user.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not update user.", "error"),
   });
   const permanentDelete = useMutation({
     mutationFn: ({ id, confirm }: { id: string; confirm: string }) =>
@@ -110,28 +130,40 @@ function Users() {
       invalidate();
       toast("Account permanently deleted.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not delete the account.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not delete the account.", "error"),
   });
   const createUser = useMutation({
-    mutationFn: () => api.post<{ fullName: string; email: string; temporaryPassword: string }>("/admin/users", newUser),
+    mutationFn: () =>
+      api.post<{ fullName: string; email: string; temporaryPassword: string }>(
+        "/admin/users",
+        newUser,
+      ),
     onSuccess: (created) => {
       invalidate();
       setAddingUser(false);
       setNewUser(EMPTY_NEW_USER);
-      setIssued({ name: created.fullName, email: created.email, password: created.temporaryPassword });
+      setIssued({
+        name: created.fullName,
+        email: created.email,
+        password: created.temporaryPassword,
+      });
       setCopied(false);
       toast("User created.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not create user.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not create user.", "error"),
   });
   const saveRoles = useMutation({
-    mutationFn: ({ id, roles }: { id: string; roles: string[] }) => api.patch(`/admin/users/${id}/roles`, { roles }),
+    mutationFn: ({ id, roles }: { id: string; roles: string[] }) =>
+      api.patch(`/admin/users/${id}/roles`, { roles }),
     onSuccess: () => {
       invalidate();
       setEditingRolesFor(null);
       toast("Roles updated.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update roles.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not update roles.", "error"),
   });
 
   const users = usersQuery.data?.items ?? [];
@@ -154,7 +186,10 @@ function Users() {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div className="flex flex-wrap gap-2">
           {ROLES.map((r) => (
-            <span key={r} className="rounded-full px-3 py-1 font-mono text-[10px] text-muted ring-1 ring-line">
+            <span
+              key={r}
+              className="rounded-full px-3 py-1 font-mono text-[10px] text-muted ring-1 ring-line"
+            >
               {r}
             </span>
           ))}
@@ -180,8 +215,9 @@ function Users() {
         <Panel className="mb-6 ring-1 ring-amber/40">
           <div className="label-mono">One-time password — shown once</div>
           <p className="mt-2 text-sm text-muted">
-            Give this to <strong className="text-fg">{issued.name}</strong> ({issued.email}) securely. It is not stored in
-            readable form and cannot be shown again. They will be asked to choose their own password when they sign in.
+            Give this to <strong className="text-fg">{issued.name}</strong> ({issued.email})
+            securely. It is not stored in readable form and cannot be shown again. They will be
+            asked to choose their own password when they sign in.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <code className="rounded-md bg-surface-2 px-3 py-2 font-mono text-base tracking-wider ring-1 ring-line">
@@ -190,7 +226,10 @@ function Users() {
             <button
               type="button"
               onClick={() => {
-                navigator.clipboard?.writeText(issued.password).then(() => setCopied(true)).catch(() => {});
+                navigator.clipboard
+                  ?.writeText(issued.password)
+                  .then(() => setCopied(true))
+                  .catch(() => {});
               }}
               className="rounded-md px-3 py-2 text-xs text-muted ring-1 ring-line hover:text-fg"
             >
@@ -250,7 +289,7 @@ function Users() {
                 onChange={(e) => setNewUser((v) => ({ ...v, role: e.target.value }))}
                 className="rounded-md bg-surface-2 px-3 py-2 text-sm text-fg outline-none ring-1 ring-line"
               >
-                {ROLES.map((r) => (
+                {ROLES.filter((r) => grantable.includes(r)).map((r) => (
                   <option key={r} value={r}>
                     {r}
                   </option>
@@ -258,7 +297,8 @@ function Users() {
               </select>
             </label>
             <p className="text-xs text-muted sm:col-span-2">
-              A one-time password is generated for the new account. The user must replace it the first time they sign in.
+              A one-time password is generated for the new account. The user must replace it the
+              first time they sign in.
             </p>
             <div className="sm:col-span-2">
               <button
@@ -294,13 +334,24 @@ function Users() {
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-wrap gap-2">
                         {ROLES.map((r) => (
-                          <label key={r} className="flex items-center gap-1.5 text-[11px] text-muted">
+                          <label
+                            key={r}
+                            className="flex items-center gap-1.5 text-[11px] text-muted"
+                          >
                             <input
                               type="checkbox"
+                              disabled={!grantable.includes(r)}
+                              title={
+                                grantable.includes(r)
+                                  ? undefined
+                                  : "Outside your authority: only someone holding all of this role's permissions can change it"
+                              }
                               checked={draftRoles.includes(r)}
                               onChange={(e) =>
                                 setDraftRoles((prev) =>
-                                  e.target.checked ? [...prev, r] : prev.filter((role) => role !== r),
+                                  e.target.checked
+                                    ? [...prev, r]
+                                    : prev.filter((role) => role !== r),
                                 )
                               }
                             />
@@ -338,125 +389,155 @@ function Users() {
                   <Chip tone={u.status === "ACTIVE" ? "emerald" : "rose"}>{u.status}</Chip>
                 </td>
                 <td className="py-3">
-                  <div className="flex flex-col items-start gap-2">
-                    {u.status !== "DEACTIVATED" ? (
+                  {u.id === me?.id ? (
+                    <p className="max-w-[16rem] text-xs text-muted">
+                      This is your account. Another administrator must change your roles or status;
+                      use Account settings for your own details and password.
+                    </p>
+                  ) : u.roles.includes("ADMIN") && !meIsAdmin ? (
+                    <p className="max-w-[16rem] text-xs text-muted">
+                      Administrator account. Only administrators can change it.
+                    </p>
+                  ) : (
+                    <div className="flex flex-col items-start gap-2">
+                      {u.status !== "DEACTIVATED" ? (
+                        <button
+                          disabled={toggleStatus.isPending}
+                          onClick={() =>
+                            toggleStatus.mutate({
+                              id: u.id,
+                              status: u.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE",
+                            })
+                          }
+                          className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
+                        >
+                          {u.status === "ACTIVE" ? "Suspend" : "Reactivate"}
+                        </button>
+                      ) : null}
+                      {u.status !== "DEACTIVATED" ? (
+                        <button
+                          disabled={toggleStatus.isPending}
+                          onClick={() => {
+                            if (
+                              window.confirm(
+                                `Deactivate ${u.fullName}'s account? They can no longer sign in, but the account can be restored.`,
+                              )
+                            ) {
+                              toggleStatus.mutate({ id: u.id, status: "DEACTIVATED" });
+                            }
+                          }}
+                          className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
+                        >
+                          Deactivate
+                        </button>
+                      ) : (
+                        <button
+                          disabled={toggleStatus.isPending}
+                          onClick={() => toggleStatus.mutate({ id: u.id, status: "ACTIVE" })}
+                          className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
+                        >
+                          Restore
+                        </button>
+                      )}
+                      {editingDetailsFor === u.id ? (
+                        <div className="flex flex-col gap-1.5">
+                          <input
+                            aria-label="Full name"
+                            value={draftName}
+                            onChange={(e) => setDraftName(e.target.value)}
+                            className="rounded-md bg-surface-2 px-2 py-1 text-xs outline-none ring-1 ring-line"
+                          />
+                          <input
+                            aria-label="Phone"
+                            placeholder="Phone"
+                            value={draftPhone}
+                            onChange={(e) => setDraftPhone(e.target.value)}
+                            className="rounded-md bg-surface-2 px-2 py-1 text-xs outline-none ring-1 ring-line"
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              disabled={saveDetails.isPending || !draftName.trim()}
+                              onClick={() =>
+                                saveDetails.mutate({
+                                  id: u.id,
+                                  fullName: draftName,
+                                  phone: draftPhone,
+                                })
+                              }
+                              className="accent-gradient rounded-md px-3 py-1 text-xs text-ink disabled:opacity-60"
+                            >
+                              Save
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditingDetailsFor(null)}
+                              className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingDetailsFor(u.id);
+                            setDraftName(u.fullName);
+                            setDraftPhone(u.phone ?? "");
+                          }}
+                          className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg"
+                        >
+                          Edit details
+                        </button>
+                      )}
                       <button
-                        disabled={toggleStatus.isPending}
-                        onClick={() =>
-                          toggleStatus.mutate({ id: u.id, status: u.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE" })
-                        }
-                        className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
-                      >
-                        {u.status === "ACTIVE" ? "Suspend" : "Reactivate"}
-                      </button>
-                    ) : null}
-                    {u.status !== "DEACTIVATED" ? (
-                      <button
-                        disabled={toggleStatus.isPending}
+                        type="button"
+                        disabled={doResetPassword.isPending}
                         onClick={() => {
-                          if (window.confirm(`Deactivate ${u.fullName}'s account? They can no longer sign in, but the account can be restored.`)) {
-                            toggleStatus.mutate({ id: u.id, status: "DEACTIVATED" });
+                          if (
+                            window.confirm(
+                              `Generate a new one-time password for ${u.fullName}? Their current password stops working and they are signed out everywhere.`,
+                            )
+                          ) {
+                            doResetPassword.mutate(u);
                           }
                         }}
-                        className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
-                      >
-                        Deactivate
-                      </button>
-                    ) : (
-                      <button
-                        disabled={toggleStatus.isPending}
-                        onClick={() => toggleStatus.mutate({ id: u.id, status: "ACTIVE" })}
-                        className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg disabled:opacity-60"
-                      >
-                        Restore
-                      </button>
-                    )}
-                    {editingDetailsFor === u.id ? (
-                      <div className="flex flex-col gap-1.5">
-                        <input
-                          aria-label="Full name"
-                          value={draftName}
-                          onChange={(e) => setDraftName(e.target.value)}
-                          className="rounded-md bg-surface-2 px-2 py-1 text-xs outline-none ring-1 ring-line"
-                        />
-                        <input
-                          aria-label="Phone"
-                          placeholder="Phone"
-                          value={draftPhone}
-                          onChange={(e) => setDraftPhone(e.target.value)}
-                          className="rounded-md bg-surface-2 px-2 py-1 text-xs outline-none ring-1 ring-line"
-                        />
-                        <div className="flex gap-2">
-                          <button
-                            type="button"
-                            disabled={saveDetails.isPending || !draftName.trim()}
-                            onClick={() => saveDetails.mutate({ id: u.id, fullName: draftName, phone: draftPhone })}
-                            className="accent-gradient rounded-md px-3 py-1 text-xs text-ink disabled:opacity-60"
-                          >
-                            Save
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => setEditingDetailsFor(null)}
-                            className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingDetailsFor(u.id);
-                          setDraftName(u.fullName);
-                          setDraftPhone(u.phone ?? "");
-                        }}
                         className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg"
                       >
-                        Edit details
+                        Reset password
                       </button>
-                    )}
-                    <button
-                      type="button"
-                      disabled={doResetPassword.isPending}
-                      onClick={() => {
-                        if (window.confirm(`Generate a new one-time password for ${u.fullName}? Their current password stops working and they are signed out everywhere.`)) {
-                          doResetPassword.mutate(u);
-                        }
-                      }}
-                      className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg"
-                    >
-                      Reset password
-                    </button>
-                    <button
-                      type="button"
-                      disabled={permanentDelete.isPending}
-                      onClick={() => {
-                        const typed = window.prompt(
-                          `PERMANENT DELETE. This erases ${u.fullName} and their applications, orders, files and profile. It cannot be undone.
+                      {canHardDelete ? (
+                        <button
+                          type="button"
+                          disabled={permanentDelete.isPending}
+                          onClick={() => {
+                            const typed = window.prompt(
+                              `PERMANENT DELETE. This erases ${u.fullName} and their applications, orders, files and profile. It cannot be undone.
 
 Type their email (${u.email}) to confirm:`,
-                        );
-                        if (typed) permanentDelete.mutate({ id: u.id, confirm: typed });
-                      }}
-                      className="rounded-md px-3 py-1 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
-                    >
-                      Delete
-                    </button>
-                    {editingRolesFor !== u.id ? (
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingRolesFor(u.id);
-                          setDraftRoles(u.roles);
-                        }}
-                        className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg"
-                      >
-                        Edit roles
-                      </button>
-                    ) : null}
-                  </div>
+                            );
+                            if (typed) permanentDelete.mutate({ id: u.id, confirm: typed });
+                          }}
+                          className="rounded-md px-3 py-1 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
+                        >
+                          Delete
+                        </button>
+                      ) : null}
+                      {editingRolesFor !== u.id ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingRolesFor(u.id);
+                            setDraftRoles(u.roles);
+                          }}
+                          className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg"
+                        >
+                          Edit roles
+                        </button>
+                      ) : null}
+                    </div>
+                  )}
                 </td>
               </tr>
             ))}

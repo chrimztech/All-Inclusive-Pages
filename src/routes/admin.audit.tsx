@@ -11,7 +11,8 @@ export const Route = createFileRoute("/admin/audit")({
       { title: "Audit Log — EOZ Staff Console" },
       {
         name: "description",
-        content: "An append-only record of moderation decisions, role changes and automated platform actions.",
+        content:
+          "An append-only record of moderation decisions, role changes and automated platform actions.",
       },
       { property: "og:title", content: "Audit Log — EOZ Staff Console" },
       {
@@ -61,7 +62,9 @@ function Audit() {
 
       {isUnauthenticated(auditQuery.error) ? (
         <Panel className="mb-4">
-          <p className="text-sm text-muted">Sign in with an admin or auditor account to view the audit log.</p>
+          <p className="text-sm text-muted">
+            Sign in with an admin or auditor account to view the audit log.
+          </p>
         </Panel>
       ) : null}
 
@@ -69,7 +72,10 @@ function Audit() {
         {events.length === 0 ? <p className="text-sm text-muted">No audit events yet.</p> : null}
         <ul className="space-y-4 text-sm">
           {events.map((e) => (
-            <li key={e.id} className="grid gap-1 border-t border-line pt-4 first:border-0 first:pt-0 sm:grid-cols-12">
+            <li
+              key={e.id}
+              className="grid gap-1 border-t border-line pt-4 first:border-0 first:pt-0 sm:grid-cols-12"
+            >
               <div className="font-mono text-xs text-accent-soft sm:col-span-3">
                 {new Date(e.occurredAt).toLocaleString()}
               </div>

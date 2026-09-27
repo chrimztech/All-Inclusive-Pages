@@ -8,7 +8,9 @@ import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-c
 import { useToast } from "@/lib/toast";
 
 export const Route = createFileRoute("/admin/inbox")({
-  head: () => ({ meta: [{ title: "Inbox — EOZ Staff Console" }, { name: "robots", content: "noindex,nofollow" }] }),
+  head: () => ({
+    meta: [{ title: "Inbox — EOZ Staff Console" }, { name: "robots", content: "noindex,nofollow" }],
+  }),
   component: Inbox,
 });
 
@@ -36,7 +38,11 @@ function Inbox() {
 
   const listQuery = useQuery({
     queryKey: ["admin", "inbox", status],
-    queryFn: () => api.get<PageResponse<ContactMessage>>("/admin/contact-messages", { status: status || undefined, size: 100 }),
+    queryFn: () =>
+      api.get<PageResponse<ContactMessage>>("/admin/contact-messages", {
+        status: status || undefined,
+        size: 100,
+      }),
     retry: false,
   });
   const allQuery = useQuery({
@@ -51,7 +57,8 @@ function Inbox() {
       queryClient.invalidateQueries({ queryKey: ["admin", "inbox"] });
       toast("Marked as resolved.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update the message.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not update the message.", "error"),
   });
 
   const remove = useMutation({
@@ -60,7 +67,8 @@ function Inbox() {
       queryClient.invalidateQueries({ queryKey: ["admin", "inbox"] });
       toast("Message deleted.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not delete the message.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not delete the message.", "error"),
   });
 
   const messages = listQuery.data?.items ?? [];
@@ -77,13 +85,22 @@ function Inbox() {
 
       {isUnauthenticated(listQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with a staff account that can manage the inbox.</p>
+          <p className="text-sm text-muted">
+            Sign in with a staff account that can manage the inbox.
+          </p>
         </Panel>
       ) : null}
 
       <div className="grid gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-4">
-        <StatTile label="Awaiting reply" value={String(all.filter((m) => m.status === "NEW").length)} tone="text-amber" />
-        <StatTile label="Resolved" value={String(all.filter((m) => m.status === "RESOLVED").length)} />
+        <StatTile
+          label="Awaiting reply"
+          value={String(all.filter((m) => m.status === "NEW").length)}
+          tone="text-amber"
+        />
+        <StatTile
+          label="Resolved"
+          value={String(all.filter((m) => m.status === "RESOLVED").length)}
+        />
       </div>
 
       <div className="mb-4 flex flex-wrap gap-2">
@@ -115,7 +132,9 @@ function Inbox() {
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <Chip tone={m.status === "NEW" ? "amber" : "emerald"}>{m.status}</Chip>
                   <Chip>{m.reason.replace(/_/g, " ")}</Chip>
-                  <span className="text-xs text-muted">{new Date(m.createdAt).toLocaleString()}</span>
+                  <span className="text-xs text-muted">
+                    {new Date(m.createdAt).toLocaleString()}
+                  </span>
                 </div>
                 <div className="font-medium">{m.name}</div>
                 <p className="mt-2 whitespace-pre-wrap text-sm text-muted">{m.message}</p>
@@ -128,7 +147,10 @@ function Inbox() {
                     {m.email}
                   </a>
                   {m.phone ? (
-                    <a href={`tel:${m.phone}`} className="inline-flex items-center gap-1.5 text-accent-soft hover:text-fg">
+                    <a
+                      href={`tel:${m.phone}`}
+                      className="inline-flex items-center gap-1.5 text-accent-soft hover:text-fg"
+                    >
                       <Phone aria-hidden="true" className="size-3.5" />
                       {m.phone}
                     </a>
@@ -148,7 +170,8 @@ function Inbox() {
                 <button
                   disabled={remove.isPending}
                   onClick={() => {
-                    if (window.confirm(`Delete the message from ${m.name}? This cannot be undone.`)) remove.mutate(m.id);
+                    if (window.confirm(`Delete the message from ${m.name}? This cannot be undone.`))
+                      remove.mutate(m.id);
                   }}
                   className="rounded-md px-3 py-2 text-xs text-rose ring-1 ring-rose/30 disabled:opacity-60"
                 >

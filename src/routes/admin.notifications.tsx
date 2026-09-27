@@ -10,7 +10,14 @@ export const Route = createFileRoute("/admin/notifications")({
   component: Notifications,
 });
 
-type NotificationRow = { id: string; recipientName: string; type: string; title: string; read: boolean; createdAt: string };
+type NotificationRow = {
+  id: string;
+  recipientName: string;
+  type: string;
+  title: string;
+  read: boolean;
+  createdAt: string;
+};
 type Summary = { total: number; unread: number };
 
 function Notifications() {
@@ -37,20 +44,31 @@ function Notifications() {
 
       {isUnauthenticated(summaryQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with a manager or admin account to view the notification feed.</p>
+          <p className="text-sm text-muted">
+            Sign in with a manager or admin account to view the notification feed.
+          </p>
         </Panel>
       ) : null}
 
       <div className="grid gap-3 pb-6 sm:grid-cols-2 lg:grid-cols-4">
         <StatTile label="Total sent" value={String(summaryQuery.data?.total ?? "—")} />
-        <StatTile label="Unread" value={String(summaryQuery.data?.unread ?? "—")} tone="text-amber" />
+        <StatTile
+          label="Unread"
+          value={String(summaryQuery.data?.unread ?? "—")}
+          tone="text-amber"
+        />
       </div>
       <Panel className="mb-6">
         <div className="label-mono">Recent notifications</div>
-        {notifications.length === 0 ? <p className="mt-4 text-sm text-muted">Nothing sent yet.</p> : null}
+        {notifications.length === 0 ? (
+          <p className="mt-4 text-sm text-muted">Nothing sent yet.</p>
+        ) : null}
         <div className="mt-4 divide-y divide-line">
           {notifications.map((n) => (
-            <div key={n.id} className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0">
+            <div
+              key={n.id}
+              className="flex flex-wrap items-center justify-between gap-3 py-3 first:pt-0"
+            >
               <div>
                 <div className="text-sm">{n.title}</div>
                 <div className="text-xs text-muted">

@@ -1,10 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import { Globe, Mail, MapPin, UserCheck } from "lucide-react";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { DashNav, EMPLOYER_NAV } from "@/components/eoz/DashNav";
 import { ORG, REGIONS } from "@/lib/eoz-data";
+import { FormErrorSummary } from "@/components/eoz/FormErrorSummary";
 import {
   api,
   ApiError,
@@ -124,6 +126,27 @@ function PostOpportunity() {
     },
   });
 
+  // Warn before navigating away from a half-filled listing (not after it has been submitted).
+  const { prompt: unsavedPrompt } = useUnsavedChanges(
+    {
+      title,
+      categoryCode,
+      organisationName,
+      deadline,
+      applicationMode,
+      routeValue,
+      source,
+      description,
+      requirements,
+      employmentType,
+      workArrangement,
+      experienceLevel,
+      salaryMin,
+      salaryMax,
+    },
+    { disabled: submitMutation.isSuccess || submitMutation.isPending },
+  );
+
   const routeFieldLabel =
     applicationMode === "EXTERNAL_URL"
       ? "Careers page or application form link"
@@ -152,6 +175,7 @@ function PostOpportunity() {
         lead="Every submission is reviewed by EOZ staff. Listings without a valid official application method are rejected."
       />
       <DashNav items={EMPLOYER_NAV} />
+      {unsavedPrompt}
 
       <section className="grid gap-6 pb-14 lg:grid-cols-12">
         <div className="lg:col-span-8">
@@ -405,13 +429,20 @@ function PostOpportunity() {
                 </div>
               </details>
 
-              {submitMutation.isError ? (
-                <p className="text-xs text-rose-400 sm:col-span-2">
-                  {submitMutation.error instanceof ApiError
-                    ? submitMutation.error.message
-                    : "Something went wrong. Please try again."}
-                </p>
-              ) : null}
+              <div className="sm:col-span-2">
+                <FormErrorSummary
+                  error={submitMutation.error}
+                  labels={{
+                    title: "Opportunity title",
+                    categoryCode: "Category",
+                    organisationName: "Organisation",
+                    applicationUrl: "Application link",
+                    applicationEmail: "Application email",
+                    applicationAddress: "Application address",
+                    deadline: "Closing date",
+                  }}
+                />
+              </div>
               <div className="sm:col-span-2 flex flex-wrap gap-3">
                 <button
                   disabled={submitMutation.isPending}

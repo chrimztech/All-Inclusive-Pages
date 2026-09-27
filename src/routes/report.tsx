@@ -57,7 +57,8 @@ function ReportPage() {
         reporterName: reporterName || undefined,
         reporterEmail: reporterEmail || undefined,
       }),
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not submit this report.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not submit this report.", "error"),
   });
 
   return (
@@ -70,8 +71,8 @@ function ReportPage() {
           <Panel>
             <Chip tone="rose">Urgent</Chip>
             <p className="mt-3 text-sm text-muted">
-              If money has already changed hands, contact the Zambia Police in addition to reporting here. Reach us on{" "}
-              {org.phone}.
+              If money has already changed hands, contact the Zambia Police in addition to reporting
+              here. Reach us on {org.phone}.
             </p>
           </Panel>
         }
@@ -84,7 +85,9 @@ function ReportPage() {
               <p className="text-emerald-400">
                 Report submitted. A moderator will re-check this listing shortly.
               </p>
-              <p className="mt-2 text-muted">Reports can be anonymous — we never share your details with the organisation.</p>
+              <p className="mt-2 text-muted">
+                Reports can be anonymous — we never share your details with the organisation.
+              </p>
             </div>
           ) : (
             <form
@@ -106,7 +109,11 @@ function ReportPage() {
                 </label>
                 <label className="block text-sm">
                   <span className="label-mono">Reason</span>
-                  <select className={field} value={reason} onChange={(e) => setReason(e.target.value)}>
+                  <select
+                    className={field}
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                  >
                     {REASONS.map((r) => (
                       <option key={r}>{r}</option>
                     ))}
@@ -150,7 +157,9 @@ function ReportPage() {
               >
                 {mutation.isPending ? "Submitting…" : "Submit report"}
               </button>
-              <p className="text-xs text-muted">Reports can be anonymous. We never share your details with the organisation.</p>
+              <p className="text-xs text-muted">
+                Reports can be anonymous. We never share your details with the organisation.
+              </p>
             </form>
           )}
         </Panel>
@@ -159,14 +168,16 @@ function ReportPage() {
           <div className="eyebrow mb-3">What happens next</div>
           <ol className="space-y-4 text-sm text-muted">
             <li>
-              <span className="font-mono text-xs text-amber">01</span> — A moderator receives the report immediately.
+              <span className="font-mono text-xs text-amber">01</span> — A moderator receives the
+              report immediately.
             </li>
             <li>
-              <span className="font-mono text-xs text-amber">02</span> — The listing is hidden while the source is re-checked.
+              <span className="font-mono text-xs text-amber">02</span> — The listing is hidden while
+              the source is re-checked.
             </li>
             <li>
-              <span className="font-mono text-xs text-amber">03</span> — It is restored, corrected or removed, and the
-              organisation is flagged where needed.
+              <span className="font-mono text-xs text-amber">03</span> — It is restored, corrected
+              or removed, and the organisation is flagged where needed.
             </li>
           </ol>
         </Panel>

@@ -6,7 +6,10 @@ import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
 import { api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
 
-export const Route = createFileRoute("/admin/content")({ head: () => ({ meta: [{ title: "Content Calendar — EOZ Staff" }] }), component: Content });
+export const Route = createFileRoute("/admin/content")({
+  head: () => ({ meta: [{ title: "Content Calendar — EOZ Staff" }] }),
+  component: Content,
+});
 
 type ContentVariant = { id: string; channel: string; body: string; updatedAt: string };
 type ContentItem = {
@@ -54,7 +57,11 @@ function Content() {
 
   const opportunityOptionsQuery = useQuery({
     queryKey: ["admin", "content-opportunity-options", opportunitySearch],
-    queryFn: () => api.get<PageResponse<OpportunityOption>>("/opportunities/admin/all", { q: opportunitySearch, size: 10 }),
+    queryFn: () =>
+      api.get<PageResponse<OpportunityOption>>("/opportunities/admin/all", {
+        q: opportunitySearch,
+        size: 10,
+      }),
     enabled: opportunitySearch.length > 1,
   });
 
@@ -83,7 +90,9 @@ function Content() {
       setOpportunityId("");
       setOpportunityLabel("");
       invalidate();
-      toast(submitAfterSave ? "Content created and submitted for review." : "Content item created.");
+      toast(
+        submitAfterSave ? "Content created and submitted for review." : "Content item created.",
+      );
       setSubmitAfterSave(false);
     },
     onError: (error) => toast(errorMessage(error, "Could not create content item."), "error"),
@@ -115,7 +124,9 @@ function Content() {
   });
   const schedule = useMutation({
     mutationFn: ({ id, scheduledAt }: { id: string; scheduledAt: string }) =>
-      api.post(`/admin/content/${id}/schedule`, { scheduledAt: new Date(scheduledAt).toISOString() }),
+      api.post(`/admin/content/${id}/schedule`, {
+        scheduledAt: new Date(scheduledAt).toISOString(),
+      }),
     onSuccess: () => {
       invalidate();
       setSchedulingId(null);
@@ -155,7 +166,9 @@ function Content() {
 
       {isUnauthenticated(itemsQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with a content, manager or admin account to manage content.</p>
+          <p className="text-sm text-muted">
+            Sign in with a content, manager or admin account to manage content.
+          </p>
         </Panel>
       ) : null}
 
@@ -172,11 +185,20 @@ function Content() {
             >
               <label>
                 <span className="label-mono">Title</span>
-                <input required value={title} onChange={(e) => setTitle(e.target.value)} className={inputCls} />
+                <input
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className={inputCls}
+                />
               </label>
               <label>
                 <span className="label-mono">Series</span>
-                <select value={series} onChange={(e) => setSeries(e.target.value)} className={inputCls}>
+                <select
+                  value={series}
+                  onChange={(e) => setSeries(e.target.value)}
+                  className={inputCls}
+                >
                   <option value="GENERAL">General</option>
                   <option value="MORNING_DEVOTION">Morning devotion</option>
                   <option value="AFTERNOON_CAREER">Afternoon career/HR</option>
@@ -186,14 +208,23 @@ function Content() {
               <div>
                 <label>
                   <span className="label-mono">Body</span>
-                  <textarea required rows={6} value={body} onChange={(e) => setBody(e.target.value)} className={inputCls} />
+                  <textarea
+                    required
+                    rows={6}
+                    value={body}
+                    onChange={(e) => setBody(e.target.value)}
+                    className={inputCls}
+                  />
                 </label>
                 <span className="mt-1 block text-right text-[11px] text-muted">
-                  {body.trim().length} characters · {body.trim() ? body.trim().split(/\s+/).length : 0} words
+                  {body.trim().length} characters ·{" "}
+                  {body.trim() ? body.trim().split(/\s+/).length : 0} words
                 </span>
               </div>
               <label className="relative">
-                <span className="label-mono">Linked opportunity (optional, enables variant generation)</span>
+                <span className="label-mono">
+                  Linked opportunity (optional, enables variant generation)
+                </span>
                 {opportunityId ? (
                   <div className="mt-1 flex items-center justify-between rounded-md bg-surface-2 px-3 py-2 text-sm ring-1 ring-accent/30">
                     <span className="truncate">{opportunityLabel}</span>
@@ -236,7 +267,8 @@ function Content() {
                             {o.title} <span className="text-xs text-muted">({o.reference})</span>
                           </button>
                         ))}
-                        {opportunityOptionsQuery.isSuccess && (opportunityOptionsQuery.data?.items ?? []).length === 0 ? (
+                        {opportunityOptionsQuery.isSuccess &&
+                        (opportunityOptionsQuery.data?.items ?? []).length === 0 ? (
                           <div className="px-3 py-2 text-xs text-muted">No matches.</div>
                         ) : null}
                       </div>
@@ -245,7 +277,11 @@ function Content() {
                 )}
               </label>
               <label className="flex items-center gap-2 text-xs text-muted">
-                <input type="checkbox" checked={submitAfterSave} onChange={(e) => setSubmitAfterSave(e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={submitAfterSave}
+                  onChange={(e) => setSubmitAfterSave(e.target.checked)}
+                />
                 Submit for review straight after saving
               </label>
               <button
@@ -277,14 +313,18 @@ function Content() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {item.status === "DRAFT" ? (
-                    <button onClick={() => submit.mutate(item.id)} className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg">
+                    <button
+                      onClick={() => submit.mutate(item.id)}
+                      className="rounded-md px-3 py-1 text-xs text-muted ring-1 ring-line hover:text-fg"
+                    >
                       Submit
                     </button>
                   ) : null}
                   {item.status !== "PUBLISHED" ? (
                     <button
                       onClick={() => {
-                        if (window.confirm(`Delete "${item.title}"? This cannot be undone.`)) remove.mutate(item.id);
+                        if (window.confirm(`Delete "${item.title}"? This cannot be undone.`))
+                          remove.mutate(item.id);
                       }}
                       className="rounded-md px-3 py-1 text-xs text-rose ring-1 ring-rose/30"
                     >
@@ -292,7 +332,10 @@ function Content() {
                     </button>
                   ) : null}
                   {item.status === "PENDING_REVIEW" ? (
-                    <button onClick={() => approve.mutate(item.id)} className="rounded-md px-3 py-1 text-xs text-emerald ring-1 ring-emerald/30">
+                    <button
+                      onClick={() => approve.mutate(item.id)}
+                      className="rounded-md px-3 py-1 text-xs text-emerald ring-1 ring-emerald/30"
+                    >
                       Approve
                     </button>
                   ) : null}
@@ -307,15 +350,20 @@ function Content() {
                       Schedule
                     </button>
                   ) : null}
-                  {(item.status === "APPROVED" || item.status === "SCHEDULED") ? (
-                    <button onClick={() => publish.mutate(item.id)} className="accent-gradient rounded-md px-3 py-1 text-xs font-medium text-ink">
+                  {item.status === "APPROVED" || item.status === "SCHEDULED" ? (
+                    <button
+                      onClick={() => publish.mutate(item.id)}
+                      className="accent-gradient rounded-md px-3 py-1 text-xs font-medium text-ink"
+                    >
                       Publish
                     </button>
                   ) : null}
                 </div>
               </div>
               {item.status === "SCHEDULED" && item.scheduledAt ? (
-                <p className="mt-2 text-xs text-muted">Scheduled for {new Date(item.scheduledAt).toLocaleString()}</p>
+                <p className="mt-2 text-xs text-muted">
+                  Scheduled for {new Date(item.scheduledAt).toLocaleString()}
+                </p>
               ) : null}
               {schedulingId === item.id ? (
                 <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-line pt-3">

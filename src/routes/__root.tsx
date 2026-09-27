@@ -12,6 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { ToastProvider } from "../lib/toast";
+import { OfflineBanner } from "../components/eoz/OfflineBanner";
+import { AccessGate } from "../components/eoz/AccessGate";
 import { Ambience } from "../components/eoz/SiteShell";
 
 function StatusScreen({ children }: { children: ReactNode }) {
@@ -154,12 +156,19 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  // Marks the page interactive; end-to-end tests wait for this instead of guessing when hydration is done.
+  useEffect(() => {
+    document.documentElement.dataset["hydrated"] = "true";
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-        <Outlet />
+        <AccessGate>
+          <Outlet />
+        </AccessGate>
+        <OfflineBanner />
       </ToastProvider>
     </QueryClientProvider>
   );

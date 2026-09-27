@@ -4,11 +4,22 @@ import { useState } from "react";
 import { FileText } from "lucide-react";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
-import { API_BASE_URL, api, ApiError, isUnauthenticated, type PageResponse } from "@/lib/api-client";
+import {
+  API_BASE_URL,
+  api,
+  ApiError,
+  isUnauthenticated,
+  type PageResponse,
+} from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
 
 export const Route = createFileRoute("/admin/applications")({
-  head: () => ({ meta: [{ title: "Applications — EOZ Staff Console" }, { name: "robots", content: "noindex,nofollow" }] }),
+  head: () => ({
+    meta: [
+      { title: "Applications — EOZ Staff Console" },
+      { name: "robots", content: "noindex,nofollow" },
+    ],
+  }),
   component: Applications,
 });
 
@@ -25,7 +36,17 @@ type Row = {
   submittedAt: string;
 };
 
-const STATUSES = ["SUBMITTED", "SCREENING", "LONGLISTED", "SHORTLISTED", "INTERVIEW", "OFFER", "HIRED", "REJECTED", "WITHDRAWN"];
+const STATUSES = [
+  "SUBMITTED",
+  "SCREENING",
+  "LONGLISTED",
+  "SHORTLISTED",
+  "INTERVIEW",
+  "OFFER",
+  "HIRED",
+  "REJECTED",
+  "WITHDRAWN",
+];
 
 const TONE: Record<string, "emerald" | "amber" | "rose" | "muted" | "accent"> = {
   HIRED: "emerald",
@@ -46,17 +67,23 @@ function Applications() {
   const listQuery = useQuery({
     queryKey: ["admin", "applications", status, query],
     queryFn: () =>
-      api.get<PageResponse<Row>>("/admin/applications", { status: status || undefined, q: query || undefined, size: 50 }),
+      api.get<PageResponse<Row>>("/admin/applications", {
+        status: status || undefined,
+        q: query || undefined,
+        size: 50,
+      }),
     retry: false,
   });
 
   const changeStatus = useMutation({
-    mutationFn: ({ id, next }: { id: string; next: string }) => api.patch(`/applications/${id}/status`, { status: next }),
+    mutationFn: ({ id, next }: { id: string; next: string }) =>
+      api.patch(`/applications/${id}/status`, { status: next }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "applications"] });
       toast("Status updated. The candidate has been notified.");
     },
-    onError: (error) => toast(error instanceof ApiError ? error.message : "Could not update the status.", "error"),
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not update the status.", "error"),
   });
 
   const rows = listQuery.data?.items ?? [];
@@ -72,7 +99,9 @@ function Applications() {
 
       {isUnauthenticated(listQuery.error) ? (
         <Panel className="mb-6">
-          <p className="text-sm text-muted">Sign in with a staff account that can manage applications.</p>
+          <p className="text-sm text-muted">
+            Sign in with a staff account that can manage applications.
+          </p>
         </Panel>
       ) : null}
 
@@ -111,7 +140,9 @@ function Applications() {
                 <div className="mb-2 flex flex-wrap items-center gap-2">
                   <Chip tone={TONE[a.status] ?? "amber"}>{a.status}</Chip>
                   <span className="font-mono text-[10px] text-muted">{a.reference}</span>
-                  <span className="text-xs text-muted">{new Date(a.submittedAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-muted">
+                    {new Date(a.submittedAt).toLocaleDateString()}
+                  </span>
                 </div>
                 <div className="font-medium">{a.candidateName}</div>
                 <div className="text-xs text-muted">{a.candidateEmail}</div>
@@ -131,13 +162,18 @@ function Applications() {
                     <span className="text-muted">No CV attached</span>
                   )}
                   {a.coverNote ? (
-                    <button onClick={() => setOpen(open === a.id ? null : a.id)} className="text-accent-soft hover:text-fg">
+                    <button
+                      onClick={() => setOpen(open === a.id ? null : a.id)}
+                      className="text-accent-soft hover:text-fg"
+                    >
                       {open === a.id ? "Hide cover note" : "Read cover note"}
                     </button>
                   ) : null}
                 </div>
                 {open === a.id && a.coverNote ? (
-                  <p className="mt-3 whitespace-pre-wrap rounded-md bg-surface-2 p-3 text-sm text-muted">{a.coverNote}</p>
+                  <p className="mt-3 whitespace-pre-wrap rounded-md bg-surface-2 p-3 text-sm text-muted">
+                    {a.coverNote}
+                  </p>
                 ) : null}
               </div>
               <label className="text-xs text-muted">
