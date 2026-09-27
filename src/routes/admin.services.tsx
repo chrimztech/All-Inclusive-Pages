@@ -295,7 +295,7 @@ function Services() {
               <input
                 required
                 type="number"
-                min="1"
+                min="0"
                 step="0.01"
                 value={newPackage.price}
                 onChange={(e) => setNewPackage((p) => ({ ...p, price: e.target.value }))}
@@ -393,7 +393,7 @@ function Services() {
                       <input
                         required
                         type="number"
-                        min="1"
+                        min="0"
                         step="0.01"
                         value={editPackage.price}
                         onChange={(e) => setEditPackage((f) => ({ ...f, price: e.target.value }))}
