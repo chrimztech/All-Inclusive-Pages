@@ -28,4 +28,12 @@ public record OpportunityCreateRequest(
         String applicationUrl,
         String applicationEmail,
         String applicationAddress,
-        String source) {}
+        String source,
+        /**
+         * Registered organisation the listing is for. Staff with OPPORTUNITY_CREATE may post for any active
+         * organisation; employers only for organisations they belong to. Omitted: the poster's own organisation,
+         * or (staff) an unregistered one named in organisationName.
+         */
+        java.util.UUID organisationId,
+        /** Publish straight away instead of queueing for review — only for people holding OPPORTUNITY_PUBLISH. */
+        Boolean publishNow) {}

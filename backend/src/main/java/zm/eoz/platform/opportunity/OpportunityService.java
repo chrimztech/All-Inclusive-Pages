@@ -37,6 +37,7 @@ public class OpportunityService {
     private final NotificationService notificationService;
     private final zm.eoz.platform.candidate.SavedOpportunityRepository savedOpportunityRepository;
     private final zm.eoz.platform.organisation.OrganisationMemberRepository organisationMemberRepository;
+    private final zm.eoz.platform.organisation.OrganisationRepository organisationRepository;
 
     private final OpportunityVersionRecorder versionRecorder;
 
@@ -48,7 +49,9 @@ public class OpportunityService {
             NotificationService notificationService,
             zm.eoz.platform.candidate.SavedOpportunityRepository savedOpportunityRepository,
             zm.eoz.platform.organisation.OrganisationMemberRepository organisationMemberRepository,
-            OpportunityVersionRecorder versionRecorder) {
+            OpportunityVersionRecorder versionRecorder,
+            zm.eoz.platform.organisation.OrganisationRepository organisationRepository) {
+        this.organisationRepository = organisationRepository;
         this.versionRecorder = versionRecorder;
         this.opportunityRepository = opportunityRepository;
         this.categoryRepository = categoryRepository;
@@ -210,19 +213,58 @@ public class OpportunityService {
         opportunity.setStatus(OpportunityStatus.PENDING_REVIEW);
         opportunity.setCreatedBy(createdBy);
         opportunity.setFlaggedDuplicateOf(findPotentialDuplicate(request).orElse(null));
-        java.util.List<zm.eoz.platform.organisation.OrganisationMember> memberships =
-                organisationMemberRepository.findById_UserId(createdBy.getId());
-        if (!memberships.isEmpty()) {
-            opportunity.setOrganisation(memberships.get(0).getOrganisation());
+
+        boolean staffPoster = zm.eoz.platform.security.Access.hasAny(createdBy, "OPPORTUNITY_CREATE");
+        zm.eoz.platform.organisation.Organisation onBehalfOf = null;
+        if (request.organisationId() != null) {
+            zm.eoz.platform.organisation.Organisation org = organisationRepository.findById(request.organisationId())
+                    .orElseThrow(() -> new NotFoundException("Organisation not found: " + request.organisationId()));
+            boolean member = organisationMemberRepository
+                    .findById_OrganisationIdAndId_UserId(org.getId(), createdBy.getId()).isPresent();
+            if (!member && !staffPoster) {
+                throw new zm.eoz.platform.common.exception.ForbiddenException(
+                        "You can only post listings for organisations you belong to.");
+            }
+            if (org.getVerificationStatus() == zm.eoz.platform.organisation.VerificationStatus.SUSPENDED
+                    || org.getVerificationStatus() == zm.eoz.platform.organisation.VerificationStatus.REJECTED) {
+                throw new BadRequestException("\"" + org.getLegalName() + "\" is " + org.getVerificationStatus().name().toLowerCase()
+                        + ", so listings can't be posted for it.");
+            }
+            opportunity.setOrganisation(org);
+            opportunity.setOrganisationName(org.getTradingName() != null && !org.getTradingName().isBlank()
+                    ? org.getTradingName() : org.getLegalName());
+            if (!member) onBehalfOf = org;
+        } else {
+            java.util.List<zm.eoz.platform.organisation.OrganisationMember> memberships =
+                    organisationMemberRepository.findById_UserId(createdBy.getId());
+            if (!memberships.isEmpty()) {
+                opportunity.setOrganisation(memberships.get(0).getOrganisation());
+            }
+        }
+
+        boolean publishNow = Boolean.TRUE.equals(request.publishNow());
+        if (publishNow) {
+            if (!zm.eoz.platform.security.Access.hasAny(createdBy, "OPPORTUNITY_PUBLISH")) {
+                throw new zm.eoz.platform.common.exception.ForbiddenException(
+                        "Publishing straight away needs the OPPORTUNITY_PUBLISH permission. Submit it for review instead.");
+            }
+            opportunity.setStatus(OpportunityStatus.PUBLISHED);
+            opportunity.setPublishedAt(Instant.now());
+            opportunity.setVerified(true);
         }
 
         opportunity = opportunityRepository.save(opportunity);
+        String forWhom = onBehalfOf != null ? " on behalf of \"" + onBehalfOf.getLegalName() + "\"" : "";
         auditService.record(
                 createdBy,
-                "SUBMITTED",
+                publishNow ? "PUBLISHED" : "SUBMITTED",
                 "Opportunity",
                 opportunity.getReference(),
-                "Submitted \"" + opportunity.getTitle() + "\" for review");
+                (publishNow ? "Published \"" : "Submitted \"") + opportunity.getTitle() + "\"" + forWhom
+                        + (publishNow ? " directly" : " for review"));
+        if (onBehalfOf != null) {
+            notifyOrganisationOwners(onBehalfOf, opportunity, publishNow);
+        }
         return OpportunityDetailResponse.from(opportunity);
     }
 
@@ -230,7 +272,7 @@ public class OpportunityService {
     @Transactional(readOnly = true)
     public Page<zm.eoz.platform.opportunity.dto.EmployerOpportunitySummary> myListings(User user, Pageable pageable) {
         return opportunityRepository
-                .findByCreatedByIdOrderByCreatedAtDesc(user.getId(), pageable)
+                .findManagedBy(user.getId(), pageable)
                 .map(o -> zm.eoz.platform.opportunity.dto.EmployerOpportunitySummary.from(
                         o, savedOpportunityRepository.countById_OpportunityId(o.getId())));
     }
@@ -238,18 +280,18 @@ public class OpportunityService {
     @Transactional(readOnly = true)
     public zm.eoz.platform.opportunity.dto.EmployerOpportunityStats myListingsStats(User user) {
         java.util.UUID userId = user.getId();
-        long published = opportunityRepository.countByCreatedByIdAndStatus(userId, OpportunityStatus.PUBLISHED);
-        long pendingReview = opportunityRepository.countByCreatedByIdAndStatusIn(
+        long published = opportunityRepository.countManagedBy(userId, List.of(OpportunityStatus.PUBLISHED));
+        long pendingReview = opportunityRepository.countManagedBy(
                 userId, List.of(OpportunityStatus.PENDING_REVIEW, OpportunityStatus.APPROVED, OpportunityStatus.SCHEDULED));
-        long drafts = opportunityRepository.countByCreatedByIdAndStatus(userId, OpportunityStatus.DRAFT);
-        long closed = opportunityRepository.countByCreatedByIdAndStatusIn(
+        long drafts = opportunityRepository.countManagedBy(userId, List.of(OpportunityStatus.DRAFT));
+        long closed = opportunityRepository.countManagedBy(
                 userId, List.of(OpportunityStatus.CLOSED, OpportunityStatus.EXPIRED, OpportunityStatus.ARCHIVED));
         return new zm.eoz.platform.opportunity.dto.EmployerOpportunityStats(published, pendingReview, drafts, closed);
     }
 
     @Transactional(readOnly = true)
     public zm.eoz.platform.opportunity.dto.EmployerAnalyticsSummary myAnalytics(User user) {
-        List<Opportunity> mine = opportunityRepository.findByCreatedById(user.getId());
+        List<Opportunity> mine = opportunityRepository.findAllManagedBy(user.getId());
         long totalViews = mine.stream().mapToLong(Opportunity::getViewsCount).sum();
         List<java.util.UUID> ids = mine.stream().map(Opportunity::getId).toList();
         long totalSaves = ids.isEmpty() ? 0 : savedOpportunityRepository.countById_OpportunityIdIn(ids);
@@ -728,6 +770,29 @@ public class OpportunityService {
         notifyCreator(opportunity, "OPPORTUNITY_ARCHIVED", "Your listing was archived",
                 "\"" + opportunity.getTitle() + "\" (" + opportunity.getReference() + ") has been archived by staff and removed from the public board.");
         return OpportunityDetailResponse.from(opportunity);
+    }
+
+    public record PostableOrganisation(java.util.UUID id, String legalName, String tradingName, String verificationStatus) {}
+
+    /** Registered organisations staff may post listings for (search by legal or trading name). */
+    @Transactional(readOnly = true)
+    public List<PostableOrganisation> postableOrganisations(String query) {
+        String q = query == null ? "" : query.trim();
+        return organisationRepository.searchPostable(q, org.springframework.data.domain.PageRequest.of(0, 20)).stream()
+                .map(o -> new PostableOrganisation(o.getId(), o.getLegalName(), o.getTradingName(), o.getVerificationStatus().name()))
+                .toList();
+    }
+
+    /** Tells an organisation's owners that EOZ posted a listing for them, so nothing appears under their name unannounced. */
+    private void notifyOrganisationOwners(zm.eoz.platform.organisation.Organisation org, Opportunity opportunity, boolean live) {
+        for (var member : organisationMemberRepository.findById_OrganisationId(org.getId())) {
+            if (member.getRoleInOrg() != zm.eoz.platform.organisation.OrganisationMember.RoleInOrg.OWNER) continue;
+            notificationService.notify(member.getUser(), "OPPORTUNITY_POSTED_FOR_YOU",
+                    "EOZ posted a listing for " + org.getLegalName(),
+                    "\"" + opportunity.getTitle() + "\" (" + opportunity.getReference() + ") was "
+                            + (live ? "published" : "submitted for review") + " by EOZ on your organisation's behalf."
+                            + " You can see and edit it under My listings.");
+        }
     }
 
     private void notifyCreator(Opportunity opportunity, String type, String title, String body) {

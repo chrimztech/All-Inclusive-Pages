@@ -49,6 +49,20 @@ public interface OpportunityRepository
 
     Page<Opportunity> findByCreatedByIdOrderByCreatedAtDesc(UUID createdById, Pageable pageable);
 
+    /** Listings someone created, plus every listing of the organisations they belong to (including ones EOZ posted). */
+    String MANAGED = "(o.createdBy.id = :userId or o.organisation.id in"
+            + " (select m.id.organisationId from zm.eoz.platform.organisation.OrganisationMember m where m.id.userId = :userId))";
+
+    @org.springframework.data.jpa.repository.Query("select o from Opportunity o where " + MANAGED + " order by o.createdAt desc")
+    Page<Opportunity> findManagedBy(@org.springframework.data.repository.query.Param("userId") UUID userId, Pageable pageable);
+
+    @org.springframework.data.jpa.repository.Query("select o from Opportunity o where " + MANAGED)
+    List<Opportunity> findAllManagedBy(@org.springframework.data.repository.query.Param("userId") UUID userId);
+
+    @org.springframework.data.jpa.repository.Query("select count(o) from Opportunity o where " + MANAGED + " and o.status in :statuses")
+    long countManagedBy(@org.springframework.data.repository.query.Param("userId") UUID userId,
+            @org.springframework.data.repository.query.Param("statuses") List<OpportunityStatus> statuses);
+
     List<Opportunity> findByCreatedById(UUID createdById);
 
     long countByCreatedByIdAndStatus(UUID createdById, OpportunityStatus status);

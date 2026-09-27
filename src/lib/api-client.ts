@@ -215,6 +215,8 @@ export type ApiOpportunitySummary = {
 };
 
 export type ApiOpportunityDetail = ApiOpportunitySummary & {
+  /** Lifecycle state, e.g. PUBLISHED or PENDING_REVIEW. */
+  status?: string;
   description: string;
   responsibilities: string | null;
   requirements: string | null;

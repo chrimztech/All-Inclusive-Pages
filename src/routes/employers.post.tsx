@@ -1,10 +1,13 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { useUnsavedChanges } from "@/lib/use-unsaved-changes";
 import { Globe, Mail, MapPin, UserCheck } from "lucide-react";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
-import { DashNav, EMPLOYER_NAV } from "@/components/eoz/DashNav";
+import { ADMIN_NAV, DashNav, EMPLOYER_NAV } from "@/components/eoz/DashNav";
+import { OnBehalfPicker, type OnBehalfChoice } from "@/components/eoz/OnBehalfPicker";
+import { isEmployer } from "@/lib/access";
+import { useCan, useCurrentUser } from "@/lib/use-current-user";
 import { ORG, REGIONS } from "@/lib/eoz-data";
 import { FormErrorSummary } from "@/components/eoz/FormErrorSummary";
 import {
@@ -21,6 +24,19 @@ import {
 } from "@/lib/api-client";
 
 export const Route = createFileRoute("/employers/post")({
+  // Staff can arrive from an organisation's admin page with it preselected.
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { organisationId?: string; organisationName?: string; organisationStatus?: string } => {
+    const out: { organisationId?: string; organisationName?: string; organisationStatus?: string } =
+      {};
+    if (typeof search["organisationId"] === "string") out.organisationId = search["organisationId"];
+    if (typeof search["organisationName"] === "string")
+      out.organisationName = search["organisationName"];
+    if (typeof search["organisationStatus"] === "string")
+      out.organisationStatus = search["organisationStatus"];
+    return out;
+  },
   head: () => ({
     meta: [
       { title: "Post an Opportunity — Echo Opportunities Zambia" },
@@ -79,6 +95,26 @@ function PostOpportunity() {
     queryFn: () => api.get<ApiCategory[]>("/categories"),
   });
 
+  const { user } = useCurrentUser();
+  const can = useCan();
+  const preset = Route.useSearch();
+  // EOZ staff posting for an organisation (employers post for their own).
+  const staffMode = can("OPPORTUNITY_CREATE") && !isEmployer(user);
+  const canPublish = can("OPPORTUNITY_PUBLISH");
+  const [onBehalf, setOnBehalf] = useState<OnBehalfChoice>(
+    preset.organisationId && preset.organisationName
+      ? {
+          kind: "registered",
+          organisation: {
+            id: preset.organisationId,
+            legalName: preset.organisationName,
+            tradingName: null,
+            verificationStatus: preset.organisationStatus ?? "VERIFIED",
+          },
+        }
+      : null,
+  );
+  const [publishNow, setPublishNow] = useState(false);
   const [title, setTitle] = useState("");
   const [categoryCode, setCategoryCode] = useState("");
   const [region, setRegion] = useState(REGIONS[0] ?? "");
@@ -99,8 +135,14 @@ function PostOpportunity() {
     mutationFn: () =>
       api.post<ApiOpportunityDetail>("/opportunities", {
         title,
+        organisationId:
+          staffMode && onBehalf?.kind === "registered" ? onBehalf.organisation.id : undefined,
+        publishNow: staffMode && canPublish ? publishNow : undefined,
         categoryCode,
-        organisationName,
+        organisationName:
+          staffMode && onBehalf?.kind === "registered"
+            ? onBehalf.organisation.tradingName || onBehalf.organisation.legalName
+            : organisationName,
         description,
         requirements: requirements
           .split("\n")
@@ -155,14 +197,37 @@ function PostOpportunity() {
         : "Where applications are delivered";
 
   if (submitMutation.isSuccess) {
+    const done = submitMutation.data;
+    const live = done.status === "PUBLISHED";
     return (
       <SiteShell>
         <PageIntro
-          eyebrow="( 05.2 ) — Submitted"
-          title="Submitted for review."
-          lead={`Reference ${submitMutation.data.reference} has been logged as pending review. EOZ staff will verify the application route before it is published.`}
+          eyebrow={live ? "( 05.2 ) — Published" : "( 05.2 ) — Submitted"}
+          title={live ? "Published." : "Submitted for review."}
+          lead={
+            live
+              ? `Reference ${done.reference} is live on the board on behalf of ${done.organisationName}.`
+              : `Reference ${done.reference} has been logged as pending review. EOZ staff will verify the application route before it is published.`
+          }
         />
-        <div className="pb-14" />
+        <div className="flex flex-wrap gap-3 pb-14">
+          {live ? (
+            <Link
+              to="/opportunities/$opportunityId"
+              params={{ opportunityId: done.slug }}
+              className="btn-primary px-4 py-2 text-sm"
+            >
+              View the listing
+            </Link>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => window.location.assign("/employers/post")}
+            className="btn-secondary px-4 py-2 text-sm"
+          >
+            Post another
+          </button>
+        </div>
       </SiteShell>
     );
   }
@@ -171,11 +236,16 @@ function PostOpportunity() {
     <SiteShell>
       <PageIntro
         eyebrow="( 05.2 ) — Submit"
-        title="Post an opportunity."
-        lead="Every submission is reviewed by EOZ staff. Listings without a valid official application method are rejected."
+        title={staffMode ? "Post on an organisation's behalf." : "Post an opportunity."}
+        lead={
+          staffMode
+            ? "Publish a listing for a company or organisation, such as an advert they sent EOZ. It appears as published by EOZ on their behalf, with their official application route."
+            : "Every submission is reviewed by EOZ staff. Listings without a valid official application method are rejected."
+        }
       />
-      <DashNav items={EMPLOYER_NAV} />
+      <DashNav items={staffMode ? ADMIN_NAV : EMPLOYER_NAV} />
       {unsavedPrompt}
+      {staffMode ? <OnBehalfPicker value={onBehalf} onChange={setOnBehalf} /> : null}
 
       <section className="grid gap-6 pb-14 lg:grid-cols-12">
         <div className="lg:col-span-8">
@@ -227,15 +297,17 @@ function PostOpportunity() {
                   ))}
                 </select>
               </label>
-              <label>
-                <span className="label-mono">Organisation</span>
-                <input
-                  required
-                  value={organisationName}
-                  onChange={(e) => setOrganisationName(e.target.value)}
-                  className={inputCls}
-                />
-              </label>
+              {staffMode && onBehalf?.kind === "registered" ? null : (
+                <label>
+                  <span className="label-mono">Organisation</span>
+                  <input
+                    required
+                    value={organisationName}
+                    onChange={(e) => setOrganisationName(e.target.value)}
+                    className={inputCls}
+                  />
+                </label>
+              )}
               <label>
                 <span className="label-mono">Closing date</span>
                 <input
@@ -443,13 +515,41 @@ function PostOpportunity() {
                   }}
                 />
               </div>
+              {staffMode && canPublish ? (
+                <label className="flex items-start gap-2 text-sm sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={publishNow}
+                    onChange={(e) => setPublishNow(e.target.checked)}
+                    className="mt-1"
+                  />
+                  <span>
+                    Publish immediately
+                    <span className="block text-xs text-muted">
+                      Skips the review queue. Only tick this if you have checked the details and the
+                      application route against the organisation's official advert.
+                    </span>
+                  </span>
+                </label>
+              ) : null}
               <div className="sm:col-span-2 flex flex-wrap gap-3">
                 <button
-                  disabled={submitMutation.isPending}
+                  disabled={submitMutation.isPending || (staffMode && onBehalf === null)}
                   className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
                 >
-                  {submitMutation.isPending ? "Submitting…" : "Submit for review"}
+                  {submitMutation.isPending
+                    ? publishNow
+                      ? "Publishing…"
+                      : "Submitting…"
+                    : staffMode && canPublish && publishNow
+                      ? "Publish now"
+                      : "Submit for review"}
                 </button>
+                {staffMode && onBehalf === null ? (
+                  <span className="self-center text-xs text-muted">
+                    Choose the organisation above first.
+                  </span>
+                ) : null}
               </div>
             </form>
           </Panel>

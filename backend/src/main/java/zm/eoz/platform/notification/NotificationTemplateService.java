@@ -41,6 +41,7 @@ public class NotificationTemplateService {
         KNOWN_TYPES.put("DEADLINE_REMINDER", "A saved listing closes within 48 hours");
         KNOWN_TYPES.put("OPPORTUNITY_APPROVED", "An employer's listing is approved");
         KNOWN_TYPES.put("OPPORTUNITY_PUBLISHED", "An employer's listing goes live");
+        KNOWN_TYPES.put("OPPORTUNITY_POSTED_FOR_YOU", "EOZ staff post a listing on an organisation's behalf");
         KNOWN_TYPES.put("OPPORTUNITY_CHANGES_REQUESTED", "Moderation asks an employer for changes");
         KNOWN_TYPES.put("OPPORTUNITY_REJECTED", "An employer's listing is rejected");
         KNOWN_TYPES.put("OPPORTUNITY_CLOSED", "An employer's listing is closed");

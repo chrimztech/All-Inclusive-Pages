@@ -145,6 +145,14 @@ public class OpportunityController {
         return ApiResponse.of(opportunityService.versions(id, currentUser()));
     }
 
+    /** Organisations a staff member can post for (the "on behalf of" picker on the post form). */
+    @GetMapping("/post-for/organisations")
+    @PreAuthorize("hasAuthority('OPPORTUNITY_CREATE')")
+    public ApiResponse<java.util.List<OpportunityService.PostableOrganisation>> postableOrganisations(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) String q) {
+        return ApiResponse.of(opportunityService.postableOrganisations(q));
+    }
+
     @GetMapping("/manage/{id}")
     @PreAuthorize("isAuthenticated()")
     public ApiResponse<OpportunityDetailResponse> getForManage(@PathVariable UUID id) {

@@ -33,4 +33,14 @@ public interface OrganisationRepository extends JpaRepository<Organisation, UUID
             @Param("verifiedOnly") boolean verifiedOnly,
             @Param("q") String q,
             Pageable pageable);
+
+    /** Organisations staff can post listings for: matching name, not suspended or rejected, verified first. */
+    @Query("select o from Organisation o where (lower(o.legalName) like lower(concat('%', :q, '%'))"
+            + " or lower(coalesce(o.tradingName, '')) like lower(concat('%', :q, '%')))"
+            + " and o.verificationStatus not in (zm.eoz.platform.organisation.VerificationStatus.SUSPENDED,"
+            + " zm.eoz.platform.organisation.VerificationStatus.REJECTED)"
+            + " order by case when o.verificationStatus = zm.eoz.platform.organisation.VerificationStatus.VERIFIED then 0 else 1 end,"
+            + " o.legalName")
+    java.util.List<Organisation> searchPostable(@org.springframework.data.repository.query.Param("q") String q,
+            org.springframework.data.domain.Pageable pageable);
 }

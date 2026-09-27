@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
@@ -156,6 +156,21 @@ function Organisations() {
                   <td className="py-3 pr-4 text-muted">{o.website ?? "—"}</td>
                   <td className="py-3">
                     <div className="flex flex-wrap gap-2">
+                      {can("OPPORTUNITY_CREATE") &&
+                      o.verificationStatus !== "SUSPENDED" &&
+                      o.verificationStatus !== "REJECTED" ? (
+                        <Link
+                          to="/employers/post"
+                          search={{
+                            organisationId: o.id,
+                            organisationName: o.tradingName ?? o.legalName,
+                            organisationStatus: o.verificationStatus,
+                          }}
+                          className="rounded-md px-3 py-1 text-xs text-accent-soft ring-1 ring-accent/30 hover:bg-surface-2"
+                        >
+                          Post a listing for them
+                        </Link>
+                      ) : null}
                       <button
                         onClick={() => setDocsFor(docsFor === o.id ? null : o.id)}
                         aria-expanded={docsFor === o.id}
