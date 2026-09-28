@@ -28,6 +28,7 @@ const NAV = [
   { to: "/content", label: "Content" },
   { to: "/employers", label: "Employers" },
   { to: "/services", label: "Services" },
+  { to: "/developer-services", label: "Developer" },
 ] as const;
 
 export function Ambience() {
@@ -115,13 +116,13 @@ function Header() {
         <BrandMark />
         <nav
           aria-label="Primary"
-          className="hidden items-center gap-0.5 rounded-full bg-white/[0.03] p-1 text-[13px] ring-1 ring-line backdrop-blur-md lg:flex"
+          className="hidden items-center gap-0.5 rounded-full bg-white/[0.03] p-1 text-[13px] ring-1 ring-line backdrop-blur-md xl:flex"
         >
           {NAV.map((item) => (
             <Link
               key={item.to}
               to={item.to}
-              className="rounded-full px-3.5 py-1.5 text-muted transition-all duration-300 hover:bg-white/[0.05] hover:text-fg"
+              className="rounded-full px-3 py-1.5 text-muted transition-all duration-300 hover:bg-white/[0.05] hover:text-fg 2xl:px-3.5"
               activeProps={{
                 className:
                   "!bg-white/[0.09] !text-fg shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-white/10",
@@ -140,7 +141,7 @@ function Header() {
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((v) => !v)}
-            className="press flex size-10 items-center justify-center rounded-lg text-fg ring-1 ring-line transition-colors hover:bg-white/5 lg:hidden"
+            className="press flex size-10 items-center justify-center rounded-lg text-fg ring-1 ring-line transition-colors hover:bg-white/5 xl:hidden"
           >
             {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
           </button>
@@ -148,7 +149,7 @@ function Header() {
       </div>
 
       {menuOpen ? (
-        <div className="fixed inset-x-0 top-[68px] bottom-0 z-40 lg:hidden">
+        <div className="fixed inset-x-0 top-[68px] bottom-0 z-40 xl:hidden">
           <button
             type="button"
             aria-label="Close menu"
@@ -493,10 +494,14 @@ function Footer() {
 
         <div className="mt-12 flex flex-col gap-4 border-t border-line pt-6 lg:flex-row lg:items-center lg:justify-between">
           <p className="max-w-[70ch] text-xs leading-5 text-muted">{ORG.disclaimer}</p>
-          <div className="flex shrink-0 items-center gap-4 whitespace-nowrap text-xs text-muted">
-            <span className="font-mono">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted lg:justify-end">
+            <span className="whitespace-nowrap font-mono">
               © {new Date().getFullYear()} {org.shortName}. All rights reserved.
             </span>
+            <Link to="/developer-services" className="group hover:text-fg">
+              Website by Chrishent Matakala Mutondo ·{" "}
+              <span className="text-accent-soft group-hover:text-fg">Hire the developer →</span>
+            </Link>
             {isStaff(footerUser) ? (
               <Link to="/admin" className="hover:text-fg">
                 Staff console

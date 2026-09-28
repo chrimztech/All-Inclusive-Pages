@@ -68,6 +68,18 @@ Everything is set through environment variables. Docker Compose reads them from 
 | `BACKUP_DIR` | `./data/backups` | Where `pg_dump` backups are written (needs `pg_dump`/`pg_restore` on the PATH; the Docker image includes them) |
 | `VITE_API_URL` | `http://localhost:8081/api/v1` | Web app → API base URL (build time) |
 
+## Posting on behalf of organisations
+
+Staff whose role has `OPPORTUNITY_CREATE` (admins and content officers by default) can post listings for companies and organisations, for example from an advert sent to EOZ.
+
+- **Where:** open **Post opportunity**, or **Admin → Organisations → Post a listing for them**.
+- **Registered organisations:** search for one to link the listing to its profile. The organisation's owners are notified, and its team can see and edit the listing under *My listings*.
+- **Unregistered organisations:** choose "isn't registered on EOZ" and type the name.
+- **Publishing:** staff who also hold `OPPORTUNITY_PUBLISH` can tick *Publish immediately*. Everyone else's listings go to the moderation queue.
+- **What the public sees:** "Published by EOZ on behalf of …".
+- **Audit:** the log records who posted the listing and for which organisation.
+- **Not allowed:** posting for suspended or rejected organisations. Employers can only post for organisations they belong to.
+
 ## Demo data
 
 To explore every screen with realistic, fictional data, start the API once with `SPRING_PROFILES_ACTIVE=demo`. Use this for demos and development, never production.
