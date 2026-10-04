@@ -87,6 +87,8 @@ public class SecurityConfig {
                                 "/api/v1/unsubscribe",
                                 "/api/v1/unsubscribe/**",
                                 "/api/v1/testimonials",
+                                "/api/v1/information-hub",
+                                "/api/v1/information-hub/**",
                                 "/actuator/health",
                                 "/actuator/health/liveness",
                                 "/actuator/health/readiness",

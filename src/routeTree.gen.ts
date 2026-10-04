@@ -42,6 +42,7 @@ import { Route as AdminExportsRouteImport } from './routes/admin.exports'
 import { Route as AdminFinanceRouteImport } from './routes/admin.finance'
 import { Route as AdminHealthRouteImport } from './routes/admin.health'
 import { Route as AdminInboxRouteImport } from './routes/admin.inbox'
+import { Route as AdminInformationHubRouteImport } from './routes/admin.information-hub'
 import { Route as AdminModerationRouteImport } from './routes/admin.moderation'
 import { Route as AdminNotificationTemplatesRouteImport } from './routes/admin.notification-templates'
 import { Route as AdminNotificationsRouteImport } from './routes/admin.notifications'
@@ -76,6 +77,8 @@ import { Route as EmployersPricingRouteImport } from './routes/employers.pricing
 import { Route as EmployersRecruitmentRouteImport } from './routes/employers.recruitment'
 import { Route as EmployersServicesRouteImport } from './routes/employers.services'
 import { Route as EmployersTeamRouteImport } from './routes/employers.team'
+import { Route as InformationHubIndexRouteImport } from './routes/information-hub.index'
+import { Route as InformationHubSlugRouteImport } from './routes/information-hub.$slug'
 import { Route as OpportunitiesIndexRouteImport } from './routes/opportunities.index'
 import { Route as OpportunitiesOpportunityIdRouteImport } from './routes/opportunities.$opportunityId'
 import { Route as OrganisationsIndexRouteImport } from './routes/organisations.index'
@@ -252,6 +255,11 @@ const AdminInboxRoute = AdminInboxRouteImport.update({
   path: '/admin/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AdminInformationHubRoute = AdminInformationHubRouteImport.update({
+  id: '/admin/information-hub',
+  path: '/admin/information-hub',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminModerationRoute = AdminModerationRouteImport.update({
   id: '/admin/moderation',
   path: '/admin/moderation',
@@ -423,6 +431,16 @@ const EmployersTeamRoute = EmployersTeamRouteImport.update({
   path: '/employers/team',
   getParentRoute: () => rootRouteImport,
 } as any)
+const InformationHubIndexRoute = InformationHubIndexRouteImport.update({
+  id: '/information-hub/',
+  path: '/information-hub/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InformationHubSlugRoute = InformationHubSlugRouteImport.update({
+  id: '/information-hub/$slug',
+  path: '/information-hub/$slug',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OpportunitiesIndexRoute = OpportunitiesIndexRouteImport.update({
   id: '/opportunities/',
   path: '/opportunities/',
@@ -511,6 +529,7 @@ export interface FileRoutesByFullPath {
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/inbox': typeof AdminInboxRoute
+  '/admin/information-hub': typeof AdminInformationHubRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/notification-templates': typeof AdminNotificationTemplatesRoute
   '/admin/notifications': typeof AdminNotificationsRoute
@@ -543,6 +562,7 @@ export interface FileRoutesByFullPath {
   '/employers/recruitment': typeof EmployersRecruitmentRoute
   '/employers/services': typeof EmployersServicesRoute
   '/employers/team': typeof EmployersTeamRoute
+  '/information-hub/$slug': typeof InformationHubSlugRoute
   '/opportunities/$opportunityId': typeof OpportunitiesOpportunityIdRoute
   '/organisations/$organisationId': typeof OrganisationsOrganisationIdRoute
   '/receipt/$invoiceId': typeof ReceiptInvoiceIdRoute
@@ -550,6 +570,7 @@ export interface FileRoutesByFullPath {
   '/admin/': typeof AdminIndexRoute
   '/candidate/': typeof CandidateIndexRoute
   '/employers/': typeof EmployersIndexRoute
+  '/information-hub/': typeof InformationHubIndexRoute
   '/opportunities/': typeof OpportunitiesIndexRoute
   '/organisations/': typeof OrganisationsIndexRoute
   '/services/': typeof ServicesIndexRoute
@@ -590,6 +611,7 @@ export interface FileRoutesByTo {
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/inbox': typeof AdminInboxRoute
+  '/admin/information-hub': typeof AdminInformationHubRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/notification-templates': typeof AdminNotificationTemplatesRoute
   '/admin/notifications': typeof AdminNotificationsRoute
@@ -622,6 +644,7 @@ export interface FileRoutesByTo {
   '/employers/recruitment': typeof EmployersRecruitmentRoute
   '/employers/services': typeof EmployersServicesRoute
   '/employers/team': typeof EmployersTeamRoute
+  '/information-hub/$slug': typeof InformationHubSlugRoute
   '/opportunities/$opportunityId': typeof OpportunitiesOpportunityIdRoute
   '/organisations/$organisationId': typeof OrganisationsOrganisationIdRoute
   '/receipt/$invoiceId': typeof ReceiptInvoiceIdRoute
@@ -629,6 +652,7 @@ export interface FileRoutesByTo {
   '/admin': typeof AdminIndexRoute
   '/candidate': typeof CandidateIndexRoute
   '/employers': typeof EmployersIndexRoute
+  '/information-hub': typeof InformationHubIndexRoute
   '/opportunities': typeof OpportunitiesIndexRoute
   '/organisations': typeof OrganisationsIndexRoute
   '/services': typeof ServicesIndexRoute
@@ -670,6 +694,7 @@ export interface FileRoutesById {
   '/admin/finance': typeof AdminFinanceRoute
   '/admin/health': typeof AdminHealthRoute
   '/admin/inbox': typeof AdminInboxRoute
+  '/admin/information-hub': typeof AdminInformationHubRoute
   '/admin/moderation': typeof AdminModerationRoute
   '/admin/notification-templates': typeof AdminNotificationTemplatesRoute
   '/admin/notifications': typeof AdminNotificationsRoute
@@ -702,6 +727,7 @@ export interface FileRoutesById {
   '/employers/recruitment': typeof EmployersRecruitmentRoute
   '/employers/services': typeof EmployersServicesRoute
   '/employers/team': typeof EmployersTeamRoute
+  '/information-hub/$slug': typeof InformationHubSlugRoute
   '/opportunities/$opportunityId': typeof OpportunitiesOpportunityIdRoute
   '/organisations/$organisationId': typeof OrganisationsOrganisationIdRoute
   '/receipt/$invoiceId': typeof ReceiptInvoiceIdRoute
@@ -709,6 +735,7 @@ export interface FileRoutesById {
   '/admin/': typeof AdminIndexRoute
   '/candidate/': typeof CandidateIndexRoute
   '/employers/': typeof EmployersIndexRoute
+  '/information-hub/': typeof InformationHubIndexRoute
   '/opportunities/': typeof OpportunitiesIndexRoute
   '/organisations/': typeof OrganisationsIndexRoute
   '/services/': typeof ServicesIndexRoute
@@ -751,6 +778,7 @@ export interface FileRouteTypes {
     | '/admin/finance'
     | '/admin/health'
     | '/admin/inbox'
+    | '/admin/information-hub'
     | '/admin/moderation'
     | '/admin/notification-templates'
     | '/admin/notifications'
@@ -783,6 +811,7 @@ export interface FileRouteTypes {
     | '/employers/recruitment'
     | '/employers/services'
     | '/employers/team'
+    | '/information-hub/$slug'
     | '/opportunities/$opportunityId'
     | '/organisations/$organisationId'
     | '/receipt/$invoiceId'
@@ -790,6 +819,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/candidate/'
     | '/employers/'
+    | '/information-hub/'
     | '/opportunities/'
     | '/organisations/'
     | '/services/'
@@ -830,6 +860,7 @@ export interface FileRouteTypes {
     | '/admin/finance'
     | '/admin/health'
     | '/admin/inbox'
+    | '/admin/information-hub'
     | '/admin/moderation'
     | '/admin/notification-templates'
     | '/admin/notifications'
@@ -862,6 +893,7 @@ export interface FileRouteTypes {
     | '/employers/recruitment'
     | '/employers/services'
     | '/employers/team'
+    | '/information-hub/$slug'
     | '/opportunities/$opportunityId'
     | '/organisations/$organisationId'
     | '/receipt/$invoiceId'
@@ -869,6 +901,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/candidate'
     | '/employers'
+    | '/information-hub'
     | '/opportunities'
     | '/organisations'
     | '/services'
@@ -909,6 +942,7 @@ export interface FileRouteTypes {
     | '/admin/finance'
     | '/admin/health'
     | '/admin/inbox'
+    | '/admin/information-hub'
     | '/admin/moderation'
     | '/admin/notification-templates'
     | '/admin/notifications'
@@ -941,6 +975,7 @@ export interface FileRouteTypes {
     | '/employers/recruitment'
     | '/employers/services'
     | '/employers/team'
+    | '/information-hub/$slug'
     | '/opportunities/$opportunityId'
     | '/organisations/$organisationId'
     | '/receipt/$invoiceId'
@@ -948,6 +983,7 @@ export interface FileRouteTypes {
     | '/admin/'
     | '/candidate/'
     | '/employers/'
+    | '/information-hub/'
     | '/opportunities/'
     | '/organisations/'
     | '/services/'
@@ -989,6 +1025,7 @@ export interface RootRouteChildren {
   AdminFinanceRoute: typeof AdminFinanceRoute
   AdminHealthRoute: typeof AdminHealthRoute
   AdminInboxRoute: typeof AdminInboxRoute
+  AdminInformationHubRoute: typeof AdminInformationHubRoute
   AdminModerationRoute: typeof AdminModerationRoute
   AdminNotificationTemplatesRoute: typeof AdminNotificationTemplatesRoute
   AdminNotificationsRoute: typeof AdminNotificationsRoute
@@ -1021,6 +1058,7 @@ export interface RootRouteChildren {
   EmployersRecruitmentRoute: typeof EmployersRecruitmentRoute
   EmployersServicesRoute: typeof EmployersServicesRoute
   EmployersTeamRoute: typeof EmployersTeamRoute
+  InformationHubSlugRoute: typeof InformationHubSlugRoute
   OpportunitiesOpportunityIdRoute: typeof OpportunitiesOpportunityIdRoute
   OrganisationsOrganisationIdRoute: typeof OrganisationsOrganisationIdRoute
   ReceiptInvoiceIdRoute: typeof ReceiptInvoiceIdRoute
@@ -1028,6 +1066,7 @@ export interface RootRouteChildren {
   AdminIndexRoute: typeof AdminIndexRoute
   CandidateIndexRoute: typeof CandidateIndexRoute
   EmployersIndexRoute: typeof EmployersIndexRoute
+  InformationHubIndexRoute: typeof InformationHubIndexRoute
   OpportunitiesIndexRoute: typeof OpportunitiesIndexRoute
   OrganisationsIndexRoute: typeof OrganisationsIndexRoute
   ServicesIndexRoute: typeof ServicesIndexRoute
@@ -1269,6 +1308,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminInboxRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/admin/information-hub': {
+      id: '/admin/information-hub'
+      path: '/admin/information-hub'
+      fullPath: '/admin/information-hub'
+      preLoaderRoute: typeof AdminInformationHubRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/moderation': {
       id: '/admin/moderation'
       path: '/admin/moderation'
@@ -1507,6 +1553,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof EmployersTeamRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/information-hub/': {
+      id: '/information-hub/'
+      path: '/information-hub'
+      fullPath: '/information-hub/'
+      preLoaderRoute: typeof InformationHubIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/information-hub/$slug': {
+      id: '/information-hub/$slug'
+      path: '/information-hub/$slug'
+      fullPath: '/information-hub/$slug'
+      preLoaderRoute: typeof InformationHubSlugRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/opportunities/': {
       id: '/opportunities/'
       path: '/opportunities'
@@ -1613,6 +1673,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminFinanceRoute: AdminFinanceRoute,
   AdminHealthRoute: AdminHealthRoute,
   AdminInboxRoute: AdminInboxRoute,
+  AdminInformationHubRoute: AdminInformationHubRoute,
   AdminModerationRoute: AdminModerationRoute,
   AdminNotificationTemplatesRoute: AdminNotificationTemplatesRoute,
   AdminNotificationsRoute: AdminNotificationsRoute,
@@ -1645,6 +1706,7 @@ const rootRouteChildren: RootRouteChildren = {
   EmployersRecruitmentRoute: EmployersRecruitmentRoute,
   EmployersServicesRoute: EmployersServicesRoute,
   EmployersTeamRoute: EmployersTeamRoute,
+  InformationHubSlugRoute: InformationHubSlugRoute,
   OpportunitiesOpportunityIdRoute: OpportunitiesOpportunityIdRoute,
   OrganisationsOrganisationIdRoute: OrganisationsOrganisationIdRoute,
   ReceiptInvoiceIdRoute: ReceiptInvoiceIdRoute,
@@ -1652,6 +1714,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminIndexRoute: AdminIndexRoute,
   CandidateIndexRoute: CandidateIndexRoute,
   EmployersIndexRoute: EmployersIndexRoute,
+  InformationHubIndexRoute: InformationHubIndexRoute,
   OpportunitiesIndexRoute: OpportunitiesIndexRoute,
   OrganisationsIndexRoute: OrganisationsIndexRoute,
   ServicesIndexRoute: ServicesIndexRoute,

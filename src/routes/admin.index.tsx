@@ -53,6 +53,7 @@ const SECTION_HINTS: Record<string, string> = {
   "/admin/recruitment": "Recruitment projects, pipelines and scorecards",
   "/admin/services": "Service orders, quotes and the catalogue",
   "/admin/content": "Channel posts and the content calendar",
+  "/admin/information-hub": "Public guides, explainers and trusted resources",
   "/admin/finance": "Invoices, payments and refunds",
   "/admin/applications": "EOZ-hosted applications across listings",
   "/admin/inbox": "Messages from the contact form",

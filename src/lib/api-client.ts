@@ -160,6 +160,31 @@ export type PageResponse<T> = {
   totalPages: number;
 };
 
+export type InformationArticleCategory =
+  | "OPPORTUNITY_GUIDES"
+  | "APPLICATION_ADVICE"
+  | "CAREER_GROWTH"
+  | "WORKPLACE"
+  | "BUSINESS"
+  | "TRUST_SAFETY";
+
+export type ApiInformationArticle = {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string;
+  body: string;
+  category: InformationArticleCategory;
+  featured: boolean;
+  status: "DRAFT" | "PUBLISHED";
+  sourceName: string | null;
+  sourceUrl: string | null;
+  readingMinutes: number;
+  publishedAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type EmploymentType =
   "FULL_TIME" | "PART_TIME" | "CONTRACT" | "INTERNSHIP" | "GIG_FREELANCE" | "VOLUNTEER";
 export type WorkArrangement = "ONSITE" | "REMOTE" | "HYBRID";

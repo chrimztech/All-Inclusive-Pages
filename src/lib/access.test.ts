@@ -157,6 +157,7 @@ describe("access policy", () => {
       "Opportunities",
       "Moderation",
       "Content",
+      "Information Hub",
       "Exports",
     ]);
     expect(sections(user("MANAGER"))).not.toContain("Users & RBAC");

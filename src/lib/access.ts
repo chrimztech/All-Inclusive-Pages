@@ -76,6 +76,11 @@ export const ADMIN_SECTIONS: readonly { to: string; label: string; rule: Rule }[
     rule: { kind: "perms", perms: ["SERVICE_VIEW", "SERVICE_MANAGE"] },
   },
   { to: "/admin/content", label: "Content", rule: { kind: "perms", perms: ["CONTENT_MANAGE"] } },
+  {
+    to: "/admin/information-hub",
+    label: "Information Hub",
+    rule: { kind: "perms", perms: ["CONTENT_MANAGE"] },
+  },
   { to: "/admin/finance", label: "Finance", rule: { kind: "perms", perms: ["FINANCE_MANAGE"] } },
   {
     to: "/admin/applications",
