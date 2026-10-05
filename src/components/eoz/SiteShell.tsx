@@ -113,7 +113,7 @@ function Header() {
           : "border-b border-transparent bg-transparent"
       }`}
     >
-      <div className="mx-auto flex h-[68px] max-w-7xl items-center justify-between gap-4 px-5 lg:px-8">
+      <div className="mx-auto flex h-[68px] items-center justify-between gap-4 px-5 lg:px-8 2xl:px-12">
         <BrandMark />
         <nav
           aria-label="Primary"
@@ -383,7 +383,7 @@ const FOOTER_COLUMNS = [
 function FooterCta() {
   const org = useOrgSettings();
   return (
-    <div className="mx-auto max-w-7xl px-5 pt-20 lg:px-8">
+    <div className="mx-auto px-5 pt-20 lg:px-8 2xl:px-12">
       <div
         className="relative overflow-hidden rounded-3xl p-8 ring-1 ring-white/10 sm:p-12 lg:p-14"
         style={{
@@ -442,7 +442,7 @@ function Footer() {
             "linear-gradient(90deg, transparent, rgba(255,214,10,0.5), rgba(124,227,164,0.5), transparent)",
         }}
       />
-      <div className="mx-auto max-w-7xl px-5 py-16 lg:px-8">
+      <div className="mx-auto px-5 py-16 lg:px-8 2xl:px-12">
         <div className="grid gap-12 lg:grid-cols-12">
           <div className="lg:col-span-4">
             <BrandMark />
@@ -546,7 +546,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       </a>
       <Ambience />
       <Header />
-      <main id="main" className="relative z-10 mx-auto max-w-7xl px-5 lg:px-8">
+      <main id="main" className="relative z-10 mx-auto px-5 lg:px-8 2xl:px-12">
         {children}
       </main>
       {showCta ? <FooterCta /> : null}

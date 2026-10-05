@@ -170,7 +170,7 @@ function Home() {
   return (
     <SiteShell>
       {/* ───────────────────────── Hero ───────────────────────── */}
-      <section className="relative -mx-5 px-5 pt-10 pb-16 lg:-mx-8 lg:px-8 lg:pt-20 lg:pb-24">
+      <section className="relative -mx-5 px-5 pt-10 pb-16 lg:-mx-8 lg:px-8 2xl:-mx-12 2xl:px-12 lg:pt-20 lg:pb-24">
         <div aria-hidden="true" className="bg-grid pointer-events-none absolute inset-0 -top-20" />
         <div className="relative grid gap-14 lg:grid-cols-12 lg:items-center lg:gap-10">
           <div className="lg:col-span-7">
@@ -292,7 +292,7 @@ function Home() {
       {/* ─────────────────────── Category marquee ─────────────────────── */}
       <section
         aria-label="Browse by category"
-        className="marquee-mask -mx-5 overflow-hidden py-2 lg:-mx-8"
+        className="marquee-mask -mx-5 overflow-hidden py-2 lg:-mx-8 2xl:-mx-12"
       >
         <div className="marquee gap-3 pr-3">
           {[0, 1].map((copy) => (

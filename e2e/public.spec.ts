@@ -31,7 +31,10 @@ test.describe("public site", () => {
       /wa\.me\/260976911338/,
     );
     await expect(page.locator('a[href="tel:+260976911338"]')).toBeVisible();
-    await expect(page.locator('a[href="mailto:chrishentmatakala@yahoo.com"]')).toBeVisible();
+    await expect(
+      page.locator('a[href="mailto:chrishentmatakala@yahoo.com"]').first(),
+    ).toBeVisible();
+    await expect(page.locator('a[href="https://github.com/chrimztech"]').first()).toBeVisible();
   });
 
   test("sitemap lists public pages", async ({ request, baseURL }) => {
