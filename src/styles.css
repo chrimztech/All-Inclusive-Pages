@@ -48,6 +48,22 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Native select popups otherwise use the browser's light menu while inheriting our pale text, making their
+     options nearly invisible. Keep the operating-system control and its option list aligned with the dark UI. */
+  select {
+    color-scheme: dark;
+  }
+
+  select option,
+  select optgroup {
+    background-color: var(--color-surface-2);
+    color: var(--color-fg);
+  }
+
+  select option:disabled {
+    color: var(--color-muted);
+  }
+
   html {
     scrollbar-color: rgba(124, 227, 164, 0.25) transparent;
   }
