@@ -96,7 +96,7 @@ public class OrganisationController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('EMPLOYER','ADMIN')")
+    @PreAuthorize("hasRole('EMPLOYER') or hasAuthority('ORGANISATION_VERIFY')")
     public ApiResponse<OrganisationResponse> register(@Valid @RequestBody OrganisationCreateRequest request) {
         return ApiResponse.of(organisationService.register(request, currentUser()));
     }

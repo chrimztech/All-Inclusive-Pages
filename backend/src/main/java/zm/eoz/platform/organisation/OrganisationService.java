@@ -76,13 +76,23 @@ public class OrganisationService {
         org.setVerificationStatus(VerificationStatus.PENDING);
         org = organisationRepository.save(org);
 
-        OrganisationMember owner = new OrganisationMember(org, createdBy);
-        owner.setRoleInOrg(OrganisationMember.RoleInOrg.OWNER);
-        owner.setStatus(OrganisationMember.Status.ACTIVE);
-        memberRepository.save(owner);
+        // An employer registering their own organisation becomes its owner. Staff-created records are deliberately
+        // left without a team until a real employer account is attached; otherwise the staff member would appear in
+        // the employer portal and receive "posted for you" notifications intended for the organisation's owners.
+        boolean createdByStaff = zm.eoz.platform.security.Access.hasAny(createdBy, "ORGANISATION_VERIFY");
+        if (!createdByStaff) {
+            OrganisationMember owner = new OrganisationMember(org, createdBy);
+            owner.setRoleInOrg(OrganisationMember.RoleInOrg.OWNER);
+            owner.setStatus(OrganisationMember.Status.ACTIVE);
+            memberRepository.save(owner);
+        }
 
         auditService.record(
-                createdBy, "REGISTERED", "Organisation", org.getId().toString(), "Registered \"" + org.getLegalName() + "\"");
+                createdBy,
+                createdByStaff ? "CREATED" : "REGISTERED",
+                "Organisation",
+                org.getId().toString(),
+                (createdByStaff ? "Created" : "Registered") + " \"" + org.getLegalName() + "\"");
         return OrganisationResponse.from(org, 0);
     }
 

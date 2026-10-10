@@ -74,6 +74,37 @@ class OnBehalfPostingTest {
     }
 
     @Test
+    void anAdministratorCreatesACompanyAndImmediatelyPostsForIt() throws Exception {
+        Cookie admin = login(staff("ADMIN"));
+        String orgName = "Admin Created Company " + System.nanoTime();
+
+        MvcResult organisation = mockMvc.perform(post("/api/v1/organisations").cookie(admin)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"legalName\":\"" + orgName + "\",\"businessType\":\"LIMITED_COMPANY\","
+                                + "\"sector\":\"Technology\",\"contactPersonName\":\"Jane Contact\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.legalName").value(orgName))
+                .andExpect(jsonPath("$.data.verificationStatus").value("PENDING"))
+                .andReturn();
+        String orgId = JsonPath.read(organisation.getResponse().getContentAsString(), "$.data.id");
+
+        // Creating a directory record on behalf of a company must not make the EOZ administrator its owner.
+        assertThat(jdbc.queryForObject(
+                        "select count(*) from organisation_members where organisation_id = ?::uuid", Long.class, orgId))
+                .isZero();
+
+        mockMvc.perform(get("/api/v1/opportunities/post-for/organisations").param("q", orgName).cookie(admin))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].id").value(orgId));
+
+        submit(admin, orgId, true)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.data.organisationId").value(orgId))
+                .andExpect(jsonPath("$.data.organisationName").value(orgName));
+    }
+
+    @Test
     void staffWithoutPublishRightsSubmitForReviewInstead() throws Exception {
         String orgId = organisation(register("EMPLOYER", null), "Review Org " + System.nanoTime());
         Cookie content = login(staff("CONTENT_OFFICER"));

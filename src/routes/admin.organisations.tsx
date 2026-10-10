@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { SiteShell, PageIntro, Panel, Chip } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav } from "@/components/eoz/DashNav";
@@ -7,13 +7,17 @@ import {
   ApiError,
   isUnauthenticated,
   BUSINESS_TYPE_LABELS,
+  SIZE_BAND_LABELS,
+  type ApiOrganisation,
   type PageResponse,
+  type OrganisationSizeBand,
 } from "@/lib/api-client";
 import { useToast } from "@/lib/toast";
 import { Fragment, useState } from "react";
 import { VerificationDocuments, VerificationReviews } from "@/components/eoz/VerificationDocuments";
 import type { BusinessType } from "@/lib/api-client";
 import { useCan } from "@/lib/use-current-user";
+import { FormErrorSummary } from "@/components/eoz/FormErrorSummary";
 
 export const Route = createFileRoute("/admin/organisations")({
   head: () => ({
@@ -53,11 +57,218 @@ const tone: Record<string, "emerald" | "amber" | "muted" | "rose"> = {
   SUSPENDED: "rose",
 };
 
+const inputCls =
+  "mt-1 w-full rounded-md bg-surface-2 px-3 py-2 text-sm outline-none ring-1 ring-line focus:ring-accent/40";
+
+function CreateOrganisationPanel({ onClose }: { onClose: () => void }) {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  const [form, setForm] = useState({
+    legalName: "",
+    tradingName: "",
+    businessType: "LIMITED_COMPANY",
+    sizeBand: "",
+    registrationNumber: "",
+    sector: "",
+    website: "",
+    address: "",
+    contactPersonName: "",
+    contactPersonRole: "",
+    contactPhone: "",
+  });
+
+  const set = (field: keyof typeof form) => (event: { target: { value: string } }) =>
+    setForm((current) => ({ ...current, [field]: event.target.value }));
+
+  const create = useMutation({
+    mutationFn: (_postAfterCreating: boolean) =>
+      api.post<ApiOrganisation>("/organisations", {
+        legalName: form.legalName.trim(),
+        tradingName: form.tradingName.trim() || undefined,
+        businessType: form.businessType || undefined,
+        sizeBand: form.sizeBand || undefined,
+        registrationNumber: form.registrationNumber.trim() || undefined,
+        sector: form.sector.trim() || undefined,
+        website: form.website.trim() || undefined,
+        address: form.address.trim() || undefined,
+        contactPersonName: form.contactPersonName.trim() || undefined,
+        contactPersonRole: form.contactPersonRole.trim() || undefined,
+        contactPhone: form.contactPhone.trim() || undefined,
+      }),
+    onSuccess: (organisation, postAfterCreating) => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "organisations"] });
+      void queryClient.invalidateQueries({ queryKey: ["post-for", "organisations"] });
+      toast(`${organisation.tradingName ?? organisation.legalName} created.`);
+      if (postAfterCreating) {
+        void navigate({
+          to: "/employers/post",
+          search: {
+            organisationId: organisation.id,
+            organisationName: organisation.tradingName ?? organisation.legalName,
+            organisationStatus: organisation.verificationStatus,
+          },
+        });
+      } else {
+        onClose();
+      }
+    },
+    onError: (error) =>
+      toast(error instanceof ApiError ? error.message : "Could not create the company.", "error"),
+  });
+
+  return (
+    <Panel className="mb-6">
+      <div className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-4">
+        <div>
+          <div className="label-mono">New company / organisation</div>
+          <h2 className="mt-1 font-display text-2xl">Create the profile first.</h2>
+          <p className="mt-1 max-w-2xl text-sm text-muted">
+            The profile starts as pending verification. You can still draft or publish a checked
+            listing for it immediately.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="rounded-md px-3 py-2 text-xs text-muted ring-1 ring-line hover:text-fg"
+        >
+          Cancel
+        </button>
+      </div>
+      <form
+        className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const submitter = (event.nativeEvent as SubmitEvent)
+            .submitter as HTMLButtonElement | null;
+          create.mutate(submitter?.value === "post");
+        }}
+      >
+        <label className="sm:col-span-2">
+          <span className="label-mono">Legal name</span>
+          <input
+            required
+            autoFocus
+            value={form.legalName}
+            onChange={set("legalName")}
+            placeholder="e.g. Copperbelt Engineering Limited"
+            className={inputCls}
+          />
+        </label>
+        <label>
+          <span className="label-mono">Trading name</span>
+          <input
+            value={form.tradingName}
+            onChange={set("tradingName")}
+            placeholder="Optional public name"
+            className={inputCls}
+          />
+        </label>
+        <label>
+          <span className="label-mono">Business type</span>
+          <select value={form.businessType} onChange={set("businessType")} className={inputCls}>
+            {(Object.keys(BUSINESS_TYPE_LABELS) as BusinessType[]).map((type) => (
+              <option key={type} value={type}>
+                {BUSINESS_TYPE_LABELS[type]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className="label-mono">Team size</span>
+          <select value={form.sizeBand} onChange={set("sizeBand")} className={inputCls}>
+            <option value="">Not set</option>
+            {(Object.keys(SIZE_BAND_LABELS) as OrganisationSizeBand[]).map((size) => (
+              <option key={size} value={size}>
+                {SIZE_BAND_LABELS[size]}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          <span className="label-mono">Registration number</span>
+          <input
+            value={form.registrationNumber}
+            onChange={set("registrationNumber")}
+            placeholder="Optional for informal businesses"
+            className={inputCls}
+          />
+        </label>
+        <label>
+          <span className="label-mono">Sector</span>
+          <input value={form.sector} onChange={set("sector")} className={inputCls} />
+        </label>
+        <label>
+          <span className="label-mono">Website</span>
+          <input
+            value={form.website}
+            onChange={set("website")}
+            placeholder="https://example.com"
+            className={inputCls}
+          />
+        </label>
+        <label className="sm:col-span-2">
+          <span className="label-mono">Address / location</span>
+          <input value={form.address} onChange={set("address")} className={inputCls} />
+        </label>
+        <label>
+          <span className="label-mono">Contact person</span>
+          <input
+            value={form.contactPersonName}
+            onChange={set("contactPersonName")}
+            className={inputCls}
+          />
+        </label>
+        <label>
+          <span className="label-mono">Contact role</span>
+          <input
+            value={form.contactPersonRole}
+            onChange={set("contactPersonRole")}
+            className={inputCls}
+          />
+        </label>
+        <label>
+          <span className="label-mono">Contact phone</span>
+          <input
+            type="tel"
+            value={form.contactPhone}
+            onChange={set("contactPhone")}
+            className={inputCls}
+          />
+        </label>
+        <div className="sm:col-span-2 lg:col-span-3">
+          <FormErrorSummary error={create.error} labels={{ legalName: "Legal name" }} />
+        </div>
+        <div className="flex flex-wrap gap-3 sm:col-span-2 lg:col-span-3">
+          <button
+            type="submit"
+            value="post"
+            disabled={create.isPending || !form.legalName.trim()}
+            className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
+          >
+            {create.isPending ? "Creating…" : "Create & post listing"}
+          </button>
+          <button
+            type="submit"
+            value="save"
+            disabled={create.isPending || !form.legalName.trim()}
+            className="rounded-md px-4 py-2 text-sm text-fg ring-1 ring-line hover:bg-surface-2 disabled:opacity-60"
+          >
+            Create only
+          </button>
+        </div>
+      </form>
+    </Panel>
+  );
+}
+
 function Organisations() {
   const can = useCan();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [docsFor, setDocsFor] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
   const orgsQuery = useQuery({
     queryKey: ["admin", "organisations"],
     queryFn: () => api.get<PageResponse<OrganisationRow>>("/organisations", { size: 50 }),
@@ -116,8 +327,24 @@ function Organisations() {
         eyebrow="( 06.2 ) — Organisations"
         title="Who is allowed to post."
         lead="Verification is per-organisation. A verified badge on a listing means the source and the employer were both checked."
+        aside={
+          can("ORGANISATION_VERIFY") ? (
+            <Panel>
+              <button
+                type="button"
+                onClick={() => setCreating((open) => !open)}
+                aria-expanded={creating}
+                className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink"
+              >
+                {creating ? "Close company form" : "Create company"}
+              </button>
+            </Panel>
+          ) : undefined
+        }
       />
       <DashNav items={ADMIN_NAV} />
+
+      {creating ? <CreateOrganisationPanel onClose={() => setCreating(false)} /> : null}
 
       {isUnauthenticated(orgsQuery.error) ? (
         <Panel className="mb-6">
