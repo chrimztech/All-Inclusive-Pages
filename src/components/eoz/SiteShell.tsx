@@ -106,48 +106,50 @@ function Header() {
   }, [menuOpen]);
 
   return (
-    <header
-      className={`sticky top-0 z-50 transition-all duration-500 ${
-        scrolled
-          ? "border-b border-line bg-ink/75 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)] backdrop-blur-2xl backdrop-saturate-150"
-          : "border-b border-transparent bg-transparent"
-      }`}
-    >
-      <div className="mx-auto flex h-[68px] items-center justify-between gap-4 px-5 lg:px-8 2xl:px-12">
-        <BrandMark />
-        <nav
-          aria-label="Primary"
-          className="hidden items-center gap-0.5 rounded-full bg-white/[0.03] p-1 text-[13px] ring-1 ring-line backdrop-blur-md xl:flex"
-        >
-          {NAV.map((item) => (
-            <Link
-              key={item.to}
-              to={item.to}
-              className="rounded-full px-3 py-1.5 text-muted transition-all duration-300 hover:bg-white/[0.05] hover:text-fg 2xl:px-3.5"
-              activeProps={{
-                className:
-                  "!bg-white/[0.09] !text-fg shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-white/10",
-              }}
-              activeOptions={{ exact: item.to === "/" }}
-            >
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        <div className="flex items-center gap-2">
-          <NotificationBell />
-          <AccountMenu />
-          <button
-            type="button"
-            aria-label={menuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((v) => !v)}
-            className="press flex size-10 items-center justify-center rounded-lg text-fg ring-1 ring-line transition-colors hover:bg-white/5 xl:hidden"
+    <>
+      <header
+        className={`sticky top-0 z-50 transition-all duration-500 ${
+          scrolled
+            ? "border-b border-line bg-ink/75 shadow-[0_10px_40px_-20px_rgba(0,0,0,0.8)] backdrop-blur-2xl backdrop-saturate-150"
+            : "border-b border-transparent bg-transparent"
+        }`}
+      >
+        <div className="mx-auto flex h-[68px] items-center justify-between gap-4 px-5 lg:px-8 2xl:px-12">
+          <BrandMark />
+          <nav
+            aria-label="Primary"
+            className="hidden items-center gap-0.5 rounded-full bg-white/[0.03] p-1 text-[13px] ring-1 ring-line backdrop-blur-md xl:flex"
           >
-            {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
-          </button>
+            {NAV.map((item) => (
+              <Link
+                key={item.to}
+                to={item.to}
+                className="rounded-full px-3 py-1.5 text-muted transition-all duration-300 hover:bg-white/[0.05] hover:text-fg 2xl:px-3.5"
+                activeProps={{
+                  className:
+                    "!bg-white/[0.09] !text-fg shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-white/10",
+                }}
+                activeOptions={{ exact: item.to === "/" }}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          <div className="flex items-center gap-2">
+            <NotificationBell />
+            <AccountMenu />
+            <button
+              type="button"
+              aria-label={menuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={menuOpen}
+              onClick={() => setMenuOpen((v) => !v)}
+              className="press flex size-10 items-center justify-center rounded-lg text-fg ring-1 ring-line transition-colors hover:bg-white/5 xl:hidden"
+            >
+              {menuOpen ? <X className="size-5" /> : <Menu className="size-5" />}
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
       {menuOpen ? (
         <div className="fixed inset-x-0 top-[68px] bottom-0 z-40 xl:hidden">
@@ -178,7 +180,7 @@ function Header() {
           </nav>
         </div>
       ) : null}
-    </header>
+    </>
   );
 }
 

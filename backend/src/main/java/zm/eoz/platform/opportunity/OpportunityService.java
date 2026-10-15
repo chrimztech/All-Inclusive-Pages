@@ -237,7 +237,8 @@ public class OpportunityService {
         } else {
             java.util.List<zm.eoz.platform.organisation.OrganisationMember> memberships =
                     organisationMemberRepository.findById_UserId(createdBy.getId());
-            if (!memberships.isEmpty()) {
+            // Staff typing in an unregistered organisation's name post for that organisation, not their own.
+            if (!memberships.isEmpty() && !staffPoster) {
                 opportunity.setOrganisation(memberships.get(0).getOrganisation());
             }
         }
@@ -250,7 +251,10 @@ public class OpportunityService {
             }
             opportunity.setStatus(OpportunityStatus.PUBLISHED);
             opportunity.setPublishedAt(Instant.now());
-            opportunity.setVerified(true);
+            // Only a linked, verified organisation counts as a verified source; typed-in names show as unverified.
+            opportunity.setVerified(opportunity.getOrganisation() != null
+                    && opportunity.getOrganisation().getVerificationStatus()
+                            == zm.eoz.platform.organisation.VerificationStatus.VERIFIED);
         }
 
         opportunity = opportunityRepository.save(opportunity);

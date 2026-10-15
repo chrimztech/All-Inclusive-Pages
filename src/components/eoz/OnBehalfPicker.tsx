@@ -76,13 +76,16 @@ export function OnBehalfPicker({
         </div>
       ) : value?.kind === "unregistered" ? (
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/[0.03] px-4 py-3 text-sm ring-1 ring-line">
-          <span>Not registered on EOZ — type the organisation's name in the form below.</span>
+          <div className="flex min-w-0 items-center gap-2">
+            <Chip tone="amber">Unverified</Chip>
+            <span>Type the organisation's name in the form below. No EOZ account is needed.</span>
+          </div>
           <button
             type="button"
             onClick={() => onChange(null)}
             className="rounded-md px-2 py-1 text-xs text-muted ring-1 ring-line hover:text-fg"
           >
-            Search registered organisations
+            Link a registered organisation instead
           </button>
         </div>
       ) : (
@@ -132,7 +135,7 @@ export function OnBehalfPicker({
             onClick={() => onChange({ kind: "unregistered" })}
             className="mt-3 text-xs text-accent-soft hover:text-fg"
           >
-            The organisation isn't registered on EOZ →
+            Not registered on EOZ? Just type its name (shown as unverified) →
           </button>
         </>
       )}

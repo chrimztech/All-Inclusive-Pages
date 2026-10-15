@@ -6,8 +6,7 @@ import { Globe, Mail, MapPin, UserCheck } from "lucide-react";
 import { SiteShell, PageIntro, Panel } from "@/components/eoz/SiteShell";
 import { ADMIN_NAV, DashNav, EMPLOYER_NAV } from "@/components/eoz/DashNav";
 import { OnBehalfPicker, type OnBehalfChoice } from "@/components/eoz/OnBehalfPicker";
-import { isEmployer } from "@/lib/access";
-import { useCan, useCurrentUser } from "@/lib/use-current-user";
+import { useCan } from "@/lib/use-current-user";
 import { ORG, REGIONS } from "@/lib/eoz-data";
 import { FormErrorSummary } from "@/components/eoz/FormErrorSummary";
 import {
@@ -95,11 +94,11 @@ function PostOpportunity() {
     queryFn: () => api.get<ApiCategory[]>("/categories"),
   });
 
-  const { user } = useCurrentUser();
   const can = useCan();
   const preset = Route.useSearch();
-  // EOZ staff posting for an organisation (employers post for their own).
-  const staffMode = can("OPPORTUNITY_CREATE") && !isEmployer(user);
+  // EOZ staff posting for an organisation (employers post for their own). Staff who also belong to an
+  // organisation still get the staff form, and can link their own organisation from the picker.
+  const staffMode = can("OPPORTUNITY_CREATE");
   const canPublish = can("OPPORTUNITY_PUBLISH");
   const [onBehalf, setOnBehalf] = useState<OnBehalfChoice>(
     preset.organisationId && preset.organisationName
@@ -112,7 +111,8 @@ function PostOpportunity() {
             verificationStatus: preset.organisationStatus ?? "VERIFIED",
           },
         }
-      : null,
+      : // Default to a typed-in organisation name so staff can post straight away; the listing shows as unverified.
+        { kind: "unregistered" },
   );
   const [publishNow, setPublishNow] = useState(false);
   const [title, setTitle] = useState("");
@@ -558,7 +558,7 @@ function PostOpportunity() {
           <Panel>
             <div className="label-mono mb-2">Review checklist</div>
             <ul className="space-y-2 text-sm text-muted">
-              <li>— Organisation must be registered and reachable.</li>
+              <li>— Organisation must be real and reachable.</li>
               <li>— Any public advert we can check should show the same role and deadline.</li>
               <li>— Application method must belong to the employer.</li>
               <li>— No application fees may be charged to candidates.</li>

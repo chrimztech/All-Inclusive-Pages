@@ -139,6 +139,25 @@ class OnBehalfPostingTest {
                 .andExpect(jsonPath("$.data.organisationName").value("Ministry of Agriculture (not on EOZ)"));
     }
 
+    @Test
+    void anUnregisteredOrganisationIsPublishedAsUnverifiedAndNotLinkedToTheStaffMembersOwnOrganisation() throws Exception {
+        String adminEmail = staff("ADMIN");
+        Cookie admin = login(adminEmail);
+        // The admin also belongs to an organisation of their own.
+        organisation(admin, "Admin's Own Org " + System.nanoTime());
+
+        MvcResult created = mockMvc.perform(post("/api/v1/opportunities").cookie(admin).contentType(MediaType.APPLICATION_JSON)
+                        .content(body("Lusaka Water Trust (not on EOZ)", null, true)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.data.organisationId").doesNotExist())
+                .andExpect(jsonPath("$.data.organisationName").value("Lusaka Water Trust (not on EOZ)"))
+                .andReturn();
+        String id = JsonPath.read(created.getResponse().getContentAsString(), "$.data.id");
+        assertThat(jdbc.queryForObject("select verified from opportunities where id = ?::uuid", Boolean.class, id))
+                .isFalse();
+    }
+
     // ---------------------------------------------------------------- helpers
 
     private ResultActions submit(Cookie cookie, String organisationId, boolean publishNow) throws Exception {
