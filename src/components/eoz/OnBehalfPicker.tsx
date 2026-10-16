@@ -12,13 +12,18 @@ export type PostableOrganisation = {
 };
 
 export type OnBehalfChoice =
-  { kind: "registered"; organisation: PostableOrganisation } | { kind: "unregistered" } | null;
+  | { kind: "registered"; organisation: PostableOrganisation }
+  | { kind: "unregistered"; name?: string }
+  | null;
 
 const displayName = (o: PostableOrganisation) => o.tradingName || o.legalName;
+const sameName = (o: PostableOrganisation, name: string) =>
+  [o.legalName, o.tradingName].some((n) => n?.trim().toLowerCase() === name.trim().toLowerCase());
 
 /**
- * For EOZ staff posting a listing on an organisation's behalf: search registered organisations (so the listing is
- * linked to their profile and their team can manage it), or choose "not registered on EOZ" and type the name.
+ * For EOZ staff posting a listing on an organisation's behalf. By default staff just type the organisation's name
+ * (it does not have to be on EOZ yet); they can instead search the directory to link a registered organisation, so
+ * the listing appears on its profile and its team can manage it.
  */
 export function OnBehalfPicker({
   value,
@@ -48,8 +53,8 @@ export function OnBehalfPicker({
         Posting on behalf of
       </div>
       <p className="mb-4 text-xs text-muted">
-        Choose the organisation this listing belongs to. A registered organisation is linked to the
-        listing, told about it, and can see and edit it under My listings.
+        The organisation does not need to be on EOZ. Type its name in the form, or link a registered
+        organisation so it is told about the listing and can manage it under My listings.
       </p>
 
       {value?.kind === "registered" ? (
@@ -78,7 +83,11 @@ export function OnBehalfPicker({
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-white/[0.03] px-4 py-3 text-sm ring-1 ring-line">
           <div className="flex min-w-0 items-center gap-2">
             <Chip tone="amber">Unverified</Chip>
-            <span>Type the organisation's name in the form below. No EOZ account is needed.</span>
+            <span>
+              {value.name
+                ? `Posting for "${value.name}". Check the name in the form below.`
+                : "Type the organisation's name in the form below. No EOZ account is needed."}
+            </span>
           </div>
           <button
             type="button"
@@ -127,16 +136,31 @@ export function OnBehalfPicker({
               </li>
             ))}
           </ul>
-          {results.isSuccess && (results.data ?? []).length === 0 ? (
+          {results.isError ? (
+            <p className="mt-2 text-xs text-muted">
+              Couldn't search the directory just now. You can still type the organisation's name.
+            </p>
+          ) : results.isSuccess && (results.data ?? []).length === 0 && debounced ? (
             <p className="mt-2 text-xs text-muted">No registered organisation matches.</p>
           ) : null}
-          <button
-            type="button"
-            onClick={() => onChange({ kind: "unregistered" })}
-            className="mt-3 text-xs text-accent-soft hover:text-fg"
-          >
-            Not registered on EOZ? Just type its name (shown as unverified) →
-          </button>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {query.trim() && !(results.data ?? []).some((o) => sameName(o, query)) ? (
+              <button
+                type="button"
+                onClick={() => onChange({ kind: "unregistered", name: query.trim() })}
+                className="rounded-md bg-accent/10 px-3 py-1.5 text-xs text-accent-soft ring-1 ring-accent/25 hover:text-fg"
+              >
+                Post for "{query.trim()}" (not on EOZ yet)
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => onChange({ kind: "unregistered" })}
+              className="rounded-md px-3 py-1.5 text-xs text-muted ring-1 ring-line hover:text-fg"
+            >
+              Cancel and type the name instead
+            </button>
+          </div>
         </>
       )}
     </Panel>

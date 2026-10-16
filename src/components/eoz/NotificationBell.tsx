@@ -122,7 +122,7 @@ export function NotificationBell() {
         <div
           role="dialog"
           aria-label="Notifications"
-          className="glass-strong fade-in z-50 overflow-hidden rounded-xl text-sm ring-1 ring-line max-sm:absolute max-sm:right-0 max-sm:top-12 max-sm:w-[calc(100vw-1.5rem)] sm:absolute sm:right-0 sm:mt-2 sm:w-[22rem]"
+          className="glass-strong fade-in z-50 overflow-hidden rounded-xl text-sm ring-1 ring-line max-sm:fixed max-sm:inset-x-3 max-sm:top-[72px] max-sm:max-h-[calc(100dvh-84px)] max-sm:overflow-y-auto sm:absolute sm:right-0 sm:mt-2 sm:w-[22rem]"
           style={{ backgroundColor: "rgba(8,29,18,0.96)" }}
         >
           <div className="flex items-center justify-between border-b border-line px-4 py-3">

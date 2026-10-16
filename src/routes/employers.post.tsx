@@ -115,6 +115,8 @@ function PostOpportunity() {
         { kind: "unregistered" },
   );
   const [publishNow, setPublishNow] = useState(false);
+  // Staff typing in an organisation that isn't on EOZ: also add it to the directory as unverified.
+  const [addOrganisation, setAddOrganisation] = useState(true);
   const [title, setTitle] = useState("");
   const [categoryCode, setCategoryCode] = useState("");
   const [region, setRegion] = useState(REGIONS[0] ?? "");
@@ -131,6 +133,12 @@ function PostOpportunity() {
   const [salaryMin, setSalaryMin] = useState("");
   const [salaryMax, setSalaryMax] = useState("");
 
+  const linkedOrganisation = staffMode && onBehalf?.kind === "registered";
+  const chooseOnBehalf = (choice: OnBehalfChoice) => {
+    setOnBehalf(choice);
+    if (choice?.kind === "unregistered" && choice.name) setOrganisationName(choice.name);
+  };
+
   const submitMutation = useMutation({
     mutationFn: () =>
       api.post<ApiOpportunityDetail>("/opportunities", {
@@ -138,6 +146,7 @@ function PostOpportunity() {
         organisationId:
           staffMode && onBehalf?.kind === "registered" ? onBehalf.organisation.id : undefined,
         publishNow: staffMode && canPublish ? publishNow : undefined,
+        addOrganisation: staffMode && !linkedOrganisation ? addOrganisation : undefined,
         categoryCode,
         organisationName:
           staffMode && onBehalf?.kind === "registered"
@@ -245,7 +254,7 @@ function PostOpportunity() {
       />
       <DashNav items={staffMode ? ADMIN_NAV : EMPLOYER_NAV} />
       {unsavedPrompt}
-      {staffMode ? <OnBehalfPicker value={onBehalf} onChange={setOnBehalf} /> : null}
+      {staffMode ? <OnBehalfPicker value={onBehalf} onChange={chooseOnBehalf} /> : null}
 
       <section className="grid gap-6 pb-14 lg:grid-cols-12">
         <div className="lg:col-span-8">
@@ -297,13 +306,14 @@ function PostOpportunity() {
                   ))}
                 </select>
               </label>
-              {staffMode && onBehalf?.kind === "registered" ? null : (
+              {linkedOrganisation ? null : (
                 <label>
                   <span className="label-mono">Organisation</span>
                   <input
                     required
                     value={organisationName}
                     onChange={(e) => setOrganisationName(e.target.value)}
+                    placeholder={staffMode ? "Company or organisation name" : undefined}
                     className={inputCls}
                   />
                 </label>
@@ -515,6 +525,24 @@ function PostOpportunity() {
                   }}
                 />
               </div>
+              {staffMode && !linkedOrganisation ? (
+                <label className="flex items-start gap-2 text-sm sm:col-span-2">
+                  <input
+                    type="checkbox"
+                    checked={addOrganisation}
+                    onChange={(e) => setAddOrganisation(e.target.checked)}
+                    className="mt-1"
+                  />
+                  <span>
+                    Add this organisation to the EOZ directory as unverified
+                    <span className="block text-xs text-muted">
+                      Its listings are grouped under one profile, which EOZ can verify later or the
+                      organisation can claim. If it is already in the directory, that record is
+                      used.
+                    </span>
+                  </span>
+                </label>
+              ) : null}
               {staffMode && canPublish ? (
                 <label className="flex items-start gap-2 text-sm sm:col-span-2">
                   <input
@@ -534,7 +562,7 @@ function PostOpportunity() {
               ) : null}
               <div className="sm:col-span-2 flex flex-wrap gap-3">
                 <button
-                  disabled={submitMutation.isPending || (staffMode && onBehalf === null)}
+                  disabled={submitMutation.isPending}
                   className="accent-gradient rounded-md px-4 py-2 text-sm font-medium text-ink disabled:opacity-60"
                 >
                   {submitMutation.isPending
@@ -545,11 +573,6 @@ function PostOpportunity() {
                       ? "Publish now"
                       : "Submit for review"}
                 </button>
-                {staffMode && onBehalf === null ? (
-                  <span className="self-center text-xs text-muted">
-                    Choose the organisation above first.
-                  </span>
-                ) : null}
               </div>
             </form>
           </Panel>

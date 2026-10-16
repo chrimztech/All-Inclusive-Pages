@@ -234,6 +234,12 @@ public class OpportunityService {
             opportunity.setOrganisationName(org.getTradingName() != null && !org.getTradingName().isBlank()
                     ? org.getTradingName() : org.getLegalName());
             if (!member) onBehalfOf = org;
+        } else if (staffPoster && Boolean.TRUE.equals(request.addOrganisation())) {
+            zm.eoz.platform.organisation.Organisation org = findOrAddOrganisation(request.organisationName(), createdBy);
+            opportunity.setOrganisation(org);
+            opportunity.setOrganisationName(org.getTradingName() != null && !org.getTradingName().isBlank()
+                    ? org.getTradingName() : org.getLegalName());
+            onBehalfOf = org;
         } else {
             java.util.List<zm.eoz.platform.organisation.OrganisationMember> memberships =
                     organisationMemberRepository.findById_UserId(createdBy.getId());
@@ -785,6 +791,33 @@ public class OpportunityService {
         return organisationRepository.searchPostable(q, org.springframework.data.domain.PageRequest.of(0, 20)).stream()
                 .map(o -> new PostableOrganisation(o.getId(), o.getLegalName(), o.getTradingName(), o.getVerificationStatus().name()))
                 .toList();
+    }
+
+    /**
+     * The directory record for an organisation staff named while posting: an existing one with the same legal or
+     * trading name, or a new unverified record. New records get no team; a real employer claims them later.
+     */
+    private zm.eoz.platform.organisation.Organisation findOrAddOrganisation(String name, User staff) {
+        String trimmed = name == null ? "" : name.trim();
+        if (trimmed.isEmpty()) {
+            throw new BadRequestException("Enter the organisation's name.");
+        }
+        zm.eoz.platform.organisation.Organisation org = organisationRepository.findByName(trimmed).stream().findFirst()
+                .orElse(null);
+        if (org == null) {
+            org = new zm.eoz.platform.organisation.Organisation();
+            org.setLegalName(trimmed);
+            org.setCreatedBy(staff);
+            org.setVerificationStatus(zm.eoz.platform.organisation.VerificationStatus.PENDING);
+            org = organisationRepository.save(org);
+            auditService.record(staff, "CREATED", "Organisation", org.getId().toString(),
+                    "Added \"" + trimmed + "\" to the directory while posting a listing for it");
+        } else if (org.getVerificationStatus() == zm.eoz.platform.organisation.VerificationStatus.SUSPENDED
+                || org.getVerificationStatus() == zm.eoz.platform.organisation.VerificationStatus.REJECTED) {
+            throw new BadRequestException("\"" + org.getLegalName() + "\" is " + org.getVerificationStatus().name().toLowerCase()
+                    + ", so listings can't be posted for it.");
+        }
+        return org;
     }
 
     /** Tells an organisation's owners that EOZ posted a listing for them, so nothing appears under their name unannounced. */

@@ -73,8 +73,9 @@ Everything is set through environment variables. Docker Compose reads them from 
 Staff whose role has `OPPORTUNITY_CREATE` (admins and content officers by default) can post listings for companies and organisations, for example from an advert sent to EOZ.
 
 - **Where:** open **Post opportunity**, or **Admin → Organisations → Post a listing for them**.
-- **Registered organisations:** search for one to link the listing to its profile. The organisation's owners are notified, and its team can see and edit the listing under *My listings*.
-- **Unregistered organisations:** choose "isn't registered on EOZ" and type the name.
+- **The organisation doesn't have to be on EOZ.** The form opens ready to type any company or organisation name. With *Add this organisation to the EOZ directory as unverified* ticked (the default), EOZ also creates an unverified directory record for it, or reuses one with the same name, so its listings are grouped under one profile that staff can verify or the organisation can claim later. Untick it to post under the typed name only.
+- **Registered organisations:** choose *Link a registered organisation instead* and search. The organisation's owners are notified, and its team can see and edit the listing under *My listings*. If the search finds nothing, *Post for "…" (not on EOZ yet)* carries the name into the form.
+- **Verification:** listings for organisations that aren't verified show as *Unverified* on the public site.
 - **Publishing:** staff who also hold `OPPORTUNITY_PUBLISH` can tick *Publish immediately*. Everyone else's listings go to the moderation queue.
 - **What the public sees:** "Published by EOZ on behalf of …".
 - **Audit:** the log records who posted the listing and for which organisation.

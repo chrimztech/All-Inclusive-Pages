@@ -158,7 +158,49 @@ class OnBehalfPostingTest {
                 .isFalse();
     }
 
+    @Test
+    void staffCanAddAMissingOrganisationAsUnverifiedWhilePostingAndItIsReusedNextTime() throws Exception {
+        String name = "Kafue Fisheries Co-op " + System.nanoTime();
+        Cookie admin = login(staff("ADMIN"));
+
+        MvcResult first = addAndPost(admin, name, true)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.data.organisationId").exists())
+                .andExpect(jsonPath("$.data.organisationName").value(name))
+                .andReturn();
+        String orgId = JsonPath.read(first.getResponse().getContentAsString(), "$.data.organisationId");
+        String listingId = JsonPath.read(first.getResponse().getContentAsString(), "$.data.id");
+        assertThat(jdbc.queryForObject("select verification_status from organisations where id = ?::uuid", String.class, orgId))
+                .isEqualTo("PENDING");
+        assertThat(jdbc.queryForObject("select count(*) from organisation_members where organisation_id = ?::uuid", Long.class, orgId))
+                .isZero();
+        assertThat(jdbc.queryForObject("select verified from opportunities where id = ?::uuid", Boolean.class, listingId))
+                .isFalse();
+
+        // A content officer posting for the same organisation (any capitalisation) reuses the record.
+        addAndPost(login(staff("CONTENT_OFFICER")), "  " + name.toUpperCase() + " ", false)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.organisationId").value(orgId));
+        assertThat(jdbc.queryForObject("select count(*) from organisations where lower(legal_name) = lower(?)", Long.class, name))
+                .isEqualTo(1);
+    }
+
+    @Test
+    void employersCannotAddOrganisationsThroughTheListingForm() throws Exception {
+        String name = "Employer-added Org " + System.nanoTime();
+        addAndPost(register("EMPLOYER", null), name, false).andExpect(status().isOk());
+        assertThat(jdbc.queryForObject("select count(*) from organisations where legal_name = ?", Long.class, name))
+                .isZero();
+    }
+
     // ---------------------------------------------------------------- helpers
+
+    private ResultActions addAndPost(Cookie cookie, String organisationName, boolean publishNow) throws Exception {
+        String json = body(organisationName, null, publishNow);
+        return mockMvc.perform(post("/api/v1/opportunities").cookie(cookie).contentType(MediaType.APPLICATION_JSON)
+                .content(json.substring(0, json.length() - 1) + ",\"addOrganisation\":true}"));
+    }
 
     private ResultActions submit(Cookie cookie, String organisationId, boolean publishNow) throws Exception {
         return mockMvc.perform(post("/api/v1/opportunities").cookie(cookie).contentType(MediaType.APPLICATION_JSON)

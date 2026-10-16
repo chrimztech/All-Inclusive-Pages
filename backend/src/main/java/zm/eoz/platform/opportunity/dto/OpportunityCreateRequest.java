@@ -36,4 +36,9 @@ public record OpportunityCreateRequest(
          */
         java.util.UUID organisationId,
         /** Publish straight away instead of queueing for review — only for people holding OPPORTUNITY_PUBLISH. */
-        Boolean publishNow) {}
+        Boolean publishNow,
+        /**
+         * Staff posting for an organisation that is not on EOZ yet: also add it to the organisations directory as
+         * unverified (or reuse an existing record with the same name) and link the listing to it.
+         */
+        Boolean addOrganisation) {}

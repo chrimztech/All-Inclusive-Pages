@@ -34,6 +34,11 @@ public interface OrganisationRepository extends JpaRepository<Organisation, UUID
             @Param("q") String q,
             Pageable pageable);
 
+    /** Organisations whose legal or trading name is exactly this (ignoring case and surrounding spaces). */
+    @Query("select o from Organisation o where lower(trim(o.legalName)) = lower(:name)"
+            + " or lower(trim(coalesce(o.tradingName, ''))) = lower(:name) order by o.createdAt")
+    java.util.List<Organisation> findByName(@org.springframework.data.repository.query.Param("name") String name);
+
     /** Organisations staff can post listings for: matching name, not suspended or rejected, verified first. */
     @Query("select o from Organisation o where (lower(o.legalName) like lower(concat('%', :q, '%'))"
             + " or lower(coalesce(o.tradingName, '')) like lower(concat('%', :q, '%')))"
