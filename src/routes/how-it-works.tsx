@@ -16,7 +16,7 @@ const CANDIDATE_STEPS = [
   {
     n: "03",
     t: "Apply directly",
-    d: "Use the employer's own application method. EOZ never collects or forwards your documents.",
+    d: "Apply directly using the shared link, or follow the application instructions on the listing.",
   },
   {
     n: "04",

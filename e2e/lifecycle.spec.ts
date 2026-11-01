@@ -52,18 +52,38 @@ test.describe.serial("listing lifecycle", () => {
     await expect(page.getByRole("heading", { name: title })).toHaveCount(0);
   });
 
-  test("a visitor finds it on the board with the employer's route", async ({ page }) => {
+  test("a visitor finds it on the board and is asked to sign up or log in to apply", async ({
+    page,
+  }) => {
     test.skip(!adminEmail, "Needs the staff step to publish the listing.");
     await signOut(page);
     await gotoReady(page, "/opportunities");
     await page.getByPlaceholder(/title, organisation or reference/i).fill(title);
-    await page
-      .getByRole("link", { name: new RegExp(title) })
-      .first()
-      .click();
+    const card = page.getByRole("link", { name: new RegExp(title) }).first();
+    await expect(card.getByText("View and Apply")).toBeVisible();
+    await card.click();
+
+    // "View and Apply" offers the two options, each returning to the listing afterwards.
+    await expect(page).toHaveURL(/\/apply\//);
+    await expect(page.getByText(title).first()).toBeVisible();
+    await expect(page.getByRole("link", { name: /create an account/i })).toHaveAttribute(
+      "href",
+      /mode=signup.*redirect=%2Fopportunities%2F/,
+    );
+    await expect(page.getByRole("link", { name: /^log in/i })).toHaveAttribute(
+      "href",
+      /mode=signin.*redirect=%2Fopportunities%2F/,
+    );
+
+    // Opening the listing itself (e.g. from a shared link) shows it, with the same sign-in step to apply.
+    const slug = new URL(page.url()).pathname.split("/").pop()!;
+    await gotoReady(page, `/opportunities/${slug}`);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
     await expect(page.getByText(/published by eoz on behalf of/i)).toBeVisible();
-    await expect(page.getByText("Share this opportunity")).toBeVisible();
+    await expect(
+      page.getByText(/create a free account or log in to see how to apply/i),
+    ).toBeVisible();
+    await expect(page.getByText(/^(Verified|Unverified|Verified source)$/)).toHaveCount(0);
   });
 
   test("a candidate applies and tracks the application", async ({ page, request }) => {

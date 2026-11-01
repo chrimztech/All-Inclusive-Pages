@@ -54,7 +54,7 @@ export const Route = createFileRoute("/")({
       {
         name: "description",
         content:
-          "Discover verified jobs, internships, scholarships, grants, tenders and training for Zambian talent. Apply directly with employers through their official channel.",
+          "Discover verified jobs, internships, scholarships, grants, tenders and training for Zambian talent. Apply directly using the link shared on each listing.",
       },
       { property: "og:title", content: "Echo Opportunities Zambia — Verified Opportunities" },
       {
@@ -101,12 +101,12 @@ const STEPS = [
   {
     icon: ShieldCheck,
     title: "Verify",
-    body: "See who is hiring, the verification status and the exact closing date before you spend a minute applying.",
+    body: "See who is hiring, what they are looking for and the exact closing date before you spend a minute applying.",
   },
   {
     icon: Send,
-    title: "Apply direct",
-    body: "Go straight to the employer's official channel. EOZ never sits between you and the decision-maker.",
+    title: "Apply directly",
+    body: "Apply directly using the shared link.",
   },
 ] as const;
 
@@ -121,7 +121,6 @@ function Home() {
   const [query, setQuery] = useState("");
   const [draft, setDraft] = useState("");
   const [region, setRegion] = useState("All regions");
-  const [verifiedOnly, setVerifiedOnly] = useState(false);
   const [deadline, setDeadline] = useState("any");
   const [order, setOrder] = useState<"newest" | "top">("newest");
 
@@ -141,13 +140,12 @@ function Home() {
   });
 
   const opportunitiesQuery = useQuery({
-    queryKey: ["opportunities", "home", category, region, query, verifiedOnly, deadline, order],
+    queryKey: ["opportunities", "home", category, region, query, deadline, order],
     queryFn: () =>
       api.get<PageResponse<ApiOpportunitySummary>>("/opportunities", {
         category,
         region,
         q: query || undefined,
-        verifiedOnly: verifiedOnly ? "true" : undefined,
         deadlineWithinDays: deadline === "any" ? undefined : Number(deadline),
         order,
         size: 20,
@@ -270,14 +268,12 @@ function Home() {
               className="fade-in mt-10 flex flex-wrap gap-x-7 gap-y-3 text-sm text-muted"
               style={{ animationDelay: "400ms" }}
             >
-              {["Verified employers", "Apply on official channels", "Free for candidates"].map(
-                (t) => (
-                  <li key={t} className="flex items-center gap-2">
-                    <CheckCircle2 aria-hidden="true" className="size-4 text-accent-soft" />
-                    {t}
-                  </li>
-                ),
-              )}
+              {["Trusted employers", "Clear application links", "Free for candidates"].map((t) => (
+                <li key={t} className="flex items-center gap-2">
+                  <CheckCircle2 aria-hidden="true" className="size-4 text-accent-soft" />
+                  {t}
+                </li>
+              ))}
             </ul>
           </div>
 
@@ -440,27 +436,6 @@ function Home() {
                       onChange={() => setDeadline(d.v)}
                     />
                   ))}
-                </FilterGroup>
-                <FilterGroup label="Employer">
-                  <button
-                    type="button"
-                    role="switch"
-                    aria-checked={verifiedOnly}
-                    onClick={() => setVerifiedOnly((v) => !v)}
-                    className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-white/[0.04]"
-                  >
-                    <span className="flex items-center gap-2">
-                      <BadgeCheck aria-hidden className="size-4 text-emerald" />
-                      Verified only
-                    </span>
-                    <span
-                      className={`relative h-5 w-9 rounded-full transition-colors duration-300 ${verifiedOnly ? "bg-accent" : "bg-white/10"}`}
-                    >
-                      <span
-                        className={`absolute top-0.5 left-0.5 size-4 rounded-full bg-white shadow transition-transform duration-300 ${verifiedOnly ? "translate-x-4" : ""}`}
-                      />
-                    </span>
-                  </button>
                 </FilterGroup>
               </div>
             </Panel>
@@ -799,10 +774,9 @@ function HeroBoard({
           <span className="label-mono">Updated continuously</span>
         </div>
 
-        <div className="grid grid-cols-3 divide-x divide-line border-b border-line">
+        <div className="grid grid-cols-2 divide-x divide-line border-b border-line">
           {[
-            { l: "Active", v: stats?.publishedListings },
-            { l: "Verified orgs", v: stats?.verifiedOrganisations },
+            { l: "Active jobs", v: stats?.publishedListings },
             { l: "Applied / wk", v: stats?.applicationsThisWeek },
           ].map((s) => (
             <div key={s.l} className="px-4 py-5">

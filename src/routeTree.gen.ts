@@ -55,6 +55,7 @@ import { Route as AdminServicesRouteImport } from './routes/admin.services'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminTestimonialsRouteImport } from './routes/admin.testimonials'
 import { Route as AdminUsersRouteImport } from './routes/admin.users'
+import { Route as ApplyOpportunityIdRouteImport } from './routes/apply.$opportunityId'
 import { Route as CandidateIndexRouteImport } from './routes/candidate.index'
 import { Route as CandidateAccountRouteImport } from './routes/candidate.account'
 import { Route as CandidateAlertsRouteImport } from './routes/candidate.alerts'
@@ -321,6 +322,11 @@ const AdminUsersRoute = AdminUsersRouteImport.update({
   path: '/admin/users',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApplyOpportunityIdRoute = ApplyOpportunityIdRouteImport.update({
+  id: '/apply/$opportunityId',
+  path: '/apply/$opportunityId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const CandidateIndexRoute = CandidateIndexRouteImport.update({
   id: '/candidate/',
   path: '/candidate/',
@@ -542,6 +548,7 @@ export interface FileRoutesByFullPath {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/apply/$opportunityId': typeof ApplyOpportunityIdRoute
   '/candidate/account': typeof CandidateAccountRoute
   '/candidate/alerts': typeof CandidateAlertsRoute
   '/candidate/applications': typeof CandidateApplicationsRoute
@@ -624,6 +631,7 @@ export interface FileRoutesByTo {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/apply/$opportunityId': typeof ApplyOpportunityIdRoute
   '/candidate/account': typeof CandidateAccountRoute
   '/candidate/alerts': typeof CandidateAlertsRoute
   '/candidate/applications': typeof CandidateApplicationsRoute
@@ -707,6 +715,7 @@ export interface FileRoutesById {
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/testimonials': typeof AdminTestimonialsRoute
   '/admin/users': typeof AdminUsersRoute
+  '/apply/$opportunityId': typeof ApplyOpportunityIdRoute
   '/candidate/account': typeof CandidateAccountRoute
   '/candidate/alerts': typeof CandidateAlertsRoute
   '/candidate/applications': typeof CandidateApplicationsRoute
@@ -791,6 +800,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/testimonials'
     | '/admin/users'
+    | '/apply/$opportunityId'
     | '/candidate/account'
     | '/candidate/alerts'
     | '/candidate/applications'
@@ -873,6 +883,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/testimonials'
     | '/admin/users'
+    | '/apply/$opportunityId'
     | '/candidate/account'
     | '/candidate/alerts'
     | '/candidate/applications'
@@ -955,6 +966,7 @@ export interface FileRouteTypes {
     | '/admin/settings'
     | '/admin/testimonials'
     | '/admin/users'
+    | '/apply/$opportunityId'
     | '/candidate/account'
     | '/candidate/alerts'
     | '/candidate/applications'
@@ -1038,6 +1050,7 @@ export interface RootRouteChildren {
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminTestimonialsRoute: typeof AdminTestimonialsRoute
   AdminUsersRoute: typeof AdminUsersRoute
+  ApplyOpportunityIdRoute: typeof ApplyOpportunityIdRoute
   CandidateAccountRoute: typeof CandidateAccountRoute
   CandidateAlertsRoute: typeof CandidateAlertsRoute
   CandidateApplicationsRoute: typeof CandidateApplicationsRoute
@@ -1399,6 +1412,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminUsersRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/apply/$opportunityId': {
+      id: '/apply/$opportunityId'
+      path: '/apply/$opportunityId'
+      fullPath: '/apply/$opportunityId'
+      preLoaderRoute: typeof ApplyOpportunityIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/candidate/': {
       id: '/candidate/'
       path: '/candidate'
@@ -1686,6 +1706,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminSettingsRoute: AdminSettingsRoute,
   AdminTestimonialsRoute: AdminTestimonialsRoute,
   AdminUsersRoute: AdminUsersRoute,
+  ApplyOpportunityIdRoute: ApplyOpportunityIdRoute,
   CandidateAccountRoute: CandidateAccountRoute,
   CandidateAlertsRoute: CandidateAlertsRoute,
   CandidateApplicationsRoute: CandidateApplicationsRoute,

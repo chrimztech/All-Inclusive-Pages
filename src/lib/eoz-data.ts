@@ -18,7 +18,7 @@ export const ORG = {
   },
   whatsappWording: "Follow the Echo Opportunities Zambia channel on WhatsApp",
   disclaimer:
-    "Echo Opportunities Zambia is a distribution and curation platform. All applications must be made directly with the employer through their official channel. EOZ does not accept, store, or forward candidate applications.",
+    "Echo Opportunities Zambia is a distribution and curation platform. Follow the application instructions shared on each listing: most opportunities are applied for directly using the employer's link or contact details, and some through EOZ on the employer's behalf.",
   recruitmentRole:
     "EOZ operates as a bridge between employers and potential candidates. Our opportunity-sharing function focuses on making relevant vacancies and opportunities easier to discover, while directing applicants to the employer's stated application process.",
   advertiserDistinction:

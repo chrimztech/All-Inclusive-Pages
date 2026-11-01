@@ -9,6 +9,7 @@ import { DeadlineChip, SaveToggle } from "@/components/eoz/OpportunityCard";
 import { useCurrentUser } from "@/lib/use-current-user";
 import { safeHttpUrl } from "@/lib/safe-url";
 import { ListingAttachments } from "@/components/eoz/ListingAttachments";
+import { ApplyGate } from "@/components/eoz/ApplyGate";
 import {
   api,
   ApiError,
@@ -110,7 +111,7 @@ function applyMethodLabel(item: ApiOpportunityDetail) {
 
 function Detail() {
   const { item } = Route.useLoaderData();
-  const { user } = useCurrentUser();
+  const { user, isLoading: userLoading } = useCurrentUser();
   const isCandidate = user?.roles.includes("CANDIDATE") ?? false;
 
   const relatedQuery = useQuery({
@@ -129,11 +130,6 @@ function Detail() {
         <div className="lg:col-span-8">
           <div className="mb-4 flex flex-wrap items-center gap-2">
             <Chip>{item.categoryName.replace(/s$/, "")}</Chip>
-            {item.verified ? (
-              <Chip tone="emerald">Verified source</Chip>
-            ) : (
-              <Chip tone="rose">Unverified</Chip>
-            )}
             <DeadlineChip deadline={item.deadline} intervalMs={1000} />
             {item.employmentType ? (
               <Chip tone="muted">{EMPLOYMENT_TYPE_LABELS[item.employmentType]}</Chip>
@@ -198,14 +194,29 @@ function Detail() {
 
           <ListingAttachments opportunityId={item.id} />
           <h2 className="mt-10 font-display text-2xl tracking-tight">How to apply</h2>
-          <Panel className="mt-4">
-            <div className="label-mono mb-2">Official application route</div>
-            <ApplyRoute item={item} />
-            <p className="mt-4 text-xs text-muted">{ORG.disclaimer}</p>
-            {item.applicationMode === "EOZ_HOSTED" ? (
-              <EozHostedApplyForm opportunityId={item.id} />
-            ) : null}
-          </Panel>
+          {user ? (
+            <Panel className="mt-4">
+              <div className="label-mono mb-2">Application route</div>
+              <ApplyRoute item={item} />
+              <p className="mt-4 text-xs text-muted">{ORG.disclaimer}</p>
+              {item.applicationMode === "EOZ_HOSTED" ? (
+                <EozHostedApplyForm opportunityId={item.id} />
+              ) : null}
+            </Panel>
+          ) : (
+            <Panel className="mt-4">
+              {userLoading ? (
+                <div className="skeleton h-24 rounded-xl" />
+              ) : (
+                <>
+                  <p className="mb-4 text-sm text-muted">
+                    Create a free account or log in to see how to apply for this opportunity.
+                  </p>
+                  <ApplyGate slug={item.slug} compact />
+                </>
+              )}
+            </Panel>
+          )}
         </div>
 
         <aside className="space-y-4 lg:col-span-4">

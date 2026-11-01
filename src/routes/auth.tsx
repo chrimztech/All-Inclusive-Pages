@@ -23,7 +23,7 @@ const TRUST_POINTS = [
   },
   {
     icon: Sparkles,
-    text: "You always apply through the employer's own official channel, never ours.",
+    text: "Every listing shows exactly how to apply, with the link or instructions to follow.",
   },
 ] as const;
 

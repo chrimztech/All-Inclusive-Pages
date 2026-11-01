@@ -38,17 +38,23 @@ test.describe.serial("staff posting on behalf of an organisation", () => {
     await expect(page.getByRole("heading", { name: "Published." })).toBeVisible();
   });
 
-  test("the public listing names the organisation and says it is unverified", async ({ page }) => {
+  test("the public listing names the organisation without showing a verification status", async ({
+    page,
+  }) => {
     test.skip(!adminEmail, "Needs the staff step to publish the listing.");
     await signOut(page);
     await gotoReady(page, "/opportunities");
     await page.getByPlaceholder(/title, organisation or reference/i).fill(title);
-    await page
+    await expect(page.getByRole("link", { name: new RegExp(title) }).first()).toBeVisible();
+    await expect(page.getByText(/^(Verified|Unverified|Verified source)$/)).toHaveCount(0);
+    const slug = await page
       .getByRole("link", { name: new RegExp(title) })
       .first()
-      .click();
+      .getAttribute("href")
+      .then((href) => href!.split("/").pop()!);
+    await gotoReady(page, `/opportunities/${slug}`);
     await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
-    await expect(page.getByText("Unverified", { exact: true }).first()).toBeVisible();
+    await expect(page.getByText(/^(Verified|Unverified|Verified source)$/)).toHaveCount(0);
     await expect(page.getByText(/published by eoz on behalf of/i)).toBeVisible();
     await expect(page.getByText(organisation).first()).toBeVisible();
   });

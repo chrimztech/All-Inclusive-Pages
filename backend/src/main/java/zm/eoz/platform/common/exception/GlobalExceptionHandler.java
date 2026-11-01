@@ -87,6 +87,45 @@ public class GlobalExceptionHandler {
                 "Someone else saved this record at the same moment. Reload to see their changes, then try again.");
     }
 
+    /** A required query parameter or form field was left out (e.g. an unsubscribe link without its token). */
+    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
+    public ProblemDetail handleMissingParameter(org.springframework.web.bind.MissingServletRequestParameterException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "missing-parameter", "The '" + ex.getParameterName() + "' parameter is required.");
+    }
+
+    @ExceptionHandler(org.springframework.web.multipart.support.MissingServletRequestPartException.class)
+    public ProblemDetail handleMissingPart(org.springframework.web.multipart.support.MissingServletRequestPartException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "missing-parameter", "The '" + ex.getRequestPartName() + "' part is required.");
+    }
+
+    /** A path or query value of the wrong type, such as a malformed id or ?page=abc. */
+    @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+    public ProblemDetail handleTypeMismatch(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "invalid-parameter", "'" + ex.getValue() + "' is not a valid value for '" + ex.getName() + "'.");
+    }
+
+    /** The request body was missing or wasn't valid JSON for this endpoint. */
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ProblemDetail handleUnreadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        return problem(HttpStatus.BAD_REQUEST, "malformed-request", "The request body is missing or isn't valid.");
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+    public ProblemDetail handleMethod(org.springframework.web.HttpRequestMethodNotSupportedException ex) {
+        return problem(HttpStatus.METHOD_NOT_ALLOWED, "method-not-allowed", ex.getMethod() + " isn't supported on this endpoint.");
+    }
+
+    @ExceptionHandler(org.springframework.web.HttpMediaTypeNotSupportedException.class)
+    public ProblemDetail handleMediaType(org.springframework.web.HttpMediaTypeNotSupportedException ex) {
+        return problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "unsupported-media-type", "This endpoint doesn't accept " + ex.getContentType() + ".");
+    }
+
+    /** An upload larger than the configured limit. */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    public ProblemDetail handleTooLarge(org.springframework.web.multipart.MaxUploadSizeExceededException ex) {
+        return problem(HttpStatus.PAYLOAD_TOO_LARGE, "file-too-large", "That file is too large.");
+    }
+
     @ExceptionHandler(NoResourceFoundException.class)
     public ProblemDetail handleNoResource(NoResourceFoundException ex) {
         return problem(HttpStatus.NOT_FOUND, "not-found", "No such endpoint: /" + ex.getResourcePath());

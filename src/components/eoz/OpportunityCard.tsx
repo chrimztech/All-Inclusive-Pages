@@ -44,8 +44,9 @@ export function OpportunityCard({
       style={{ animationDelay: `${delay}ms` }}
     >
       {isCandidate ? <SaveToggle opportunityId={item.id} /> : null}
+      {/* Signed-out visitors are asked to create an account or log in before they see how to apply. */}
       <Link
-        to="/opportunities/$opportunityId"
+        to={user ? "/opportunities/$opportunityId" : "/apply/$opportunityId"}
         params={{ opportunityId: item.slug }}
         className="relative z-[1] flex gap-4"
       >
@@ -55,11 +56,6 @@ export function OpportunityCard({
             <div className="min-w-0 flex-1">
               <div className="mb-2.5 flex flex-wrap items-center gap-1.5">
                 <Chip>{item.categoryName.replace(/s$/, "")}</Chip>
-                {item.verified ? (
-                  <Chip tone="emerald">Verified</Chip>
-                ) : (
-                  <Chip tone="rose">Unverified</Chip>
-                )}
                 <span
                   className={
                     countdownTone(countdown) === "rose" && !countdown.expired ? "soft-pulse" : ""
@@ -100,7 +96,7 @@ export function OpportunityCard({
               REF <span className="text-fg/80">{item.reference}</span>
             </span>
             <span className="inline-flex items-center gap-1 font-medium text-accent-soft">
-              View details
+              View and Apply
               <ArrowRight
                 aria-hidden="true"
                 className="size-3.5 transition-transform duration-300 group-hover:translate-x-1"

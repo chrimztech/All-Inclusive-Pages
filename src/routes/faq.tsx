@@ -6,7 +6,7 @@ import { useOrgSettings } from "@/lib/use-org-settings";
 const FAQS = [
   {
     q: "Does EOZ receive my application?",
-    a: "No. Every listing carries the employer's own official application method. You apply directly with the organisation; EOZ never accepts, stores or forwards applications.",
+    a: "It depends on the listing. Most opportunities are applied for directly using the link or contact details shared on the listing. Some employers ask EOZ to receive applications on their behalf; those listings let you apply on EOZ. Always follow the instructions on the listing.",
   },
   {
     q: "Is it free to browse opportunities?",
