@@ -248,7 +248,10 @@ export type ApiOpportunityDetail = ApiOpportunitySummary & {
   benefits: string | null;
   applicationMode: string;
   applicationUrl: string | null;
+  /** "To" address(es), comma-separated. */
   applicationEmail: string | null;
+  applicationCc?: string | null;
+  applicationBcc?: string | null;
   applicationAddress: string | null;
   source: string | null;
   viewsCount: number;

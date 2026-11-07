@@ -180,7 +180,11 @@ public class OpportunityService {
         } catch (IllegalArgumentException e) {
             throw new BadRequestException("Unknown application mode: " + request.applicationMode());
         }
-        validateApplicationRoute(mode, request.applicationUrl(), request.applicationEmail(), request.applicationAddress());
+        String emailTo = EmailList.normalise(request.applicationEmail(), "application");
+        String emailCc = EmailList.normalise(request.applicationCc(), "CC");
+        String emailBcc = EmailList.normalise(request.applicationBcc(), "BCC");
+        EmailList.requireWithinLimit(emailTo, emailCc, emailBcc);
+        validateApplicationRoute(mode, request.applicationUrl(), emailTo, request.applicationAddress());
 
         Opportunity opportunity = new Opportunity();
         opportunity.setReference(referenceNumberService.next("EOZ-OPP"));
@@ -207,7 +211,9 @@ public class OpportunityService {
         opportunity.setDeadline(request.deadline());
         opportunity.setApplicationMode(mode);
         opportunity.setApplicationUrl(request.applicationUrl());
-        opportunity.setApplicationEmail(request.applicationEmail());
+        opportunity.setApplicationEmail(emailTo);
+        opportunity.setApplicationCc(emailCc);
+        opportunity.setApplicationBcc(emailBcc);
         opportunity.setApplicationAddress(request.applicationAddress());
         opportunity.setSource(request.source());
         opportunity.setStatus(OpportunityStatus.PENDING_REVIEW);
@@ -578,7 +584,15 @@ public class OpportunityService {
             opportunity.setDeadline(request.deadline());
         }
         if (request.applicationUrl() != null) opportunity.setApplicationUrl(request.applicationUrl());
-        if (request.applicationEmail() != null) opportunity.setApplicationEmail(request.applicationEmail());
+        if (request.applicationEmail() != null) {
+            opportunity.setApplicationEmail(EmailList.normalise(request.applicationEmail(), "application"));
+        }
+        if (request.applicationCc() != null) opportunity.setApplicationCc(EmailList.normalise(request.applicationCc(), "CC"));
+        if (request.applicationBcc() != null) {
+            opportunity.setApplicationBcc(EmailList.normalise(request.applicationBcc(), "BCC"));
+        }
+        EmailList.requireWithinLimit(
+                opportunity.getApplicationEmail(), opportunity.getApplicationCc(), opportunity.getApplicationBcc());
         if (request.applicationAddress() != null) opportunity.setApplicationAddress(request.applicationAddress());
         if (request.source() != null) opportunity.setSource(request.source());
         if (request.applicationMode() != null && !request.applicationMode().isBlank()) {
@@ -756,6 +770,8 @@ public class OpportunityService {
         copy.setApplicationMode(source.getApplicationMode());
         copy.setApplicationUrl(source.getApplicationUrl());
         copy.setApplicationEmail(source.getApplicationEmail());
+        copy.setApplicationCc(source.getApplicationCc());
+        copy.setApplicationBcc(source.getApplicationBcc());
         copy.setApplicationAddress(source.getApplicationAddress());
         copy.setSource(source.getSource());
         copy.setStatus(OpportunityStatus.PENDING_REVIEW);

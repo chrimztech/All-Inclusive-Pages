@@ -19,4 +19,7 @@ public record OpportunityUpdateRequest(
         String applicationAddress,
         String source,
         /** Switches how candidates apply; the matching route field must then be present on the listing. */
-        String applicationMode) {}
+        String applicationMode,
+        /** CC / BCC application contacts, comma-separated; "" clears them. */
+        String applicationCc,
+        String applicationBcc) {}

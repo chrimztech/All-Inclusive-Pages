@@ -41,4 +41,7 @@ public record OpportunityCreateRequest(
          * Staff posting for an organisation that is not on EOZ yet: also add it to the organisations directory as
          * unverified (or reuse an existing record with the same name) and link the listing to it.
          */
-        Boolean addOrganisation) {}
+        Boolean addOrganisation,
+        /** Extra application contacts, comma-separated; applicationEmail holds the "To" address(es). */
+        String applicationCc,
+        String applicationBcc) {}

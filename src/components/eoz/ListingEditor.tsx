@@ -4,6 +4,8 @@ import { api, ApiError } from "@/lib/api-client";
 import { REGIONS } from "@/lib/eoz-data";
 import { useToast } from "@/lib/toast";
 import { ListingAttachments } from "@/components/eoz/ListingAttachments";
+import { DetailsEditor, EmailListEditor } from "@/components/eoz/ListingFields";
+import { emailFieldsFrom, emailRowsFrom, type EmailRow } from "@/lib/email-list";
 
 type Detail = {
   version: number | null;
@@ -21,6 +23,8 @@ type Detail = {
   applicationMode: string;
   applicationUrl: string | null;
   applicationEmail: string | null;
+  applicationCc: string | null;
+  applicationBcc: string | null;
   applicationAddress: string | null;
   source: string | null;
 };
@@ -72,9 +76,11 @@ export function ListingEditor({
   });
 
   const [form, setForm] = useState<Record<string, string>>({});
+  const [emailRows, setEmailRows] = useState<EmailRow[]>(() => emailRowsFrom(""));
   useEffect(() => {
     const d = detailQuery.data;
     if (d) {
+      setEmailRows(emailRowsFrom(d.applicationEmail, d.applicationCc, d.applicationBcc));
       setForm({
         title: d.title,
         categoryCode: d.categoryCode,
@@ -88,7 +94,6 @@ export function ListingEditor({
         deadline: toLocalInput(d.deadline),
         applicationMode: d.applicationMode,
         applicationUrl: d.applicationUrl ?? "",
-        applicationEmail: d.applicationEmail ?? "",
         applicationAddress: d.applicationAddress ?? "",
         source: d.source ?? "",
       });
@@ -104,6 +109,7 @@ export function ListingEditor({
         `/opportunities/manage/${opportunityId}`,
         {
           ...form,
+          ...(form["applicationMode"] === "EMPLOYER_EMAIL" ? emailFieldsFrom(emailRows) : {}),
           deadline: form["deadline"] ? new Date(form["deadline"]).toISOString() : undefined,
         },
         { ifMatch: detailQuery.data?.version },
@@ -198,7 +204,7 @@ export function ListingEditor({
             className={inputCls}
           />
         </label>
-        <label className="text-xs text-muted">
+        <label className="text-xs text-muted sm:col-span-2">
           Responsibilities
           <textarea
             rows={3}
@@ -207,15 +213,13 @@ export function ListingEditor({
             className={inputCls}
           />
         </label>
-        <label className="text-xs text-muted">
-          Requirements
-          <textarea
-            rows={3}
+        <div className="text-xs text-muted sm:col-span-2">
+          <DetailsEditor
             value={form["requirements"] ?? ""}
-            onChange={set("requirements")}
-            className={inputCls}
+            onChange={(value) => setForm((f) => ({ ...f, requirements: value }))}
+            rows={10}
           />
-        </label>
+        </div>
         <label className="text-xs text-muted sm:col-span-2">
           Benefits
           <textarea
@@ -263,16 +267,12 @@ export function ListingEditor({
           </label>
         ) : null}
         {mode === "EMPLOYER_EMAIL" ? (
-          <label className="text-xs text-muted sm:col-span-2">
-            Application email
-            <input
-              required
-              type="email"
-              value={form["applicationEmail"] ?? ""}
-              onChange={set("applicationEmail")}
-              className={inputCls}
-            />
-          </label>
+          <div className="text-xs text-muted sm:col-span-2">
+            Application emails
+            <div className="mt-1">
+              <EmailListEditor rows={emailRows} onChange={setEmailRows} inputClassName={inputCls} />
+            </div>
+          </div>
         ) : null}
         {mode === "PHYSICAL_ADDRESS" ? (
           <label className="text-xs text-muted sm:col-span-2">

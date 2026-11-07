@@ -117,6 +117,8 @@ public class OpportunityVersionRecorder {
         m.put("applicationMode", o.getApplicationMode() != null ? o.getApplicationMode().name() : null);
         m.put("applicationUrl", o.getApplicationUrl());
         m.put("applicationEmail", o.getApplicationEmail());
+        m.put("applicationCc", o.getApplicationCc());
+        m.put("applicationBcc", o.getApplicationBcc());
         m.put("applicationAddress", o.getApplicationAddress());
         m.put("source", o.getSource());
         m.put("status", o.getStatus() != null ? o.getStatus().name() : null);

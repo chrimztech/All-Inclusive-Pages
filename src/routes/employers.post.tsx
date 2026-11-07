@@ -9,6 +9,8 @@ import { OnBehalfPicker, type OnBehalfChoice } from "@/components/eoz/OnBehalfPi
 import { useCan } from "@/lib/use-current-user";
 import { ORG, REGIONS } from "@/lib/eoz-data";
 import { FormErrorSummary } from "@/components/eoz/FormErrorSummary";
+import { DetailsEditor, EmailListEditor } from "@/components/eoz/ListingFields";
+import { emailFieldsFrom, emailRowsFrom, type EmailRow } from "@/lib/email-list";
 import {
   api,
   ApiError,
@@ -127,6 +129,7 @@ function PostOpportunity() {
   const [source, setSource] = useState("");
   const [description, setDescription] = useState("");
   const [requirements, setRequirements] = useState("");
+  const [emailRows, setEmailRows] = useState<EmailRow[]>(() => emailRowsFrom(""));
   const [employmentType, setEmploymentType] = useState("");
   const [workArrangement, setWorkArrangement] = useState("");
   const [experienceLevel, setExperienceLevel] = useState("");
@@ -153,11 +156,8 @@ function PostOpportunity() {
             ? onBehalf.organisation.tradingName || onBehalf.organisation.legalName
             : organisationName,
         description,
-        requirements: requirements
-          .split("\n")
-          .map((r) => r.trim())
-          .filter(Boolean)
-          .join("; "),
+        // Kept exactly as typed: line breaks, spacing and headings are shown as entered.
+        requirements: requirements.trim() ? requirements : undefined,
         region,
         employmentType: employmentType || undefined,
         workArrangement: workArrangement || undefined,
@@ -167,7 +167,7 @@ function PostOpportunity() {
         deadline: deadline ? new Date(deadline).toISOString() : undefined,
         applicationMode,
         applicationUrl: applicationMode === "EXTERNAL_URL" ? routeValue : undefined,
-        applicationEmail: applicationMode === "EMPLOYER_EMAIL" ? routeValue : undefined,
+        ...(applicationMode === "EMPLOYER_EMAIL" ? emailFieldsFrom(emailRows) : {}),
         applicationAddress: applicationMode === "PHYSICAL_ADDRESS" ? routeValue : undefined,
         source: source.trim() || undefined,
         salaryVisible: Boolean(salaryMin || salaryMax),
@@ -186,6 +186,7 @@ function PostOpportunity() {
       deadline,
       applicationMode,
       routeValue,
+      emails: emailFieldsFrom(emailRows).applicationEmail,
       source,
       description,
       requirements,
@@ -201,9 +202,7 @@ function PostOpportunity() {
   const routeFieldLabel =
     applicationMode === "EXTERNAL_URL"
       ? "Careers page or application form link"
-      : applicationMode === "EMPLOYER_EMAIL"
-        ? "Email address for applications"
-        : "Where applications are delivered";
+      : "Where applications are delivered";
 
   if (submitMutation.isSuccess) {
     const done = submitMutation.data;
@@ -382,27 +381,30 @@ function PostOpportunity() {
                   No external link needed — candidates apply directly on EOZ, with their profile CV
                   attached, and you'll see and screen every applicant from your Applicants page.
                 </p>
+              ) : applicationMode === "EMPLOYER_EMAIL" ? (
+                <div className="sm:col-span-2">
+                  <span className="label-mono">Email addresses for applications</span>
+                  <div className="mt-1">
+                    <EmailListEditor
+                      rows={emailRows}
+                      onChange={setEmailRows}
+                      inputClassName={inputCls}
+                    />
+                  </div>
+                </div>
               ) : (
                 <label className="sm:col-span-2">
                   <span className="label-mono">{routeFieldLabel}</span>
                   <input
                     required
-                    type={
-                      applicationMode === "EMPLOYER_EMAIL"
-                        ? "email"
-                        : applicationMode === "EXTERNAL_URL"
-                          ? "url"
-                          : "text"
-                    }
+                    type={applicationMode === "EXTERNAL_URL" ? "url" : "text"}
                     value={routeValue}
                     onChange={(e) => setRouteValue(e.target.value)}
                     className={inputCls}
                     placeholder={
-                      applicationMode === "EMPLOYER_EMAIL"
-                        ? "careers@employer.zm"
-                        : applicationMode === "EXTERNAL_URL"
-                          ? "https://"
-                          : "Plot 12, Cairo Road, Lusaka"
+                      applicationMode === "EXTERNAL_URL"
+                        ? "https://"
+                        : "Plot 12, Cairo Road, Lusaka"
                     }
                   />
                 </label>
@@ -426,15 +428,9 @@ function PostOpportunity() {
                   className={inputCls}
                 />
               </label>
-              <label className="sm:col-span-2">
-                <span className="label-mono">Requirements (one per line)</span>
-                <textarea
-                  rows={4}
-                  value={requirements}
-                  onChange={(e) => setRequirements(e.target.value)}
-                  className={inputCls}
-                />
-              </label>
+              <div className="sm:col-span-2">
+                <DetailsEditor value={requirements} onChange={setRequirements} />
+              </div>
 
               <details className="sm:col-span-2 rounded-md ring-1 ring-line">
                 <summary className="cursor-pointer px-3 py-2 text-sm text-muted">
@@ -520,6 +516,9 @@ function PostOpportunity() {
                     organisationName: "Organisation",
                     applicationUrl: "Application link",
                     applicationEmail: "Application email",
+                    applicationCc: "CC email",
+                    applicationBcc: "BCC email",
+                    requirements: "Opportunity details",
                     applicationAddress: "Application address",
                     deadline: "Closing date",
                   }}

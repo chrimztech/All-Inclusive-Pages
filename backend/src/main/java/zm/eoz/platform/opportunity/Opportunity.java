@@ -108,8 +108,15 @@ public class Opportunity {
     @Column(name = "application_url")
     private String applicationUrl;
 
+    /** "To" address(es), comma-separated. */
     @Column(name = "application_email")
     private String applicationEmail;
+
+    @Column(name = "application_cc")
+    private String applicationCc;
+
+    @Column(name = "application_bcc")
+    private String applicationBcc;
 
     @Column(name = "application_address")
     private String applicationAddress;

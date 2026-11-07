@@ -170,7 +170,7 @@ function Home() {
       {/* ───────────────────────── Hero ───────────────────────── */}
       <section className="relative -mx-5 px-5 pt-10 pb-16 lg:-mx-8 lg:px-8 2xl:-mx-12 2xl:px-12 lg:pt-20 lg:pb-24">
         <div aria-hidden="true" className="bg-grid pointer-events-none absolute inset-0 -top-20" />
-        <div className="relative grid gap-14 lg:grid-cols-12 lg:items-center lg:gap-10">
+        <div className="relative grid grid-cols-1 gap-14 lg:grid-cols-12 lg:items-center lg:gap-10">
           <div className="lg:col-span-7">
             <div className="fade-in inline-flex items-center gap-2.5 rounded-full bg-white/[0.04] py-1.5 pr-4 pl-3 text-xs text-muted ring-1 ring-line backdrop-blur">
               <span className="live-dot" />
@@ -223,7 +223,7 @@ function Home() {
                 />
               </label>
               <div className="flex gap-2">
-                <label className="relative flex flex-1 items-center sm:flex-none">
+                <label className="relative flex min-w-0 flex-1 items-center sm:flex-none">
                   <MapPin
                     aria-hidden="true"
                     className="pointer-events-none absolute left-3 size-4 text-muted"
@@ -232,7 +232,7 @@ function Home() {
                   <select
                     value={region}
                     onChange={(e) => setRegion(e.target.value)}
-                    className="w-full appearance-none rounded-xl bg-white/[0.04] py-3 pr-4 pl-9 text-sm outline-none ring-1 ring-line transition-colors hover:bg-white/[0.07] sm:w-44"
+                    className="w-full min-w-0 appearance-none truncate rounded-xl bg-white/[0.04] py-3 pr-4 pl-9 text-sm outline-none ring-1 ring-line transition-colors hover:bg-white/[0.07] sm:w-44"
                   >
                     <option>All regions</option>
                     {REGIONS.map((r) => (
@@ -240,7 +240,7 @@ function Home() {
                     ))}
                   </select>
                 </label>
-                <button type="submit" className="btn-primary px-5 py-3 text-sm">
+                <button type="submit" className="btn-primary shrink-0 px-5 py-3 text-sm">
                   Search
                   <ArrowRight aria-hidden="true" className="size-4" />
                 </button>
@@ -758,7 +758,7 @@ function HeroBoard({
     <div className="fade-in relative sm:py-9 lg:col-span-5" style={{ animationDelay: "300ms" }}>
       <div
         aria-hidden
-        className="pointer-events-none absolute -inset-10 rounded-full opacity-70 blur-3xl"
+        className="pointer-events-none absolute -inset-y-10 inset-x-0 rounded-full opacity-70 blur-3xl sm:-inset-10"
         style={{
           background:
             "radial-gradient(closest-side, rgba(36,180,92,0.30), rgba(255,214,10,0.10), transparent)",

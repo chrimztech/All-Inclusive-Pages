@@ -10,6 +10,7 @@ import { useCurrentUser } from "@/lib/use-current-user";
 import { safeHttpUrl } from "@/lib/safe-url";
 import { ListingAttachments } from "@/components/eoz/ListingAttachments";
 import { ApplyGate } from "@/components/eoz/ApplyGate";
+import { FormattedText } from "@/components/eoz/ListingFields";
 import {
   api,
   ApiError,
@@ -176,19 +177,17 @@ function Detail() {
             ) : null}
           </p>
 
-          <p className="mt-8 max-w-[62ch] text-pretty text-lg text-muted">{item.description}</p>
+          <p className="mt-8 max-w-[62ch] whitespace-pre-wrap text-pretty text-lg text-muted">
+            {item.description}
+          </p>
 
-          {item.requirements ? (
+          {item.requirements?.trim() ? (
             <>
-              <h2 className="mt-10 font-display text-2xl tracking-tight">Requirements</h2>
-              <ul className="mt-4 space-y-2 text-sm text-muted">
-                {item.requirements.split(";").map((r) => (
-                  <li key={r} className="flex gap-3">
-                    <span className="text-accent-soft">—</span>
-                    <span>{r.trim()}</span>
-                  </li>
-                ))}
-              </ul>
+              <h2 className="mt-10 font-display text-2xl tracking-tight">Opportunity details</h2>
+              <FormattedText
+                text={item.requirements}
+                className="mt-4 max-w-[72ch] space-y-3 text-[15px] leading-7 text-muted"
+              />
             </>
           ) : null}
 
@@ -325,18 +324,49 @@ function ApplyRoute({ item }: { item: ApiOpportunityDetail }) {
   }
 
   if (item.applicationMode === "EMPLOYER_EMAIL" && item.applicationEmail) {
-    const subject = encodeURIComponent(`Application: ${item.title} (${item.reference})`);
+    const list = (value: string | null | undefined) =>
+      (value ?? "")
+        .split(",")
+        .map((a) => a.trim())
+        .filter(Boolean);
+    const to = list(item.applicationEmail);
+    const cc = list(item.applicationCc);
+    const bcc = list(item.applicationBcc);
+    const params = [
+      `subject=${encodeURIComponent(`Application: ${item.title} (${item.reference})`)}`,
+    ];
+    if (cc.length) params.push(`cc=${cc.map(encodeURIComponent).join(",")}`);
+    if (bcc.length) params.push(`bcc=${bcc.map(encodeURIComponent).join(",")}`);
+    const rows: [string, string[]][] = [
+      ["To", to],
+      ["CC", cc],
+      ["BCC", bcc],
+    ];
     return (
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="space-y-3">
         <a
-          href={`mailto:${item.applicationEmail}?subject=${subject}`}
+          href={`mailto:${to.join(",")}?${params.join("&")}`}
           onClick={() => trackApplyClick(item.id)}
           className="btn-primary px-5 py-3 text-sm"
         >
           <Mail aria-hidden="true" className="size-4" />
           Email your application
         </a>
-        <span className="font-mono text-sm text-fg/80">{item.applicationEmail}</span>
+        <dl className="space-y-1 text-sm">
+          {rows
+            .filter(([, addresses]) => addresses.length)
+            .map(([label, addresses]) => (
+              <div key={label} className="flex flex-wrap gap-x-2">
+                <dt className="w-10 shrink-0 text-muted">{label}</dt>
+                <dd className="min-w-0 break-all font-mono text-fg/80">{addresses.join(", ")}</dd>
+              </div>
+            ))}
+        </dl>
+        {cc.length || bcc.length ? (
+          <p className="text-xs text-muted">
+            The button fills in every address. If you write the email yourself, include them all.
+          </p>
+        ) : null}
       </div>
     );
   }
